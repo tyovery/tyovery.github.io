@@ -1,0 +1,582 @@
+<html>
+
+<!-- < Timer Start > -->
+<script language="javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+
+<head>
+
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="cache-control" content="no-cache, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+
+<title>Menu Tree - ~tyovery~'s Homepage</title>
+
+<style type="text/css">
+body
+{
+	line-height: 38%;
+	font-size: 19px;
+	background-color: #FFFFFF;
+	color: #000000;
+}
+p
+{
+	line-height: 38%;
+	font-size: 19px;
+	color: #000000;
+}
+a
+{
+	text-decoration: none;
+}
+</style>
+
+</head>
+
+<body>
+
+<center>
+
+<script type="text/javascript">
+
+/* 清除緩存，從服務器重新下載頁面。 #Begin */
+/* 須改 Link  <a id="link_mainpage" onClick+="ClearCache(this.id);"
+var firstClick_link_mainpage = 1;
+var firstClick_link_logpage = 1;
+
+function ClearCache(linkID)
+{
+	if(eval("firstClick_" + linkID) == 1)
+	{
+		eval( "firstClick_" + linkID + " = 0 ; " );
+		setTimeout('self.parent.frames["mainpage_frame"].window.location.reload(true);', 500);
+	}
+}
+*/
+/* 清除緩存，從服務器重新下載頁面。 #End */
+
+function afterClickOnLink(targetFrameName)
+{
+	self.parent.frames[targetFrameName].document.write("<html>\n");
+	self.parent.frames[targetFrameName].document.write("<head>\n");
+	self.parent.frames[targetFrameName].document.write('<meta name="author" content="~tyovery~" />\n');
+	self.parent.frames[targetFrameName].document.write('<meta http-equiv="content-type" content="text/html;charset=big5" />\n');
+	self.parent.frames[targetFrameName].document.write("<title>Loading Page - ~tyovery~'s Homepage</title>\n");
+	self.parent.frames[targetFrameName].document.write("<style type='text/css'>\n");
+
+	self.parent.frames[targetFrameName].document.write("body\n{\n");
+	self.parent.frames[targetFrameName].document.write("line-height: 38%;\n");
+	self.parent.frames[targetFrameName].document.write("font-size: 19px;\n");
+	self.parent.frames[targetFrameName].document.write("background-color: #FFFFFF;\n");
+	self.parent.frames[targetFrameName].document.write("color: #000000;\n");
+	self.parent.frames[targetFrameName].document.write("}\n");
+
+	self.parent.frames[targetFrameName].document.write("p\n{\n");
+	self.parent.frames[targetFrameName].document.write("line-height: 38%;\n");
+	self.parent.frames[targetFrameName].document.write("font-size: 19px;\n");
+	self.parent.frames[targetFrameName].document.write("color: #000000;\n");
+	self.parent.frames[targetFrameName].document.write("}\n");
+
+	self.parent.frames[targetFrameName].document.write("a\n{\n");
+	self.parent.frames[targetFrameName].document.write("text-decoration: none;\n");
+	self.parent.frames[targetFrameName].document.write("}\n");
+
+	self.parent.frames[targetFrameName].document.write("</style>\n");
+	self.parent.frames[targetFrameName].document.write("</head>\n");
+	self.parent.frames[targetFrameName].document.write("<body>\n");
+	self.parent.frames[targetFrameName].document.write("<br /><br />\n");
+	self.parent.frames[targetFrameName].document.write("<center>\n");
+	self.parent.frames[targetFrameName].document.write("<p>網頁下載中，請稍候……</p>\n");
+	self.parent.frames[targetFrameName].document.write("<p>Downloading Page.......</p>\n");
+	self.parent.frames[targetFrameName].document.write("<br />\n");
+	self.parent.frames[targetFrameName].document.write("<p>沒有回應？<a href='javascript: history.go(-1);'><font color='#BF3F3F'>按此</font></a>回到上一頁。</p>\n");
+	self.parent.frames[targetFrameName].document.write("</center>\n");
+	self.parent.frames[targetFrameName].document.write("</body>\n");
+	self.parent.frames[targetFrameName].document.write("</html>\n");
+}
+// afterClickOnLink("mainpage_frame");
+</script>
+
+<div id="area_menu">
+
+<p style="margin-top: 19px; line-height: 38%; font-size: 31px; color: #3F7F7F;">Menu</p>
+
+<div id="area_overture" style="margin-top: -19px; background-color: #7F7F7F;">
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+<p style="line-height: 38%; font-size: 19px;">
+	<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="mainpage.htm" style="color: #3F3F3F;">
+		封面
+	</a>
+</p>
+<p style="line-height: 38%; font-size: 19px;">
+	<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="logpage.htm" style="color: #3F3F3F;">
+		封底
+	</a>
+</p>
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+</div>
+
+<div id="area_art" style="margin-top: -19px; background-color: #BF7F9F;">
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+	<p style="line-height: 62%; font-size: 19px; color: #3F3F3F;"><b>藝術</b></p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="art/arts.htm" style="color: #FFFFFF;">
+			美感判斷
+		</a>
+	</p>
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+</div>
+
+<div id="area_ology" style="margin-top: -19px; background-color: #00BFBF;">
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+	<p style="line-height: 62%; font-size: 19px; color: #3F3F3F;"><b>探究</b></p>
+
+	<!-- 哲 #Begin -->
+
+	<p style="line-height: 38%; font-size: 19px;" onClick="Menu_HS_AQ_fc();">
+		<span id="Menu_HS_AQ_link" style="color: #0000FF; cursor: pointer;">- 哲 -</span>
+	</p>
+	<div id="Menu_HS_AQ_area"></div>
+	<script type="text/javascript">
+		var Menu_HS_AQ_HoS = 0;
+		function Menu_HS_AQ_fc()
+		{
+			if(Menu_HS_AQ_HoS > 0)
+			{ // 收起
+				Menu_HS_AQ_area.innerHTML = "";
+				Menu_HS_AQ_link.innerHTML = "- 哲 -";
+				Menu_HS_AQ_HoS = 0;
+			}
+			else
+			{ // 下拉
+				Menu_HS_AQ_area.innerHTML = '\
+		<table border="0" cellspacing="0" cellpadding="3px" style="margin-top: -12px; background-color: #009F9F;">\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="all_question/overture.htm" style="color: #0000FF;">\
+				引入\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="all_question/law_of_truth.htm" style="color: #0000FF;">\
+				真理\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="all_question/learn_train.htm" style="color: #0000FF;">\
+				學習\
+				</a>\
+				</td>\
+			</tr>\
+		</table>\
+				';
+				Menu_HS_AQ_link.innerHTML = "v 哲 v";
+				Menu_HS_AQ_HoS = 1;
+			}
+		}
+	</script>
+
+	<!-- 哲 #End -->
+
+	<!-- 圖形 #Begin -->
+
+	<p style="line-height: 38%; font-size: 19px;" onClick="Menu_HS_image_fc();">
+		<span id="Menu_HS_image_link" style="color: #0000FF; cursor: pointer;">- 圖形 -</span>
+	</p>
+	<div id="Menu_HS_image_area"></div>
+	<script type="text/javascript">
+		var Menu_HS_image_HoS = 0;
+		function Menu_HS_image_fc()
+		{
+			if(Menu_HS_image_HoS > 0)
+			{ // 收起
+				Menu_HS_image_area.innerHTML = "";
+				Menu_HS_image_link.innerHTML = "- 圖形 -";
+				Menu_HS_image_HoS = 0;
+			}
+			else
+			{ // 下拉
+				Menu_HS_image_area.innerHTML = '\
+		<table border="0" cellspacing="0" cellpadding="3px" style="margin-top: -12px; background-color: #009F9F; text-align: center;">\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/image/overture.htm" style="color: #0000FF;">\
+				圖形的本質\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/image/angle.htm" style="color: #0000FF;">\
+				角度能量\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/image/shape.htm" style="color: #0000FF;">\
+				形狀(未完整)\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/image/circle_line_basic.htm" style="color: #0000FF;">\
+				基礎作圖\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/image/div.htm" style="color: #0000FF;">\
+				速等分線\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/image/single_line_drawing.htm" style="color: #0000FF;">\
+				一筆畫\
+				</a>\
+				</td>\
+			</tr>\
+		</table>\
+				';
+				Menu_HS_image_link.innerHTML = "v 圖形 v";
+				Menu_HS_image_HoS = 1;
+			}
+		}
+	</script>
+
+	<!-- 圖形 #End -->
+
+	<!-- 數 #Begin -->
+<!--
+	<p style="line-height: 38%; font-size: 19px;" onClick="Menu_HS_math_fc();">
+		<span id="Menu_HS_math_link" style="color: #0000FF; cursor: pointer;">- 數 -</span>
+	</p>
+	<div id="Menu_HS_math_area"></div>
+	<script type="text/javascript">
+		var Menu_HS_math_HoS = 0;
+		function Menu_HS_math_fc()
+		{
+			if(Menu_HS_math_HoS > 0)
+			{ // 收起
+				Menu_HS_math_area.innerHTML = "";
+				Menu_HS_math_link.innerHTML = "- 數 -";
+				Menu_HS_math_HoS = 0;
+			}
+			else
+			{ // 下拉
+				Menu_HS_math_area.innerHTML = '\
+		<table border="0" cellspacing="0" cellpadding="3px" style="margin-top: -12px; background-color: #009F9F;">\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/math/myst_math.htm" style="color: #0000FF;">\
+				最神秘的數\
+				</a>\
+				</td>\
+			</tr>\
+		</table>\
+				';
+				Menu_HS_math_link.innerHTML = "v 數 v";
+				Menu_HS_math_HoS = 1;
+			}
+		}
+	</script>
+-->
+	<!-- 數 #End -->
+
+	<!-- 色彩 #Begin -->
+
+	<p style="line-height: 38%; font-size: 19px;" onClick="Menu_HS_color_fc();">
+		<span id="Menu_HS_color_link" style="color: #0000FF; cursor: pointer;">- 色彩 -</span>
+	</p>
+	<div id="Menu_HS_color_area"></div>
+	<script type="text/javascript">
+		var Menu_HS_color_HoS = 0;
+		function Menu_HS_color_fc()
+		{
+			if(Menu_HS_color_HoS > 0)
+			{ // 收起
+				Menu_HS_color_area.innerHTML = "";
+				Menu_HS_color_link.innerHTML = "- 色彩 -";
+				Menu_HS_color_HoS = 0;
+			}
+			else
+			{ // 下拉
+				Menu_HS_color_area.innerHTML = '\
+		<table border="0" cellspacing="0" cellpadding="3px" style="margin-top: -12px; background-color: #009F9F;">\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/color/type.htm" style="color: #0000FF;">\
+				分類\
+				</a>\
+				</td>\
+			</tr>\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/color/group.htm" style="color: #0000FF;">\
+				組合\
+				</a>\
+				</td>\
+			</tr>\
+		</table>\
+				';
+				Menu_HS_color_link.innerHTML = "v 色彩 v";
+				Menu_HS_color_HoS = 1;
+			}
+		}
+	</script>
+
+	<!-- 色彩 #End -->
+	
+	<!-- 生物 #Begin -->
+
+	<p style="line-height: 38%; font-size: 19px;" onClick="Menu_HS_biology_fc();">
+		<span id="Menu_HS_biology_link" style="color: #0000FF; cursor: pointer;">- 生物 -</span>
+	</p>
+	<div id="Menu_HS_biology_area"></div>
+	<script type="text/javascript">
+		var Menu_HS_biology_HoS = 0;
+		function Menu_HS_biology_fc()
+		{
+			if(Menu_HS_biology_HoS > 0)
+			{ // 收起
+				Menu_HS_biology_area.innerHTML = "";
+				Menu_HS_biology_link.innerHTML = "- 生物 -";
+				Menu_HS_biology_HoS = 0;
+			}
+			else
+			{ // 下拉
+				Menu_HS_biology_area.innerHTML = '\
+		<table border="0" cellspacing="0" cellpadding="3px" style="margin-top: -12px; background-color: #009F9F;">\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/biology/animalia.htm" style="color: #0000FF;">\
+				動物界\
+				</a>\
+				</td>\
+			</tr>\
+		</table>\
+				';
+				Menu_HS_biology_link.innerHTML = "v 生物 v";
+				Menu_HS_biology_HoS = 1;
+			}
+		}
+	</script>
+
+	<!-- 生物 #End -->
+
+	<!-- 語文 #Begin -->
+
+	<p style="line-height: 38%; font-size: 19px;" onClick="Menu_HS_language_fc();">
+		<span id="Menu_HS_language_link" style="color: #0000FF; cursor: pointer;">- 語文 -</span>
+	</p>
+	<div id="Menu_HS_language_area"></div>
+	<script type="text/javascript">
+		var Menu_HS_language_HoS = 0;
+		function Menu_HS_language_fc()
+		{
+			if(Menu_HS_language_HoS > 0)
+			{ // 收起
+				Menu_HS_language_area.innerHTML = "";
+				Menu_HS_language_link.innerHTML = "- 語文 -";
+				Menu_HS_language_HoS = 0;
+			}
+			else
+			{ // 下拉
+				Menu_HS_language_area.innerHTML = '\
+		<table border="0" cellspacing="0" cellpadding="3px" style="margin-top: -12px; background-color: #009F9F;">\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="ology/language/eng_alphabet.htm" style="color: #0000FF;">\
+				英文字母\
+				</a>\
+				</td>\
+			</tr>\
+		</table>\
+				';
+				Menu_HS_language_link.innerHTML = "v 語文 v";
+				Menu_HS_language_HoS = 1;
+			}
+		}
+	</script>
+
+	<!-- 語文 #End -->
+
+	<!-- 謎題 #Begin -->
+
+	<p style="line-height: 38%; font-size: 19px;" onClick="Menu_HS_puzzle_fc();">
+		<span id="Menu_HS_puzzle_link" style="color: #0000FF; cursor: pointer;">- 謎題 -</span>
+	</p>
+	<div id="Menu_HS_puzzle_area"></div>
+	<script type="text/javascript">
+		var Menu_HS_puzzle_HoS = 0;
+		function Menu_HS_puzzle_fc()
+		{
+			if(Menu_HS_puzzle_HoS > 0)
+			{ // 收起
+				Menu_HS_puzzle_area.innerHTML = "";
+				Menu_HS_puzzle_link.innerHTML = "- 謎題 -";
+				Menu_HS_puzzle_HoS = 0;
+			}
+			else
+			{ // 下拉
+				Menu_HS_puzzle_area.innerHTML = '\
+		<table border="0" cellspacing="0" cellpadding="3px" style="margin-top: -12px; background-color: #009F9F;">\
+			<tr>\
+				<td style="font-size: 19px;">\
+				<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="puzzle/iq_question/my__six_colors_lights.htm" style="color: #0000FF;">\
+				六色吊燈\
+				</a>\
+				</td>\
+			</tr>\
+		</table>\
+				';
+				Menu_HS_puzzle_link.innerHTML = "v 謎題 v";
+				Menu_HS_puzzle_HoS = 1;
+			}
+		}
+	</script>
+
+	<!-- 謎題 #End -->
+
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+</div>
+
+<div id="area_games" style="margin-top: -19px; background-color: #BF7F00;">
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+	<p style="line-height: 62%; font-size: 19px; color: #3F3F3F;"><b>遊戲</b></p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="games/chinese_chess.htm" style="color: #FFFFFF;">
+			中國象棋
+		</a>
+	</p>
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+</div>
+
+<div id="area_trainer" style="margin-top: -19px; background-color: #3F007F;">
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+	<p style="line-height: 62%; font-size: 19px; color: #BFBFBF;"><b>訓練器</b></p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="trainer/aura_v2.htm" style="color: #7FBFBF;">
+			殘色 (ver. 2)
+		</a>
+	</p>
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+</div>
+
+<div id="area_tools" style="margin-top: -19px; background-color: #BFBF00;">
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+	<p style="line-height: 62%; font-size: 19px; color: #3F3F3F;"><b>工具</b></p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="math/multiplication_table_v4_1.htm" style="color: #BF0000;">
+			動態乘法表 (ver. 4.1)
+		</a>
+	</p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="math/combinatorics_table_v1_1.htm" style="color: #BF0000;">
+			組合變化數表 (ver. 1.1)
+		</a>
+	</p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="math/integral_square_v_1_1.htm" style="color: #BF0000;">
+			堆積矩陣 (ver. 1.1)
+		</a>
+	</p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="math/fully_factor_composite_v1_1.htm" style="color: #BF0000;">
+			多因合成數 (ver. 1.1)
+		</a>
+	</p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="math/trigonometric_functions_table_v1.htm" style="color: #BF0000;">
+			三角函數表 (ver. 1)
+		</a>
+	</p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="math/pythagorean_formula_v1.htm" style="color: #BF0000;">
+			勾股公式表 (ver. 1)
+		</a>
+	</p>
+<!--
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="math/pythagorean_triple_v1_1.htm" style="color: #BF0000;">
+			勾股數組計算器 (ver. 1.1)
+		</a>
+	</p>
+-->
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="tools/stopwatch_v5_2.htm" style="color: #BF0000;">
+			秒計 (ver. 5.2)
+		</a>
+	</p>
+	<p style="line-height: 38%; font-size: 19px;">
+		<a target="mainpage_frame" onClick="afterClickOnLink(this.target);" href="tools/characters_counter_v2.htm" style="color: #BF0000;">
+			字符統計器 (ver. 2)
+		</a>
+	</p>
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+</div>
+
+<div id="area_contact" style="margin-top: -19px; background-color: #3FBF3F;">
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+	<p style="line-height: 62%; font-size: 19px; color: #3F3F3F;"><b>我的網絡</b></p>
+	<p style="line-height: 0%; font-size: 19px;">
+		<a target="_blank" href="http://www.youtube.com/user/tyovery/videos?view=u" style="color: #C9312C;"> <!-- default color: #C9312C -->
+			YouTube
+		</a>
+	</p>
+	<p style="line-height: 0%; font-size: 19px;">
+		<a target="_blank" href="http://www.facebook.com/tyovery" style="color: #3052FF;"> <!-- default color: #2138AE -->
+			FaceBook
+		</a>
+	</p>
+	<p style="line-height: 0%; font-size: 19px;">
+		<a target="_blank" href="http://soundcloud.com/love528/" style="color: #FF5900;"> <!-- default color: #FF5900 -->
+			SoundCloud
+		</a>
+	</p>
+	<p style="line-height: 0%; font-size: 19px;">
+		<a target="_blank" href="http://zh-tw.justin.tv/fukyichung/videos" style="color: #282828;"> <!-- default color: #282828 -->
+			JTV
+		</a>
+	</p>
+<p style="line-height: 0%; font-size: 19px;">&nbsp;</p>
+</div>
+
+</div><!-- area_menu #End -->
+
+<br />
+
+	<!-- Facebook Like # Begin -->
+
+<iframe src="http://www.facebook.com/plugins/like.php?href=http://tyovery.i34u.com/index.html"\
+	scrolling="no" frameborder=0 style="border: none; width: 150px;">
+</iframe>
+
+	<!-- Facebook Like # End -->
+
+</center>
+
+</body>
+
+<!-- < Timer Stop > -->
+<script language="javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+document.write("<p style='font-size: 12px;'>Load Time: "+(timerEnd-timerBegin)+"ms</p>");
+</script>
+
+</html>

@@ -1,0 +1,53 @@
+<html>
+
+<!-- < Timer Start > -->
+<script language="javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+
+<head>
+
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="cache-control" content="no-cache, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+
+<title>~tyovery~'s Home Page</title>
+
+<style type="text/css">
+a
+{
+	text-decoration: none;
+}
+</style>
+
+<frameset cols="260,*">
+	<frameset rows="*,100">
+		<frame name="menutree_frame" src="menutree.htm" />
+		<frame name="state_frame" src="state.htm" />
+	</frameset>
+	<frame name="mainpage_frame" src="mainpage.htm" />
+
+	<noframes>
+		<body>
+			<p>您的瀏覽器不支援／沒有打開 框架(Frame) 功能。</p>
+			<p><a href="menutree.htm">請按此處繼續</a></p>
+		</body>
+	</noframes>
+</frameset>
+
+</head>
+
+<body></body>
+
+<!-- < Timer Stop > -->
+<script language="javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+document.write("<p style='font-size: 12px;'>Load Time: "+(timerEnd-timerBegin)+"ms</p>");
+</script>
+
+</html>

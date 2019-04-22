@@ -1,0 +1,432 @@
+<html>
+
+<!-- < Timer Start > -->
+<script language="javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+
+
+
+
+<head>
+
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="cache-control" content="no-cache, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+<// meta http-equiv="refresh" content="2;url=homepage.htm" />
+
+<title>~tyovery~'s Home Page</title>
+
+<style type="text/css">
+body{
+	margin-top: -15px;
+	line-height: 100%;
+	font-size: 19px";
+	background-color: #000000;
+	color: #FFFFFF;
+}
+p
+{
+	margin-top: -15px;
+	line-height: 15px;
+	font-size: 19px;
+	background-color: #000000;
+	color: #FFFFFF;
+}
+td
+{
+	margin-top: 0px;
+	line-height: 100%;
+	font-size: 19px;
+	/* background-color: #FFFFFF; */
+	color: #000000;
+	border: 0px;
+}
+table
+{
+	border: "0px solid #FFFFFF";
+}
+a
+{
+	text-decoration: none;
+}
+</style>
+
+<script type="text/javascript"> // Pop Win
+function popwin()
+{
+OpenWindow = window.open("", "", "width=800, height=600, toolbar=no ,scrollbars=" + scroll + ",menubar=no"); // 第二項是標籤(如果設了標籤，就算重按Link，也不會出現多於一個新窗口)
+OpenWindow.document.write('<html>');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('<head>');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('<meta name="author" content="~tyovery~" />');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('<meta http-equiv="content-type" content="text/html;charset=big5" />');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('<title>Pop Win - ~tyovery~</title>');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('<style>');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('body{\n');
+OpenWindow.document.write('margin-top="0px";\n');
+OpenWindow.document.write('line-height="15px";\n');
+OpenWindow.document.write('font-size="15px";\n');
+OpenWindow.document.write('background-color="#000000";\n');
+OpenWindow.document.write('color="#FFFFFF";\n');
+OpenWindow.document.write('}\n');
+OpenWindow.document.write('a{\n');
+OpenWindow.document.write('color="#FFFFFF";\n');
+OpenWindow.document.write('}\n');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('</style>');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('</head>');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('<body>');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('<center>');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('<br /><br />');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('<h1>Pop Win</h1>');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('+Line');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('<br /><br /><br />');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('<a href="#" onclick="window.close();">[Close]</a>');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('</center>');
+OpenWindow.document.write('\n');
+OpenWindow.document.write('</body>');
+OpenWindow.document.write('\n\n');
+OpenWindow.document.write('</html>');
+OpenWindow.document.write('\n');
+OpenWindow.document.close();
+}
+</script>
+
+</head>
+
+<!-- Mouse Msg -->
+
+<script type="text/javascript"> 
+function mousePosition(ev)
+{
+	// 支持 火狐
+	if (ev.pageX || ev.pageY)
+	{
+		return {x:ev.pageX, y:ev.pageY};
+	}
+	// 支持 IE
+	return {
+	x:ev.clientX + document.body.scrollLeft - document.body.clientLeft,
+	y:ev.clientY + document.body.scrollTop - document.body.clientTop};
+}
+
+var mouseDownYN = "";
+
+function MouseDownIng()
+{
+	mouseDownYN = " , OnClick";
+}
+
+function MouseUpIng()
+{
+	mouseDownYN = "";
+}
+
+function mouseMsg(ev)
+{
+	ev = ev || window.event;
+	var mousePos = mousePosition(ev);
+	mouseClickStat = mouseDownYN;
+
+	/* 指標尾的區塊
+	document.getElementById('div1').innerHTML = "● " + mousePos.x + " × " + mousePos.y + " , #" + mMColor_Rn + mMColor_Gn + mMColor_Bn + mouseClickStat;
+	document.getElementById('div1').style.left = mousePos.x + 10;
+	document.getElementById('div1').style.top = mousePos.y + 15;
+	*/
+}
+
+var mMColor_R;
+var mMColor_G;
+var mMColor_B;
+
+function mouseMsgColorAutoChange_Out()
+{
+	if(mMColor_R.toString(16).length < 2)
+	{
+		mMColor_Rn = "0" + mMColor_R.toString(16);
+	}
+	else
+	{
+		mMColor_Rn = mMColor_R.toString(16);
+	}
+
+	if(mMColor_G.toString(16).length < 2)
+	{
+		mMColor_Gn = "0" + mMColor_G.toString(16);
+	}
+	else
+	{
+		mMColor_Gn = mMColor_G.toString(16);
+	}
+
+	if(mMColor_B.toString(16).length < 2)
+	{
+		mMColor_Bn = "0" + mMColor_B.toString(16);
+	}
+	else
+	{
+		mMColor_Bn = mMColor_B.toString(16);
+	}
+//	div1.style.color = "#" + mMColor_Rn + mMColor_Gn + mMColor_Bn; // 指標尾塊的漸變色
+	TopTitle.style.color = "#" + mMColor_Rn + mMColor_Gn + mMColor_Bn; // 大標題的漸變色
+}
+
+var mMColorChangeDelayMS = 0;
+
+function mMColor_RGB_Change()
+{
+	if(mMColor_R == 255 && mMColor_G < 255 && mMColor_B == 0)
+	{
+		mMColor_G ++;
+	}
+	if(mMColor_R > 0 && mMColor_G == 255 && mMColor_B == 0)
+	{
+		mMColor_R --;
+	}
+	if(mMColor_R == 0 && mMColor_G == 255 && mMColor_B < 255)
+	{
+		mMColor_B ++;
+	}
+	if(mMColor_R == 0 && mMColor_G > 0 && mMColor_B == 255)
+	{
+		mMColor_G --;
+	}
+	if(mMColor_R < 255 && mMColor_G == 0 && mMColor_B == 255)
+	{
+		mMColor_R ++;
+	}
+	if(mMColor_R == 255 && mMColor_G == 0 && mMColor_B > 0)
+	{
+		mMColor_B --;
+	}
+	mouseMsgColorAutoChange_Out();
+	setTimeout("mMColor_RGB_Change()",mMColorChangeDelayMS);
+}
+
+function mouseMsgColorAutoChange()
+{
+	mMColor_R = 255;
+	mMColor_G = 0;
+	mMColor_B = 0;
+
+	mouseMsgColorAutoChange_Out();
+
+	setTimeout("mMColor_RGB_Change()",mMColorChangeDelayMS);
+}
+
+setTimeout("mouseMsgColorAutoChange();",100);
+
+// 事件添加
+document.onmousemove = mouseMsg;
+document.onmousedown = mouseMsg;
+document.onmouseup = mouseMsg;
+
+</script>
+
+<!-- Mouse Msg - End -->
+
+<body bgcolor="#000000" onLoad=mouseMsg; onMouseDown=MouseDownIng(); onMouseUp=MouseUpIng();>
+
+<!-- Mouse Msg GUI -->
+
+<div id='div1' style="position:absolute;
+left:-4;
+top:-4;
+z-index:1000;
+padding:0px;
+background-color:#000000;
+color:#FFFFFF;
+font-size:15px;
+border:4px solid #000000;">
+</div>
+
+<!-- Mouse Msg GUI - End -->
+
+<br><br>
+<table align="center"><tr><td id="TopTitle" style="
+margin-top:0px;
+line-height:100%;
+font-size:32px;
+background-color:#000000;
+color:#FFFFFF;
+" align="center">
+~tyovery~
+</td></tr></table>
+<br><br>
+
+
+<center>
+<script type="text/javascript">
+document.write('<p style="margin-top:0px;line-height:15px;font-size:15px;background-color:#000000;color:#FFFFFF;">');
+document.write("\u0DF4&nbsp;\u0DF4<br />\u0E2A&nbsp;&nbsp;&nbsp;\u0E2A<br />o<br />\V");
+document.write("</p>");
+</script>
+
+<noscript>
+<br />
+<p style="line-height: 100%;font-size: 19px;color: #FFBFBF;">您的瀏覽器不支持／沒有打開 Active Scripting，站內有些功能可能無法呈現。</p>
+<br />
+<a href="homepage.htm"><p style="line-height: 100%;font-size: 19px;color: #BFFFBF;">按此繼續。</p></a>
+</noscript>
+
+	<!-- Load HomePage 倒數顯示區 #Begin -->
+<script type="text/javascript">
+	document.write('<div id="state_disp" style="line-height: 100%;font-size: 19px;color: #FFFFFF;">[Loading....]</div>');
+	document.write('<div id="StayOnThisPage_disp">');
+		document.write('<a id="StayOnThisPage_Link_a" href="javascript: StopToLoadHP_fc();">');
+			document.write('<div id="StayOnThisPage_Link" style="line-height: 100%;font-size: 19px;color: #FF0000;">(Click to Stay)</div>');
+		document.write('</a>');
+	document.write('</div>');
+</script>
+	<!-- Load HomePage 倒數顯示區 #End -->
+
+
+	<!-- Pop Win - Begin -->
+<!--
+<a href="#" onclick="popwin();" style="margin-top:0px;line-height:15px;font-size:15px;background-color:#000000;color:#FFFFFF;">Pop Win</a>
+
+<p style="margin-top:0px;line-height:15px;font-size:15px;background-color:#000000;color:#FFFFFF;">
+<input type="button" onclick="popwin();" value="Pop Win">
+</p>
+-->
+	<!-- Pop Win - End -->
+
+<script type="text/javascript">
+var lineAdded = 0;
+function addLine()
+{
+	if(lineAdded == 1)
+	{
+		newInput.style.visibility="hidden";
+		AddLine.innerHTML = "+Line";
+		lineAdded = 0;
+	}
+	else
+	{
+		newInput.style.visibility="visible";
+		AddLine.innerHTML = "-Line";
+		newInput.focus();
+		lineAdded = 1;
+	}
+}
+</script>
+
+	<!--
+<input id="newInput" style='visibility="hidden";' size=32 /><br />
+
+<div id="AddLine" style="margin-top:0px;line-height:15px;font-size:15px;background-color:#000000;color:#FFFFFF;" onClick="addLine();">
++Line
+</div>
+	-->
+
+</center>
+
+
+
+
+
+<table>
+
+<noscript>
+<tr><td style="line-height: 100%; font-size: 19px; color: #FFFFFF;" bgcolor="#7F0000" align="center">No Script Support</td></tr>
+</noscript>
+
+<script type="text/javascript">
+document.write('<tr><td style="line-height: 100%; font-size: 19px; color: #FFFFFF;" bgcolor="#007F00" align="center">Have Script Support</td></tr>');
+</script>
+
+</table>
+<br />
+
+<script type="text/javascript">
+document.write('<p style="margin-top:0px;line-height:15px;font-size:15px;background-color:#000000;color:#FFFFFF;">');
+document.write("href: "+window.location.href+"<br>");
+document.write("protocol: "+window.location.protocol+"<br>");
+document.write("host: "+window.location.host+"<br>");
+document.write("hostname: "+window.location.hostname+"<br>");
+document.write("port: "+window.location.port+"<br>");
+document.write("pathname: "+window.location.pathname+"<br>");
+document.write("search: "+window.location.search+"<br>");
+document.write("hash: "+window.location.hash+"<br>");
+document.write("</p>");
+
+// window.open("homepage.htm","HomePage");
+// window.close();
+
+var homepage="homepage.htm"; // 即將轉移的頁面
+var secondToLoadHP = 2; // 轉移前的倒計秒數
+var StopToLoadHP = 0; // 是否停止轉移
+
+state_disp.innerHTML = secondToLoadHP+"s to load HomePage";
+
+function timeToLoadHP()
+{
+	if(StopToLoadHP == 0)
+	{
+		if(secondToLoadHP > 1)
+		{
+			secondToLoadHP -= 1;
+			state_disp.innerHTML = secondToLoadHP + "s to load HomePage";
+			setTimeout("timeToLoadHP()",1000);
+		}
+		else if(secondToLoadHP == 1)
+		{
+			window.location.href = homepage; // 轉移
+			state_disp.innerHTML = "Loading HomePage.......";
+			StayOnThisPage_disp.innerHTML = "";
+		}
+	}
+}
+
+function StopToLoadHP_fc()
+{
+	StopToLoadHP = 1;
+	state_disp.innerHTML = "";
+	StayOnThisPage_Link.innerHTML = '<span style="line-height: 100%;font-size: 19px;color: #BFFFBF;">按此繼續</span>';
+	StayOnThisPage_Link_a.href = "javascript: ClickToLoadHP_fc();"
+}
+
+function ClickToLoadHP_fc()
+{
+	state_disp.innerHTML = '<div style="line-height: 100%;font-size: 19px;color: #FFFFFF;">Loading HomePage.......</div>';
+	StayOnThisPage_disp.innerHTML = "";
+	window.location.href = homepage ;
+}
+
+setTimeout("timeToLoadHP()",1000);
+
+</script>
+
+</body>
+
+
+
+
+<!-- < Timer Stop > -->
+<script language="javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+document.write("<br><br><p style='font-size: 12px'>Load Time: "+(timerEnd-timerBegin)+"ms</p>");
+</script>
+
+
+</html>

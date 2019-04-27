@@ -1,0 +1,223 @@
+<html>
+
+<!-- < Timer Start > -->
+<script language="javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+
+<head>
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="cache-control" content="no-cache, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+
+<title>勾股數組計算器 - ~tyovery~'s Homepage</title>
+
+<style type="text/css">
+body
+{
+	background-color: #FFFFFF;
+	color: #000000;
+}
+
+p
+{
+	line-height: 100%;
+}
+
+td
+{
+	text-align: center;
+}
+</style>
+
+</head>
+
+<body>
+
+	<!-- Debug -->
+<script type="text/javascript">
+window.onerror=reportError;
+function reportError(msg,url,line)
+{
+	var str_cht=new Array;
+	str_cht[1] = "抱歉 :(";
+	str_cht[2] = "我們找到一個錯誤在第 " + line + " 行：";
+	var str_eng=new Array;
+	str_eng[1] = "Sorry :(";
+	str_eng[2] = "We have found an Error On Line " + line + ":";
+	alert(str_cht[1] + "\n" + str_eng[1] + "\n\n" + str_cht[2] + "\n" + str_eng[2] + "\n\n" + msg);
+	return true;
+}
+</script>
+
+tested on: IE 10 , Chrome 27
+
+<center>
+
+<p style="font-size: 31px ;">勾股數組</p>
+
+<p style="font-size: 19px ;">
+	<input type="button" value="還原預設" style="text-align: center;" onClick="inputs_default_fc();" />
+	<input type="button" value="計算" style="text-align: center;" onClick="input_Clean_fc();" />(<font color="#FF0000">多需時</font>)
+	<br />
+	勾的計算下限：<input id="no_floor_input" type="text" value="1" size="10" style="text-align: center;" OnKeyPress="inputs_filter_fc(event);" />
+	<br />
+	勾的計算上限：<input id="no_limit_input" type="text" value="30" size="10" style="text-align: center;" OnKeyPress="inputs_filter_fc(event);" />
+	<br />
+	股的計算下限：<input id="or_floor_input" type="text" value="1" size="10" style="text-align: center;" OnKeyPress="inputs_filter_fc(event);" />
+	<br />
+	股的計算上限：<input id="or_limit_input" type="text" value="420" size="10" style="text-align: center;" OnKeyPress="inputs_filter_fc(event);" />
+	<br />
+<!--
+	(算法：列出　&#8730; ( 勾&#178; + 股&#178; )　為整數的組合。)
+-->
+</p>
+
+<div id="OutputArea"></div>
+
+<script type="text/javascript">
+
+	/* Settings #Begin */
+var no_floor = 1 ; // 勾的計算下限
+var no_limit = 30 ; // 勾的計算上限
+var or_floor = 1 ; // 股的計算下限
+var or_limit = 100100 ; // 股的計算上限
+	/* Settings #End */
+
+var no,or,nr,count,txt2out,or_floor_toFor;
+
+function gen()
+{
+	no_floor = no_floor_input.value;
+	no_limit = no_limit_input.value;
+	or_floor = or_floor_input.value;
+	or_limit = or_limit_input.value;
+
+	txt2out='<table border="3" cellspacing="0" cellpadding="5" align="center">';
+	txt2out+="<tr><td>勾平方</td><td>+</td><td>股平方</td><td>=</td><td>弦平方</td></tr>";
+	txt2out+="<tr><td>0\u00B2</td><td>+</td><td>n\u00B2</td><td>=</td><td>n\u00B2</td></tr>";
+
+	count = 0 ;
+
+	for(no = no_floor; no <= no_limit ; no ++)
+	{
+		if(or_floor >= no)
+		{
+			or_floor_toFor = or_floor;
+		}
+		else
+		{
+			or_floor_toFor = no;
+		}
+		for(or = or_floor_toFor ; or <= or_limit ; or ++)
+		{
+			nr = Math.sqrt( no*no + or*or ) ;
+			if( nr % 1 == 0 )
+			{
+				txt2out += "<tr>";
+				txt2out += "<td>" + no + "\u00B2</td>";
+				txt2out += "<td>+</td>";
+				txt2out += "<td>" + or + "\u00B2</td>";
+				txt2out += "<td>=</td>";
+				txt2out += "<td>" + nr + "\u00B2</td>";
+				txt2out += "</tr>";
+				count ++ ;
+			}
+		}
+	}
+
+	txt2out+='</table>';
+
+	OutputArea.innerHTML = txt2out + "<br />總計(不計勾0)：" + count + "<br /><br />";
+}
+
+function input_Clean_fc()
+{
+	// 只保留數字
+	no_floor_input.value = no_floor_input.value.replace(/[^0-9]/g,"");
+	no_limit_input.value = no_limit_input.value.replace(/[^0-9]/g,"");
+	or_floor_input.value = or_floor_input.value.replace(/[^0-9]/g,"");
+	or_limit_input.value = or_limit_input.value.replace(/[^0-9]/g,"");
+
+	// 空
+	if(no_floor_input.value == "")
+	{
+		no_floor_input.value = 3;
+	}
+	if(no_limit_input.value == "")
+	{
+		no_limit_input.value = 3;
+	}
+	if(or_floor_input.value == "")
+	{
+		or_floor_input.value = 4;
+	}
+	if(or_limit_input.value == "")
+	{
+		or_limit_input.value = 4;
+	}
+
+	// 調整為一般顯示的數值
+	no_floor_input.value *= 1;
+	no_limit_input.value *= 1;
+	or_floor_input.value *= 1;
+	or_limit_input.value *= 1;
+
+	// 執行前
+	if(no_limit_input.value < no_floor_input.value || or_limit_input.value < or_floor_input.value) // inputs 上限 < 下限
+	{
+		alert("上限 < 下限");
+	}
+	else
+	{
+		gen();
+	}
+}
+
+function inputs_filter_fc(e)
+{
+	// 當按下 Enter
+	if(e.keyCode == 13)
+	{
+		input_Clean_fc();
+	}
+
+	// 當按下非數字
+	if(e.keyCode > 57 || e.keyCode < 48 )
+	{
+		// 只保留數字
+		setTimeout('no_floor_input.value = no_floor_input.value.replace(/[^0-9]/g,"");',0);
+		setTimeout('no_limit_input.value = no_limit_input.value.replace(/[^0-9]/g,"");',0);
+		setTimeout('or_floor_input.value = or_floor_input.value.replace(/[^0-9]/g,"");',0);
+		setTimeout('or_limit_input.value = or_limit_input.value.replace(/[^0-9]/g,"");',0);
+	}
+}
+
+function inputs_default_fc()
+{
+	no_floor_input.value = 1;
+	no_limit_input.value = 30;
+	or_floor_input.value = 1;
+	or_limit_input.value = 420;
+}
+
+gen();
+
+</script>
+
+</center>
+
+</body>
+
+<!-- < Timer Stop > -->
+<script language="javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+document.write("<p style='line-height: 0%; font-size: 12px;'>Load Time: "+(timerEnd-timerBegin)+"ms</p>");
+</script>
+
+</html>

@@ -1,0 +1,168 @@
+<html>
+
+<head>
+
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="cache-control" content="no-cache, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+
+<title>組合表 by ~tyovery~</title>
+
+<style type="text/css">
+body
+{
+	background-color: #FFFFFF ;
+	color: #000000 ;
+}
+font
+{
+	font-size: 14pt ;
+	line-height: 100% ;
+}
+td
+{
+	text-align: center ;
+	font-size: 14pt ;
+	color: #000000 ;
+	background-color: #FFFFFF ;
+}
+</style>
+
+</head>
+
+<body>
+Tested on IE 10 , Chrome 26
+<br /><br />
+
+<center>
+
+版圖大小：<select id="chooseMap" onchange="XnYLimit=this.options[this.options.selectedIndex].value;MultiplicatorMap_Gen();">
+<option value="9" selected=true >9 × 9</option>
+<option value="19">19 × 19</option>
+<option value="26">26 × 26</option>
+<option value="50">50 × 50</option>
+<option value="100">100 × 100</option>
+</select>(<font color="#FF0000">大需時</font>)
+<br />
+
+	<!-- 色塊標籤 Begin -->
+
+<table border=0 cellspacing=0 cellpadding=3 align="center">
+<tr>
+<td><input id="NonOrder" type="checkbox" checked=true onClick="MultiplicatorMap_Gen();" /><font color="#000000">不同順序視為同一組合</font></td>
+</tr>
+<tr>
+<td><input id="NonDouble" type="checkbox" onClick="MultiplicatorMap_Gen();" /><font color="#000000">不重複狀態</font></td>
+</tr>
+</table>
+
+	<!-- 色塊標籤 End -->
+
+</center>
+<br />
+
+<div id="MultiplicatorMapOutput"></div>
+
+<script type="text/javascript">
+
+var TextToHTML,mul,fortxt;
+
+// Settings // Begin
+var XnYLimit = 9 ; // 最大行列數 (多需時)
+// Settings // End
+
+function MultiplicatorMap_Gen()
+{
+	// 倍積數列
+	if(NonOrder.checked==true)
+	{
+		mul = new Array;
+		mul[0] = 1;
+		for(var i = 1 ; i <= XnYLimit; i++)
+		{
+			mul[i] = mul[i-1] * i;
+		}
+	}
+
+	TextToHTML='<table border=3 cellspacing=0 cellpadding=5 align="center" color="#FF0000">';
+	for(var yy = 0 ; yy <= XnYLimit ; yy ++)
+	{
+		if (yy > 0)
+		{
+			// 最左
+			TextToHTML+="<tr><td style='background-color: #BFBFBF ;'>"+ yy +"</td>";
+		}
+		else
+		{
+			// 左上格
+			TextToHTML+="<tr><td>位數→<hr color='#FFFFFF' />狀態數↓</td>";
+		}
+		for(var xx = 1 ; xx <= XnYLimit ; xx ++ )
+		{
+			if(yy > 0)
+			{
+				// 計算
+				if(NonOrder.checked==true && NonDouble.checked==false)
+				{ // 不分順序
+					fortxt = 1;
+					for(var i = 1 ; i <= xx ; i++)
+					{
+						fortxt *= yy + i - 1 ;
+					}
+
+					fortxt = Math.round(fortxt / mul[xx]);
+					TextToHTML+="<td>"+fortxt+"</td>";
+				}
+				else if(NonDouble.checked==true)
+				{ // 不重複狀態
+					fortxt = 1;
+					for(var i = 1 ; i <= xx ; i ++)
+					{
+						fortxt *= yy - i + 1 ;
+					}
+
+					if(NonOrder.checked==true)
+					{ // 最少變化
+						fortxt = Math.round(fortxt / mul[xx]);
+					}
+
+					TextToHTML+="<td>"+fortxt+"</td>";
+				}
+				else
+				{ // 最多變化
+					TextToHTML+="<td>"+Math.pow(yy,xx)+"</td>";
+				}
+			}
+			else
+			{
+				// 橫頂
+				TextToHTML+="<td style='background-color: #BFBFBF ;'>"+ xx +"</td>";
+			}
+			if(xx == XnYLimit)
+			{
+				// 行結束
+				TextToHTML+="</tr>";
+			}
+		}
+	}
+	TextToHTML+="</table>";
+	MultiplicatorMapOutput.innerHTML=TextToHTML;
+}
+
+function chooseMap_toDefault()
+{
+	chooseMap.options[0].selected=true;
+}
+
+
+chooseMap_toDefault();
+MultiplicatorMap_Gen();
+
+</script>
+
+
+</body>
+
+</html>

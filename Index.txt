@@ -1,0 +1,4 @@
+算術類	math\
+學術類	ology\
+謎題類	puzzle\
+工具類	tools\

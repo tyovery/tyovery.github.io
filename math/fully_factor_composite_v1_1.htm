@@ -1,0 +1,151 @@
+<html>
+
+<head>
+<meta charset="big5" />
+<title>因數 與 多因合成數</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+
+<!-- < Timer Start > -->
+<script type="text/javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+<!-- End of < Timer Start > -->
+
+<script type="text/javascript">
+
+document.write('<a id="factor_List" href="#ffc_List">↓↓跳至多因合成數列表↓↓</a>');
+document.write('<p><b>黑色</b>為質數(1除外)；<font color="#0000FF">藍色</font>為合成數。</p>');
+
+var max = 5000 ; // 設定最大值
+
+var buf , count , top_num = new Array , top_count = new Array ; // 大因緩存 , 因數計量 , 記錄「最多因數的整數」 , 因數量
+top_num[0] = 1 ;
+top_count[0] = 1 ;
+top_num[1] = 2 ;
+top_count[1] = 2 ;
+
+/* for PS
+	n = 被除數
+	m = 除數(小因)
+	n/m = 商數(大因)
+*/
+
+for(var n = 1 ; n <= max ; n ++ )
+{
+	// 清理
+	count = 2 ;
+	buf = new Array ;
+	buf[0] = n ;
+
+	document.write("<div id='disp"+n+"' style='color: #000000;'>" + n + " 的因數有：1</div>");
+//	document.write(n + " 的因數有：1");
+
+	for(var m = 2 ; m <= n ; m ++)
+	{
+		if( m <= n/m )
+		{
+			if( n % m == 0 )
+			{
+				document.getElementById("disp"+n).innerHTML += "," + m ;
+			//	document.write("," + m);
+				count ++ ;
+				if( m != n/m )
+				{
+					count ++ ;
+					buf[buf.length] = n/m ;
+				}
+			}
+		}
+		else
+		{
+			for(var p = buf.length - 1 ; p >= 0 ; p -- )
+			{
+				document.getElementById("disp"+n).innerHTML += "," + buf[p] ;
+			//	document.write( "," + buf[p] );	
+			}
+			document.getElementById("disp"+n).innerHTML += " (共 " + count + "個)" ;
+		//	document.write(" (共 " + count + "個)");
+			if(count > 2)
+			{
+				document.getElementById("disp"+n).style.color = "#0000FF";
+			}
+
+			// 多因合數
+			if(count > top_count[top_count.length-1] )
+			{
+				top_num[top_num.length] = n ;
+				top_count[top_count.length] = count ;
+			}
+
+			break;
+		}
+	}
+}
+
+document.write('<br /><a id="ffc_List" href="#factor_List">↑↑跳至因數列表↑↑</a><br />');
+document.write("<br />多因合成數（最初「有最多因數」的數）：");
+
+for(var i = 0 ; i <= top_num.length - 1 ; i ++)
+{
+	document.write("<br />" +　top_num[i] + "有" + top_count[i] + "個因數");
+}
+
+</script>
+
+<!-- < Timer Stop > -->
+<script type="text/javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+var loadTime=timerEnd-timerBegin,loadTime_disp;
+
+if(loadTime>=1000)
+{
+	var loadTime_ms=loadTime%1000;
+	if(loadTime_ms!=0)
+	{
+		if((loadTime_ms+"").length==3)
+		{
+			if(loadTime_ms%100==0)
+			{
+				loadTime_ms=loadTime_ms/100;
+			}
+			else if(loadTime_ms%10==0)
+			{
+				loadTime_ms=loadTime_ms/10;
+			}
+		}
+		else if((loadTime_ms+"").length==2)
+		{
+			if(loadTime_ms%10==0)
+			{
+				loadTime_ms=loadTime_ms/10;
+			}
+			loadTime_ms="0"+loadTime_ms;
+		}
+		else if((loadTime_ms+"").length==1)
+		{
+			loadTime_ms="00"+loadTime_ms;
+		}
+		loadTime_disp=Math.floor(loadTime/1000)+"."+loadTime_ms+"s";
+	}
+	else
+	{
+		loadTime_disp=Math.floor(loadTime/1000)+"s";
+	}
+}
+else
+{
+	loadTime_disp=loadTime+"ms";
+}
+
+document.write("<br /><br />Load Time: " + loadTime_disp + "<br /><br />");
+</script>
+<!-- End of < Timer Stop > -->
+
+</body>
+
+</html>

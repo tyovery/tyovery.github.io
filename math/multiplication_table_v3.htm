@@ -3,21 +3,14 @@
 <head>
 <meta name="author" content="~tyovery~" />
 <meta http-equiv="content-type" content="text/html;charset=big5" />
-<title>動態乘法表 v4.2 by ~tyovery~</title>
+<title>動態乘法表 by ~tyovery~</title>
 
 <style type="text/css">
-body
-{
-	background-color: #FFFFFF ;
-	color: #000000 ;
-}
-
 font
 {
 	font-size: 14pt ;
 	line-height: 100% ;
 }
-
 td
 {
 	text-align: center ;
@@ -25,31 +18,26 @@ td
 	color: #000000 ;
 	background-color: #FFFFFF ;
 }
-
-a
-{
-	text-decoration: underline;
-}
 </style>
 
 </head>
 
 <body>
-Tested on Chrome 72 , IE 10
+Tested on IE 10 , Chrome 26
+<br /><br />
 
 <center>
-<p style="background-color: #FFFFFF ; color: #007F00 ; font-size: 23pt ; line-height: 0% ;">動態乘法表 v4.2</p>
+
 版圖大小：<select id="chooseMap" onchange="XnYLimit=this.options[this.options.selectedIndex].value;MultiplicatorMap_Gen();">
-<option value="9">9 × 9</option>
-<option value="19" selected=true >19 × 19</option>
-<option value="40">40 × 40</option>
-<option value="49">49 × 49</option>
-<option value="64">64 × 64</option>
-<option value="90">90 × 90</option>
-<option value="130">130 × 130</option>
-<option value="160">160 × 160</option>
-<option value="256">256 × 256</option>
-</select>(<font color="#FF0000">大需時</font>)
+<option value="9">9×9</option>
+<option value="19" selected=true >19×19</option>
+<option value="39">39×39</option>
+<option value="49">49×49</option>
+<option value="64">64×64</option>
+<option value="90">90×90</option>
+<option value="160">160×160</option>
+<option value="256">256×256</option>
+</select>(大需時)
 <br />
 
 	<!-- 色塊標籤 Begin -->
@@ -59,17 +47,17 @@ Tested on Chrome 72 , IE 10
 <td><input id="HighLight_Magenta3" type="checkbox" checked=true onClick="Magenta3n6_Lock();MultiplicatorMap_Gen();" /><font style="background-color: #BF00BF ;" color="#FFFFFF">三角形數</font></td>
 <td><font style="background-color: #BF0000 ;" color="#FFFFFF">三角平方數</font></td>
 <td><input id="HighLight_Yellow" type="checkbox" checked=true onClick="MultiplicatorMap_Gen();" /><font style="background-color: #BFBF00 ;" color="#000000">平方數</font></td>
-<td><font style="background-color: #00BF00 ;" color="#000000">二冪平方數</font></td>
-<td><input id="HighLight_Cyan" type="checkbox" checked=true onClick="MultiplicatorMap_Gen();" /><font style="background-color: #00BFBF ;" color="#000000">二冪數</font></td>
+<td><font style="background-color: #00BF00 ;" color="#000000">n<sup>2</sup> & 2<sup>n</sup></font></td>
+<td><input id="HighLight_Cyan" type="checkbox" checked=true onClick="MultiplicatorMap_Gen();" /><font style="background-color: #00BFBF ;" color="#000000">2<sup>n</sup></font></td>
 <td><input id="HighLight_Blue" type="checkbox" checked=true onClick="MultiplicatorMap_Gen();" /><font style="background-color: #0000BF ;" color="#FFFFFF">十倍的行列</font></td>
 </tr>
 <tr>
 <td onMouseOver="Magenta3n6_Lock();"><input id="HighLight_Magenta6" type="checkbox" checked=true disabled=true onClick="Magenta3n6_Lock();MultiplicatorMap_Gen();" /><font style="background-color: #BF00BF ;" color="#FFFFFF">六角形數</font></td>
 <td><font style="background-color: #BF0000 ;" color="#FFFFFF">六角平方數</font></td>
+<td></td>
 <td><a href="javascript:HighLightCheckAll();"><font style="background-color: #FFFFFF ;" color="#000000">全選</font></a></td>
+<td></td>
 <td><a href="javascript:HighLightCheckNone();"><font style="background-color: #FFFFFF ;" color="#000000">全消</font></a></td>
-<td><font color="#7F00FF">計算耗時：</font></td>
-<td><div id="GenTimeOutput" style="color: #7F00FF ;">&ltJavaScript&gt;</div></td>
 </tr>
 </table>
 
@@ -78,11 +66,11 @@ Tested on Chrome 72 , IE 10
 </center>
 <br />
 
-<div id="MultiplicatorMapOutput"><center>&ltJavaScript&gt;</center></div>
+<div id="MultiplicatorMapOutput"></div>
 
 <script type="text/javascript">
 
-var TextToHTML , HighLightCheckAll_change , quotient2 , log ;
+var TextToHTML,HighLightCheckAll_change;
 
 // Settings // Begin
 var XnYLimit = 19 ; // 最大行列數 (多需時)
@@ -90,11 +78,6 @@ var XnYLimit = 19 ; // 最大行列數 (多需時)
 
 function MultiplicatorMap_Gen()
 {
-	/* < Timer Start > */
-	var timerBegin,timerEnd;
-	var timerBegin_get=new Date();
-	timerBegin=timerBegin_get.getTime();
-
 	TextToHTML='<table border=3 cellspacing=0 cellpadding=5 align="center" color="#FF0000">';
 	for(var yy = 0 ; yy <= XnYLimit ; yy ++)
 	{
@@ -111,10 +94,6 @@ function MultiplicatorMap_Gen()
 			if(yy > 0)
 			{
 				// 判斷是否 = 2^n
-				log = Math.log(yy * xx) / Math.log(2);
-				log % 1 == 0 ? quotient2 = "Y" : quotient2 = "N" ;
-
-				/* 判斷是否 = 2^n  ( * 舊方法 * )
 				var quotient2 = yy * xx;
 				while(quotient2 >= 2)
 				{
@@ -133,7 +112,6 @@ function MultiplicatorMap_Gen()
 						break;
 					}
 				}
-				*/
 
 				if( yy == 1 && xx == 1 ) // 1的混色
 				{
@@ -220,7 +198,7 @@ function MultiplicatorMap_Gen()
 				/* 特定條件 </font>，已改為通用
 				if(
 					( yy == 1 && xx == 1 ) || // 1 的格
-					( xx == yy * 2 - 1 || xx == yy * 2 + 1 || yy == xx * 2 - 1 || yy == xx * 2 + 1 ) || // 三角形數 (沒有判斷其他同值的數)
+					( xx == yy * 2 - 1 || xx == yy * 2 + 1 || yy == xx * 2 - 1 || yy == xx * 2 + 1 ) || // 三角形數
 					( ( Math.sqrt(yy*xx) % 1 != 0 ) && ( yy % 10 == 0 || xx % 10 == 0 ) ) // 十倍的行列
 				)
 				{
@@ -241,12 +219,6 @@ function MultiplicatorMap_Gen()
 		}
 	}
 	TextToHTML+="</table>";
-
-	/* < Timer Stop > */
-	var timerEnd_get=new Date();
-	timerEnd=timerEnd_get.getTime();
-	GenTimeOutput.innerHTML = (timerEnd-timerBegin)+" ms";
-
 	MultiplicatorMapOutput.innerHTML=TextToHTML;
 }
 

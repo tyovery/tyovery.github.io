@@ -1,0 +1,441 @@
+<head>
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+<title>單字符統計器 By ~tyovery~</title>
+</head>
+
+<textarea id="WordsInput" cols="120" rows="20" style="text-align:left" OnKeyUp="if(AutoTell != 0){CompelToCloseAutoTell_fc();if(AutoTell != 0){HowManyWords();}}if( event.ctrlKey && event.keyCode==13 ){HowManyWords();}" />
+3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701</textarea>
+<br />
+<input id="TellMeHowManyWords" type="button" value="計算(多需時)" OnClick="HowManyWords();"/>
+<input id="TellMeHowManyWords_Auto" type="button" value="關閉隨打即算功能" OnClick="TellMeHowManyWords_Auto_fc();"/>
+<input id="WordsInput_HideShow" type="button" value="隱藏輸入框" OnClick="WordsInput_HideShow_fc();" />
+<input type="button" value="顯示現時總位數" OnClick="alert('現時總位數 = ' + WordsInput.value.length);" />
+<input type="button" value="清空" OnClick="WordsInput_CleanUp_fc();" />
+<br />
+插入：{
+<input id="InsertPi" type="button" value="圓周率(點168位)" OnClick="WordsInput.value+='3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701';if(AutoTell != 0){CompelToCloseAutoTell_fc();if(AutoTell != 0){HowManyWords();}}WordsInput.focus();" />
+<input id="InsertRandomASCII" type="button" value="100個隨機ASCII有形字元(33~126)" OnClick="InsertRandomASCII_fc();if(AutoTell != 0){CompelToCloseAutoTell_fc();if(AutoTell != 0){HowManyWords();}}WordsInput.focus();" />
+<input id="InsertRandomUniBMP" type="button" value="10個隨機Unicode字元(1~65535)" OnClick="InsertRandomUniBMP_fc();if(AutoTell != 0){CompelToCloseAutoTell_fc();if(AutoTell != 0){HowManyWords();}}WordsInput.focus();" />
+<input id="InsertStaff" type="button" value="Staff" OnClick="WordsInput.value+='\n\nProgrammed By ~tyovery~\nLast Built At: 2012-11-22 15:28\n\n';if(AutoTell != 0){CompelToCloseAutoTell_fc();if(AutoTell != 0){HowManyWords();}}WordsInput.focus();" />
+}
+<br />
+<span id="HowManyWords_disp"></span>
+
+<script type="text/javascript">
+/* Settings */
+var Word_Before1 = "「"; // 字元開括號
+var Word_After1 = "」"; // 字元關括號
+var Word_Before2 = "『"; // 字元開括號(後備)
+var Word_After2 = "』"; // 字元關括號(後備)
+var AutoTell = 1; // 開關「隨打即算」功能 1|0
+var CompelToCloseAutoTell = 10000; // 輸入位數大於此值將強制關閉「隨打即算」功能。
+var CompelToCloseAutoTell_msg = "10,000"; // 上行數值的叫法。
+/* End of Settings */
+
+var Word_Before,Word_After;
+var RecordWord=new Array,RecordWordTimes=new Array;
+var InputWord=WordsInput.value;
+var RecordWordOrder = new Array,RecordWordOrderCompare_Value,RecordWordOrderCompare_Length;
+
+function WordLineOrder() // 排位
+{
+	for(var j = 0 ; j <= RecordWordTimes.length - 1  ; j ++ ) // j = 當前排位
+	{
+		RecordWordOrderCompare_Value = 0;
+
+		// 比較最大值
+		for(var i = 0 ; i <= RecordWordTimes.length - 1 ; i++) // i = 當前對比行號
+		{
+			if(RecordWordOrder.length == 0)
+			{
+				if( RecordWordTimes[i] > RecordWordOrderCompare_Value )
+				{
+					RecordWordOrderCompare_Value = RecordWordTimes[i]; // 記錄最大值
+					RecordWordOrderCompare_Length = i; // 記錄最大值的位置
+				}
+			} else {
+				// 忽略已排列的行號
+				for(var k = 0; k <= RecordWordOrder.length - 1 ; k ++) // k = 當前已分析最大值(RecordWordOrder[])的對比行號
+				{
+					if(i == RecordWordOrder[k] )
+					{
+						break;
+					}
+					if( k == RecordWordOrder.length - 1 && RecordWordTimes[i] > RecordWordOrderCompare_Value )
+					{
+						RecordWordOrderCompare_Value = RecordWordTimes[i]; // 記錄最大值
+						RecordWordOrderCompare_Length = i; // 記錄最大值的位置
+					}
+				}
+			}
+		}
+		RecordWordOrder[RecordWordOrder.length] = RecordWordOrderCompare_Length;
+	}
+
+// alert(RecordWordOrderCompare_Value+"\n"+RecordWordOrderCompare_Length+"\n"+RecordWordOrder);
+}
+
+function CompelToCloseAutoTell_fc() // 強制關閉「隨打即算」功能。
+{
+	if( WordsInput.value.length > CompelToCloseAutoTell )
+	{
+		TellMeHowManyWords_Auto.value = "打開隨打即算功能";
+		AutoTell = 0;
+		alert("因為總位數大於 "+CompelToCloseAutoTell_msg+"，所以我們強制關閉了「隨打即算」功能。");
+	}
+}
+
+function HowManyWords() // 計算
+{
+	// 清理
+	RecordWord = new Array;
+	RecordWordTimes = new Array;
+	InputWord = WordsInput.value;
+	RecordWordOrder = new Array;
+
+	// 空字串，直接輸出。
+	if(InputWord.length == 0)
+	{
+		HowManyWords_disp.innerHTML = "";
+	}
+
+	for(var i = 1 ; i <= InputWord.length ; i++)
+	{
+		// 檢查字元是否出現過
+		for(j = 0 ; j <= RecordWord.length ; j++)
+		{
+			if(InputWord.substr(i-1,1) == RecordWord[j])
+			{
+				RecordWordTimes[j] ++;
+				break;
+			} else if(j == RecordWord.length)
+			{
+				RecordWord[RecordWord.length] = InputWord.substr(i-1,1);
+				RecordWordTimes[RecordWord.length-1] = 1;
+				break;
+			}
+		}
+
+		// 輸出到顯示欄
+		if( i == InputWord.length )
+		{
+			WordLineOrder(); // 以出現最多至最少排位
+			HowManyWords_disp.innerHTML = ""; // 清空顯示欄
+
+			for(var k = 0 ; k <= RecordWordOrder.length - 1 ; k ++ )
+			{
+				// 檢查字元與括號是否相同
+				if(RecordWord[RecordWordOrder[k]] == Word_Before1 || RecordWord[RecordWordOrder[k]] == Word_After1 )
+				{
+					Word_Before = Word_Before2;
+					Word_After = Word_After2;
+				} else {
+					Word_Before = Word_Before1;
+					Word_After = Word_After1;
+				}
+
+				// 轉換特殊字元
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 12288)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>全形空格</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 127)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>DEL</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 32)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>半形空格</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 31)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>US</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 30)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>RS</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 29)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>GS</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 28)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>FS</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 27)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>ESC</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 26)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>SUB</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 25)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>EM</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 24)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>CAN</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 23)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>ETB</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 22)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>SYN</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 21)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>NAK</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 20)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>DC4</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 19)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>DC3</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 18)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>DC2</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 17)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>DC1</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 16)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>DLE</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 15)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>SI</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 14)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>SO</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 13)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>換行號</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 12)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>FF</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 11)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>Vt</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 9)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>HT</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 8)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>BS</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 7)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>BEL</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 6)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>ACK</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 5)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>ENQ</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 4)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>EOT</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 3)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>ETX</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 2)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>STX</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) == 1)
+				{
+					RecordWord[RecordWordOrder[k]] = "<b>SOH</b>";
+					Word_Before = " ";
+					Word_After = "";
+				}
+				if(RecordWord[RecordWordOrder[k]].charCodeAt(0) != 10)
+				{
+					// 逐行輸出到顯示欄
+					if(RecordWordTimes[RecordWordOrder[k]] == RecordWordTimes[RecordWordOrder[k-1]])
+					{
+						HowManyWords_disp.innerHTML = HowManyWords_disp.innerHTML.substr(0,HowManyWords_disp.innerHTML.length-1);
+						HowManyWords_disp.innerHTML += "、" + Word_Before + RecordWord[RecordWordOrder[k]] + Word_After + "。" ;
+					} else {
+						HowManyWords_disp.innerHTML += "<br />" + " 我們發現了 " + RecordWordTimes[RecordWordOrder[k]] + " 個" + Word_Before + RecordWord[RecordWordOrder[k]] + Word_After + "。" ;
+					}
+				}
+			}
+
+			/* 未排列順序
+			for(var k = 0 ; k <= RecordWord.length - 1 ; k ++ )
+			{
+				if(RecordWord[k] == Word_Before1 || RecordWord[k] == Word_After1 )
+				{
+					Word_Before = Word_Before2;
+					Word_After = Word_After2;
+				} else {
+					Word_Before = Word_Before1;
+					Word_After = Word_After1;
+				}
+				HowManyWords_disp.innerHTML += "<br />" + " 我們發現了 " + RecordWordTimes[k] + " 個" + Word_Before + RecordWord[k] + Word_After + "。" ;
+			}
+			*/
+		}
+	}
+}
+
+function WordsInput_HideShow_fc()
+{
+	if(WordsInput_HideShow.value == "隱藏輸入框")
+	{
+		WordsInput_HideShow.value = "顯示輸入框";
+		TellMeHowManyWords.disabled = true;
+		InsertPi.disabled = true;
+		InsertStaff.disabled = true;
+		InsertRandomASCII.disabled = true;
+		InsertRandomUniBMP.disabled = true;
+		WordsInput.style.visibility='hidden';
+		window.location.href = "#TellMeHowManyWords";
+	} else if(WordsInput_HideShow.value == "顯示輸入框")
+	{
+		WordsInput_HideShow.value = "隱藏輸入框";
+		TellMeHowManyWords.disabled = false;
+		InsertPi.disabled = false;
+		InsertStaff.disabled = false;
+		InsertRandomASCII.disabled = false;
+		InsertRandomUniBMP.disabled = false;
+		WordsInput.style.visibility='visible';
+		window.location.href = "#WordsInput";
+	}
+}
+
+function WordsInput_CleanUp_fc()
+{
+	WordsInput.value="";
+	WordsInput_HideShow.value = "隱藏輸入框";
+	TellMeHowManyWords.disabled = false;
+	InsertPi.disabled = false;
+	InsertStaff.disabled = false;
+	InsertRandomASCII.disabled = false;
+	InsertRandomUniBMP.disabled = false;
+	WordsInput.style.visibility='visible';
+	WordsInput.focus();
+	HowManyWords_disp.innerHTML="";
+}
+
+function TellMeHowManyWords_Auto_fc()
+{
+	if(TellMeHowManyWords_Auto.value == "關閉隨打即算功能" )
+	{
+		TellMeHowManyWords_Auto.value = "打開隨打即算功能";
+		AutoTell = 0;
+	} else 	if(TellMeHowManyWords_Auto.value == "打開隨打即算功能" )
+	{
+		TellMeHowManyWords_Auto.value = "關閉隨打即算功能";
+		AutoTell = 1;
+	}
+}
+
+function InsertRandomUniBMP_fc() // 插入隨機字元(Unicode BMP)
+{
+	for( var i = 1 ; i <= 10 ; i++)
+	{
+		var j = Math.round(Math.random()*(65534)+1);
+		WordsInput.value += String.fromCharCode(j);
+	}
+}
+
+function InsertRandomASCII_fc() // 插入隨機字元(ASCII)
+{
+	for( var i = 1 ; i <= 100 ; i++)
+	{
+		var j = Math.round(Math.random()*(93)+33);
+		WordsInput.value += String.fromCharCode(j);
+	}
+}
+
+HowManyWords();
+WordsInput.focus();
+
+</script>

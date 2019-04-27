@@ -1,0 +1,513 @@
+<head>
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+<title>JS秒計 By ~tyovery~</title>
+</head>
+
+<body>
+
+	<!-- Debug -->
+<!--
+<script type="text/javascript">
+window.onerror=reportError;
+function reportError(msg,url,line)
+{
+	var str_cht=new Array;
+	str_cht[1] = "抱歉 :(";
+	str_cht[2] = "我們找到一個錯誤在第 " + line + " 行：";
+	var str_eng=new Array;
+	str_eng[1] = "Sorry :(";
+	str_eng[2] = "We have found an Error On Line " + line + ":";
+	alert(str_cht[1] + "\n" + str_eng[1] + "\n\n" + str_cht[2] + "\n" + str_eng[2] + "\n\n" + msg);
+	return true;
+}
+</script>
+-->
+
+	<!-- Check Browser -->
+<script type="text/javascript">
+var browserChecker,browserVer={},browserUserAgent=navigator.userAgent.toLowerCase();
+
+(browserChecker = browserUserAgent.match(/msie ([\d.]+)/)) ? browserVer.ie = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/chrome\/([\d.]+)/)) ? browserVer.chrome = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/firefox\/([\d.]+)/)) ? browserVer.firefox = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/opera.([\d.]+)/)) ? browserVer.opera = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/version\/([\d.]+).*safari/)) ? browserVer.safari = browserChecker[1] : 0;
+
+if(browserVer.ie)
+{
+	document.write('Internet Explorer ' + browserVer.ie);
+}
+if(browserVer.chrome)
+{
+	document.write('Chrome ' + browserVer.chrome);
+}
+if(browserVer.firefox)
+{
+	document.write('Firefox ' + browserVer.firefox);
+}
+if(browserVer.opera)
+{
+	document.write('Opera ' + browserVer.opera);
+}
+if(browserVer.safari)
+{
+	document.write('Safari ' + browserVer.safari);
+}
+	</script>
+
+<center>
+	<noscript>
+		<p style="font-size:32pt;line-height:62%;">
+			<font color="#FF0000">J</font><font color="#007FBF">S</font><font color="#BFBF00">秒計</font>
+		</p>
+		<p style="font-size:20pt;line-height:62%;">
+			<font color="#7F7F7F">tested on </font><font color="#6CBDE4">IE 9</font><font color="#7F7F7F"> , </font><font color="#EA5347">Ch</font><font color="#BFBF09">ro</font><font color="#4DB849">me</font><font color="#4F8ECB"> 23</font><font color="#7F7F7F"> , </font><font color="#D76417">FF 16</font>
+		</p>
+		<br />
+		<p style="font-size:20pt;line-height:62%;">
+			<font color="#7F7F7F">Programmed by ~</font><font color="#BF0000">t</font><font color="#BF5F00">y</font><font color="#BFBF00">o</font><font color="#00BF00">v</font><font color="#00BFBF">e</font><font color="#0000BF">r</font><font color="#BF00BF">y</font><font color="#7F7F7F">~</font>
+		</p>
+		<p style="font-size:20pt;line-height:62%;">
+			<font color="#7F7F7F">最後更新：2012-11-09</font>
+		</p>
+	</noscript>
+	<script type="text/javascript">
+		document.write('<p style="font-size:32pt;line-height:62%;">');
+		document.write('<font color="#FF0000">J</font>');
+		document.write('<font color="#007FBF">S</font>');
+		document.write('<font color="#BFBF00">秒計</font></p>');
+		document.write('<p style="font-size:20pt;line-height:62%;">');
+		document.write('<font color="#7F7F7F">tested on </font>');
+		document.write('<font color="#6CBDE4">IE 9</font>');
+		document.write('<font color="#7F7F7F"> , </font>');
+		document.write('<font color="#EA5347">Ch</font>');
+		document.write('<font color="#BFBF09">ro</font>');
+		document.write('<font color="#4DB849">me</font>');
+		document.write('<font color="#4F8ECB"> 23</font>');
+		document.write('<font color="#7F7F7F"> , </font>');
+		document.write('<font color="#D76417">FF 16</font>');
+		document.write('</p>');
+		document.write('<br />');
+		document.write('<p style="font-size:20pt;line-height:62%;">');
+		document.write('<font color="#7F7F7F">Programmed by ~</font>');
+		document.write('<font color="#BF0000">t</font>');
+		document.write('<font color="#BF5F00">y</font>');
+		document.write('<font color="#BFBF00">o</font>');
+		document.write('<font color="#00BF00">v</font>');
+		document.write('<font color="#00BFBF">e</font>');
+		document.write('<font color="#0000BF">r</font>');
+		document.write('<font color="#BF00BF">y</font>');
+		document.write('<font color="#7F7F7F">~</font></p>');
+		document.write('<p style="font-size:20pt;line-height:62%;"><font color="#7F7F7F">最後更新：2012-11-09</font></p>');
+		window.status="Programmed by ~tyovery~    最後更新：2012-11-09";
+	</script>
+<br /><br />
+<span id="time_disp">0.000s</span>
+<input id="StartButton" type="button" value="開始" onClick="StartButton_fc();" />
+<input id="ResetButton" type="button" value="歸零" onClick="ResetButton_fc();" />
+<input id="TakeRecordButton" type="button" value="增加記錄" onClick="TakeRecordButton_fc();this.focus();" />
+<br />
+<input id="GetTotalAndAverageTimeButton" type="button" value="加總／平衡值" onClick="GetTotalAndAverageTimeButton_fc();" disabled=true />
+<input id="ClearRecordButton" type="button" value="清除全部記錄" onClick="ClearRecordButton_fc();" disabled=true />
+<br />
+<input id="SetAlertInput" type="text" value="30" size=8 style="text-align:center;" OnKeyPress="SetAlertInput_filter_fc(event);" onKeyUp="SetAlertInput_SizeTune();" onClick="SetAlertInput_SizeTune();" />s (限8位)
+<input id="SetAlertButton" type="button" value="設置提示" onClick="SetAlertButton_fc();" />
+<br />
+<input id="OrderS2LButton" type="button" value="由小至大排列(多需時)" onClick="OrderS2LButton_fc();" disabled=true />
+<br />
+<input id="OrderL2SButton" type="button" value="由大至小排列(多需時)" onClick="OrderL2SButton_fc();" disabled=true />
+<br />
+<span id="record"></span>
+
+<!-- Alert Button 
+<br /><br />
+<input type="button" value="Alert" onClick="alert(recordSlot_text[0]);alert(aa0);" />
+-->
+
+<script type="text/javascript">
+
+var beginTime,nowTime,pauseTime,ready2disp = "0.000";
+var recordSlot_time=new Array(1),recordSlot_text=new Array(1),totalRecordTime;
+var AlertSetOn = 0,AlertSetMS = "0.000";
+var TextRange_source,TextRange_save,TextRange_load;
+recordSlot_text[0]=0; // 現在的記錄總行數
+
+function timer_renew()
+{
+	if(StartButton.value == "暫停")
+	{
+		nowTime = new Date().getTime() - beginTime ;
+		ready2disp = nowTime / 1000;
+		if( (ready2disp+"").substr( (ready2disp+"").length-3 , 1 ) == ".")
+		{
+			ready2disp += "0";
+		} else if( (ready2disp+"").substr( (ready2disp+"").length-2 , 1 ) == ".")
+		{
+			ready2disp += "00";
+		} else if( (ready2disp+"").substr( (ready2disp+"").length-4 , 1 ) == ".")
+		{
+		} else
+		{
+			ready2disp += ".000";
+		}
+		time_disp.innerHTML = ready2disp + "s";
+		if(AlertSetOn == 1 && ready2disp * 1 >= AlertSetMS * 1)
+		{
+			AlertSetOn = 0;
+			alert("計時已達 "+AlertSetMS+" 秒。");
+		}
+		setTimeout("timer_renew();",1);
+	}
+}
+
+function ResetButton_fc() // 歸零
+{
+	StartButton.value = "開始";
+	time_disp.innerHTML = "0.000s";
+	ready2disp = "0.000";
+	if(SetAlertButton.value.match(/^取消/g) == "取消")
+	{
+		AlertSetOn = 1;
+	}
+	StartButton.focus();
+}
+
+function StartButton_fc() // 開始／暫停
+{
+	if(StartButton.value == "開始")
+	{
+		StartButton.value = "暫停";
+		beginTime = new Date().getTime();
+		timer_renew();
+	} else if(StartButton.value == "暫停")
+	{
+		StartButton.value = "繼續";
+		pauseTime = nowTime;
+	} else if(StartButton.value == "繼續")
+	{
+		StartButton.value = "暫停";
+		beginTime = new Date().getTime() - pauseTime;
+		timer_renew();
+	}
+}
+
+function MoveUp(MoveUp_thisPosition) // 上移記錄
+{
+	for(var i = MoveUp_thisPosition + 1 ; i <= recordSlot_text.length - 1 ; i++)
+	{
+		if(recordSlot_text[i] != "") // 檢查是否已刪行
+		{
+			// 交換時間
+			recordSlot_time[0] = recordSlot_time[MoveUp_thisPosition];
+			recordSlot_time[MoveUp_thisPosition] = recordSlot_time[i];
+			recordSlot_time[i] = recordSlot_time[0];
+
+			// 重組行 (被按下按鈕的此行)
+			recordSlot_text[MoveUp_thisPosition] = recordSlot_time[MoveUp_thisPosition];
+			recordSlot_text[MoveUp_thisPosition] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+MoveUp_thisPosition+");' />";
+			recordSlot_text[MoveUp_thisPosition] += " <input id='MoveUpButton"+MoveUp_thisPosition+"' type='button' value='上移' onClick='MoveUp("+MoveUp_thisPosition+");' />";
+			recordSlot_text[MoveUp_thisPosition] += " <input id='MoveDownButton"+MoveUp_thisPosition+"' type='button' value='下移' onClick='MoveDown("+MoveUp_thisPosition+");' />";
+			recordSlot_text[MoveUp_thisPosition] += " <input type='button' value='清除' onClick='recordSlot_text["+MoveUp_thisPosition+"]=\"\";displayRecord();' />";
+			recordSlot_text[MoveUp_thisPosition] += "<br />";
+
+			// 重組行 (交換的行)
+			recordSlot_text[i] = recordSlot_time[i];
+			recordSlot_text[i] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveUpButton"+i+"' type='button' value='上移' onClick='MoveUp("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveDownButton"+i+"' type='button' value='下移' onClick='MoveDown("+i+");' />";
+			recordSlot_text[i] += " <input type='button' value='清除' onClick='recordSlot_text["+i+"]=\"\";displayRecord();' />";
+			recordSlot_text[i] += "<br />";
+
+			// 刷新顯示板
+			displayRecord();
+			break; // 不用這行可以實現逐行向上滾動
+		}
+	}
+}
+
+function MoveDown(MoveDown_thisPosition) // 下移記錄
+{
+	for(var i = MoveDown_thisPosition - 1 ; i >= 1 ; i--)
+	{
+		if(recordSlot_text[i] != "") // 檢查是否已刪行
+		{
+
+			// 交換時間
+			recordSlot_time[0] = recordSlot_time[MoveDown_thisPosition];
+			recordSlot_time[MoveDown_thisPosition] = recordSlot_time[i];
+			recordSlot_time[i] = recordSlot_time[0];
+
+			// 重組行 (被按下按鈕的此行)
+			recordSlot_text[MoveDown_thisPosition] = recordSlot_time[MoveDown_thisPosition];
+			recordSlot_text[MoveDown_thisPosition] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+MoveDown_thisPosition+");' />";
+			recordSlot_text[MoveDown_thisPosition] += " <input id='MoveUpButton"+MoveDown_thisPosition+"' type='button' value='上移' onClick='MoveUp("+MoveDown_thisPosition+");' />";
+			recordSlot_text[MoveDown_thisPosition] += " <input id='MoveDownButton"+MoveDown_thisPosition+"' type='button' value='下移' onClick='MoveDown("+MoveDown_thisPosition+");' />";
+			recordSlot_text[MoveDown_thisPosition] += " <input type='button' value='清除' onClick='recordSlot_text["+MoveDown_thisPosition+"]=\"\";displayRecord();' />";
+			recordSlot_text[MoveDown_thisPosition] += "<br />";
+
+			// 重組行 (交換的行)
+			recordSlot_text[i] = recordSlot_time[i];
+			recordSlot_text[i] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveUpButton"+i+"' type='button' value='上移' onClick='MoveUp("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveDownButton"+i+"' type='button' value='下移' onClick='MoveDown("+i+");' />";
+			recordSlot_text[i] += " <input type='button' value='清除' onClick='recordSlot_text["+i+"]=\"\";displayRecord();' />";
+			recordSlot_text[i] += "<br />";
+
+			// 刷新顯示板
+			displayRecord();
+			break; // 不用這行可以實現逐行向下滾動
+		}
+	}
+}
+
+function displayRecord() // 刷新記錄顯示板
+{
+	record.innerHTML = "";
+	recordSlot_text[0] = 0;
+	for(var i = recordSlot_text.length - 1 ; i >= 1 ; i--)
+	{
+		record.innerHTML += recordSlot_text[i];
+		if(recordSlot_text[i] != "") // 計算記錄的總行數
+		{
+			recordSlot_text[0] ++ ;
+		}
+	}
+	if(recordSlot_text[0] > 1)
+	{
+		ClearRecordButton.disabled=false;
+		GetTotalAndAverageTimeButton.disabled=false;
+		OrderS2LButton.disabled=false;
+		OrderL2SButton.disabled=false;
+	} else if(recordSlot_text[0] > 0)
+	{
+		ClearRecordButton.disabled=false;
+		GetTotalAndAverageTimeButton.disabled=true;
+		OrderS2LButton.disabled=true;
+		OrderL2SButton.disabled=true;
+	} else
+	{
+		ClearRecordButton_fc();
+	}
+
+	// 屏閉上移按鈕
+	for(var i = recordSlot_text.length - 1 ; i >= 1 ; i--)
+	{
+		if(recordSlot_text[i] != "")
+		{
+			document.getElementById("MoveUpButton"+i).disabled=true;
+			break;
+		}
+	}
+
+	// 屏閉下移按鈕
+	for(var i = 1 ; i <= recordSlot_text.length - 1 ; i++)
+	{
+		if(recordSlot_text[i] != "")
+		{
+			document.getElementById("MoveDownButton"+i).disabled=true;
+			break;
+		}
+	}
+}
+
+function LoadTimeFromRecord(LoadTimeFromRecord_thisPosition) // 載入暫存值
+{
+	StartButton.value = "繼續";
+	pauseTime = recordSlot_time[LoadTimeFromRecord_thisPosition].substr(0,recordSlot_time[LoadTimeFromRecord_thisPosition].length - 1) * 1000;
+	time_disp.innerHTML = recordSlot_time[LoadTimeFromRecord_thisPosition];
+	ready2disp = recordSlot_time[LoadTimeFromRecord_thisPosition].substr(0,recordSlot_time[LoadTimeFromRecord_thisPosition].length - 1);
+	if(SetAlertButton.value.match(/^取消/g) == "取消" && SetAlertInput.value * 1 >= ready2disp * 1)
+	{
+		AlertSetOn = 1;
+	} else {
+		AlertSetOn = 0;
+	}
+	StartButton.focus();
+}
+
+function TakeRecordButton_fc() // 記錄
+{
+	recordSlot_time[recordSlot_time.length] = time_disp.innerHTML;
+	recordSlot_text[recordSlot_text.length] = recordSlot_time[recordSlot_time.length - 1];
+	recordSlot_text[recordSlot_text.length - 1] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+(recordSlot_text.length - 1)+");' />";
+	recordSlot_text[recordSlot_text.length - 1] += " <input id='MoveUpButton"+(recordSlot_text.length - 1)+"' type='button' value='上移' onClick='MoveUp("+(recordSlot_text.length - 1)+");' />";
+	recordSlot_text[recordSlot_text.length - 1] += " <input id='MoveDownButton"+(recordSlot_text.length - 1)+"' type='button' value='下移' onClick='MoveDown("+(recordSlot_text.length - 1)+");' />";
+	recordSlot_text[recordSlot_text.length - 1] += " <input type='button' value='清除' onClick='recordSlot_text["+(recordSlot_text.length - 1)+"]=\"\";displayRecord();' />";
+	recordSlot_text[recordSlot_text.length - 1] += "<br />";
+	displayRecord();
+}
+
+function ClearRecordButton_fc() // 清除全部時間記錄
+{
+	ClearRecordButton.disabled=true;
+	GetTotalAndAverageTimeButton.disabled=true;
+	OrderS2LButton.disabled=true;
+	OrderL2SButton.disabled=true;
+	record.innerHTML = "";
+	recordSlot_time = new Array(1);
+	recordSlot_text = new Array(1);
+	recordSlot_text[0] = 0;
+}
+
+function GetTotalAndAverageTimeButton_fc() // 加總 & 平衡值
+{
+	totalRecordTime = 0;
+	for(var i = 1 ; i <= recordSlot_text.length - 1 ; i++)
+	{
+		if(recordSlot_text[i] != "")
+		{
+			totalRecordTime += recordSlot_time[i].substr(0,recordSlot_time[i].length-1) * 1;
+		}
+	}
+	alert("Total Time: " + totalRecordTime.toFixed(3) + "s\nAverage Time: " + ( totalRecordTime / recordSlot_text[0] ).toFixed(3) + "s");
+}
+
+function OrderS2LButton_fc()
+{
+	for(var i = 1 ; i <= recordSlot_text.length - 2 ; i++)
+	{
+		if(recordSlot_text[i] != "") // 確認有目前的行
+		{
+			for(var j = i + 1 ; j <= recordSlot_text.length - 1 ; j++)
+			{
+				if(recordSlot_text[j] != "") // 找上一行
+				{
+					if(recordSlot_time[i].substr(0,recordSlot_time[i].length-1) * 1 < recordSlot_time[j].substr(0,recordSlot_time[j].length-1) * 1)
+					{
+						MoveUp(i);
+						if(i > 1)
+						{
+							i=0;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+function OrderL2SButton_fc()
+{
+	for(var i = 1 ; i <= recordSlot_text.length - 2 ; i++)
+	{
+		if(recordSlot_text[i] != "") // 確認有目前的行
+		{
+			for(var j = i + 1 ; j <= recordSlot_text.length - 1 ; j++)
+			{
+				if(recordSlot_text[j] != "") // 找上一行
+				{
+					if(recordSlot_time[i].substr(0,recordSlot_time[i].length-1) * 1 > recordSlot_time[j].substr(0,recordSlot_time[j].length-1) * 1)
+					{
+						MoveUp(i);
+						if(i > 1)
+						{
+							i=0;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+function SetAlertInput_Clean_fc()
+{
+	// 只保留數字與小數點
+	SetAlertInput.value = SetAlertInput.value.replace(/[^0-9.]/g,"");
+
+	// 清除多餘的小數點
+	for(var i = 0 ; i <= SetAlertInput.value.length - 1 ; i ++ )
+	{
+		if(SetAlertInput.value.substr(i,1) == ".")
+		{
+			SetAlertInput.value = SetAlertInput.value.substr(0,i+1) + SetAlertInput.value.substr(i+1,SetAlertInput.value.length-i).replace(/[.]/g,"");
+			break;
+		}
+	}
+
+	// 空 = 0
+	if(SetAlertInput.value == "." || SetAlertInput.value == "")
+	{
+		SetAlertInput.value = 0;
+	}
+
+	// 調整位數為8位
+	if(SetAlertInput.value.length > 8)
+	{
+		SetAlertInput.value = SetAlertInput.value.substr(0,8);
+	}
+
+	// 調整為一般顯示的數值
+	SetAlertInput.value *= 1;
+}
+
+function SetAlertButton_fc()
+{
+	SetAlertInput_Clean_fc();
+	if(SetAlertButton.value == "設置提示")
+	{
+		SetAlertButton.value = "取消 ( "+SetAlertInput.value+" 秒 )";
+		if(SetAlertInput.value * 1 >= ready2disp * 1)
+		{
+			AlertSetOn = 1;
+		}
+		AlertSetMS = SetAlertInput.value;
+	} else if(SetAlertButton.value.match(/^取消/g) == "取消")
+	{
+		SetAlertButton.value = "設置提示";
+		AlertSetOn = 0;
+	}
+}
+
+function SetAlertInput_SizeTune()
+{
+	SetAlertInput.size = SetAlertInput.value.length + 4;
+}
+
+function SetAlertInput_filter_fc(e)
+{
+	// 當按下 Enter
+	if(e.keyCode == 13)
+	{
+		SetAlertButton.value = "設置提示";
+		AlertSetOn = 0;
+		SetAlertButton_fc();
+	}
+
+	// 當按下非數字及小數點
+	if(e.keyCode > 57 || e.keyCode < 48 && e.keyCode != 46)
+	{
+		// 找取當前光標位置
+		if(browserVer.ie)
+		{
+			TextRange_source = document.selection.createRange();
+			TextRange_source.setEndPoint("StartToStart",SetAlertInput.createTextRange());
+			TextRange_save = TextRange_source.text.length;
+		}
+
+		// 只保留數字和小數點
+		setTimeout('SetAlertInput.value = SetAlertInput.value.replace(/[^0-9.]/g,"");TextRangeJump();',0);
+	}
+	SetAlertInput_SizeTune();
+}
+
+function TextRangeJump() // 還原光標位置
+{
+	if(browserVer.ie)
+	{
+		TextRange_load = document.getElementById("SetAlertInput").createTextRange();
+		TextRange_load.moveStart('character',TextRange_save);
+		TextRange_load.collapse(true);
+		TextRange_load.select();
+	}
+}
+
+StartButton.focus(); // 焦點於開始按鈕
+SetAlertInput_SizeTune(); // 調整鬧鐘設定框
+
+</script>
+</center>
+</body>

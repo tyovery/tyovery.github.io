@@ -1,0 +1,486 @@
+<html>
+
+<!-- < Timer Start > -->
+<script language="javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+
+<head>
+
+<meta name="author" content="~tyovery~" />
+<meta http-equiv="cache-control" content="no-cache, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+
+<title>色彩分類 - ~tyovery~'s Homepage</title>
+
+<style type="text/css">
+body
+{
+	color: #FFFFFF;
+	background-color: #404040;
+}
+
+p
+{
+	line-height: 100%;
+	font-size: 19px;
+	color: #FFFFFF;
+}
+
+a
+{
+	text-decoration: none;
+}
+</style>
+
+</head>
+
+<body>
+
+<br /><br />
+
+<center>
+
+<span style="line-height: 200%; font-size: 50px;"><font color="#FFBFFF">色</font><font color="#BFFFFF">彩</font></span>
+
+<p style="margin-top: 0px; line-height: 19px; font-size: 31px;"> <!-- background-color:#404040; -->
+	<font color="#800000">●</font>
+	<font color="#404040">●</font>
+	<font color="#808000">●</font>
+	<font color="#404040">●</font>
+	<font color="#008000">●</font>
+	<font color="#404040">●</font>
+	<font color="#008080">●</font>
+	<font color="#404040">●</font>
+	<font color="#000080">●</font>
+	<font color="#404040">●</font>
+	<font color="#800080">●</font>
+	<br />
+	<font color="#FF0000">●</font>
+	<font color="#FF8000">●</font>
+	<font color="#FFFF00">●</font>
+	<font color="#80FF00">●</font>
+	<font color="#00FF00">●</font>
+	<font color="#00FF80">●</font>
+	<font color="#00FFFF">●</font>
+	<font color="#0080FF">●</font>
+	<font color="#0000FF">●</font>
+	<font color="#8000FF">●</font>
+	<font color="#FF00FF">●</font>
+	<font color="#FF0080">●</font>
+	<br />
+	<font color="#FF8080">●</font>
+	<font color="#404040">●</font>
+	<font color="#FFFF80">●</font>
+	<font color="#404040">●</font>
+	<font color="#80FF80">●</font>
+	<font color="#404040">●</font>
+	<font color="#80FFFF">●</font>
+	<font color="#404040">●</font>
+	<font color="#8080FF">●</font>
+	<font color="#404040">●</font>
+	<font color="#FF80FF">●</font>
+	<br />
+</p>
+
+
+<p style="font-size: 19px;color: #FFFFFF;">色彩主要有「光源色」和「反光色」兩個系統。</p>
+<img src="3circle_color.png" />
+<!-- <p style="font-size: 19px;color: #FFFFFF;">&lt;元色&gt;</p> -->
+<p style="font-size: 19px;color: #FFFFFF;">「光源三元色」是「紅<font color="#FF0000">●</font>」、「綠<font color="#00FF00">●</font>」、「藍<font color="#0000FF">●</font>」。</p>
+<p style="font-size: 19px;color: #FFFFFF;">「反光三元色」為「品<font color="#FF00FF">●</font>」、「黃<font color="#FFFF00">●</font>」、「青<font color="#00FFFF">●</font>」。</p>
+<p style="font-size: 19px;color: #FFFFFF;">「二元色」＝「紅<font color="#FF0000">●</font>」與「藍<font color="#0000FF">●</font>」。</p>
+<p style="font-size: 19px;color: #FFFFFF;">「四元色」＝「紅<font color="#FF0000">●</font>」、「黃<font color="#FFFF00">●</font>」、「綠<font color="#00FF00">●</font>」、「藍<font color="#0000FF">●</font>」。</p>
+<p style="font-size: 19px;color: #FFFFFF;">「等頻色」＝「黑<font color="#000000">●</font>」至「白<font color="#FFFFFF">●</font>」。</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	「十色」＝
+	紅<font color="#FF0000">●</font>
+	、
+	橙<font color="#FF7F00">●</font>
+	、
+	黃<font color="#FFFF00">●</font>
+	、
+	綠<font color="#00FF00">●</font>
+	、
+	青<font color="#00FFFF">●</font>
+	、
+	藍<font color="#0000FF">●</font>
+	、
+	紫<font color="#7F00FF">●</font>
+	、
+	品<font color="#FF00FF">●</font>
+	、
+	黑<font color="#000000">●</font>
+	、
+	白<font color="#FFFFFF">●</font>
+	。
+</p>
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;光源色系統&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">「黑<font color="#000000">●</font>」、「白<font color="#FFFFFF">●</font>」為零級色彩；</p>
+<p style="font-size: 19px;color: #FFFFFF;">「紅<font color="#FF0000">●</font>」、「綠<font color="#00FF00">●</font>」、「藍<font color="#0000FF">●</font>」為一級色彩；</p>
+<p style="font-size: 19px;color: #FFFFFF;">「品<font color="#FF00FF">●</font>」、「黃<font color="#FFFF00">●</font>」、「青<font color="#00FFFF">●</font>」為二級色彩；</p>
+<p style="font-size: 19px;color: #FFFFFF;">「紫<font color="#7F00FF">●</font>」、「橙<font color="#FF7F00">●</font>」為三級色彩。</p>
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;反光色系統&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">「黑<font color="#000000">●</font>」、「白<font color="#FFFFFF">●</font>」為零級色彩；</p>
+<p style="font-size: 19px;color: #FFFFFF;">「品<font color="#FF00FF">●</font>」、「黃<font color="#FFFF00">●</font>」、「青<font color="#00FFFF">●</font>」為一級色彩；</p>
+<p style="font-size: 19px;color: #FFFFFF;">「紅<font color="#FF0000">●</font>」、「綠<font color="#00FF00">●</font>」、「藍<font color="#0000FF">●</font>」為二級色彩；</p>
+<p style="font-size: 19px;color: #FFFFFF;">「紫<font color="#7F00FF">●</font>」、「橙<font color="#FF7F00">●</font>」為三級色彩。</p>
+<br />
+
+<p style="font-size: 19px;color: #FFFFFF;">通常在藝術方面，多採用「反光色」系統。</p>
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;光頻率順序&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	紅<font color="#FF0000">●</font>
+	&lt;
+	橙<font color="#FF7F00">●</font>
+	&lt;
+	黃<font color="#FFFF00">●</font>
+	&lt;
+	綠<font color="#00FF00">●</font>
+	&lt;
+	青<font color="#00FFFF">●</font>
+	&lt;
+	藍<font color="#0000FF">●</font>
+	&lt;
+	紫<font color="#7F00FF">●</font>
+	&lt;
+	品<font color="#FF00FF">●</font>
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;音頻率順序&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	橙紅<font color="#FF3F00">●</font>
+	=C#；
+	橙黃<font color="#FFBF00">●</font>
+	=D#；
+	&nbsp;&nbsp;&nbsp;
+	&nbsp;&nbsp;&nbsp;
+	青<font color="#00FFFF">●</font>
+	=F#；
+	紫藍<font color="#3F00FF">●</font>
+	=G#；
+	紫品<font color="#BF00FF">●</font>
+	=A#
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	紅<font color="#FF0000">●</font>
+	=C；
+	橙<font color="#FF7F00">●</font>
+	=D；
+	黃<font color="#FFFF00">●</font>
+	=E；
+	綠<font color="#00FF00">●</font>
+	=F；
+	藍<font color="#0000FF">●</font>
+	=G；
+	紫<font color="#7F00FF">●</font>
+	=A；
+	品<font color="#FF00FF">●</font>
+	=B
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;十色順序&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	穿透感：
+	白<font color="#FFFFFF">●</font>
+	&gt;
+	黃<font color="#FFFF00">●</font>
+	&gt;
+	品<font color="#FF00FF">●</font>
+	&gt;
+	紅<font color="#FF0000">●</font>
+	&gt;
+	橙<font color="#FF7F00">●</font>
+	&gt;
+	青<font color="#00FFFF">●</font>
+	&gt;
+	綠<font color="#00FF00">●</font>
+	&gt;
+	紫<font color="#7F00FF">●</font>
+	&gt;
+	藍<font color="#0000FF">●</font>
+	&gt;
+	黑<font color="#000000">●</font>
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	明亮值：
+	白<font color="#FFFFFF">●</font>
+	&gt;
+	黃<font color="#FFFF00">●</font>
+	&gt;
+	青<font color="#00FFFF">●</font>
+	&gt;
+	綠<font color="#00FF00">●</font>
+	&gt;
+	橙<font color="#FF7F00">●</font>
+	&gt;
+	品<font color="#FF00FF">●</font>
+	&gt;
+	紅<font color="#FF0000">●</font>
+	&gt;
+	紫<font color="#7F00FF">●</font>
+	&gt;
+	藍<font color="#0000FF">●</font>
+	&gt;
+	黑<font color="#000000">●</font>
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	明亮感：
+	黃<font color="#FFFF00">●</font>
+	&gt;
+	白<font color="#FFFFFF">●</font>
+	&gt;
+	青<font color="#00FFFF">●</font>
+	&gt;
+	綠<font color="#00FF00">●</font>
+	&gt;
+	品<font color="#FF00FF">●</font>
+	&gt;
+	紅<font color="#FF0000">●</font>
+	&gt;
+	橙<font color="#FF7F00">●</font>
+	&gt;
+	紫<font color="#7F00FF">●</font>
+	&gt;
+	藍<font color="#0000FF">●</font>
+	&gt;
+	黑<font color="#000000">●</font>
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;進退感&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	平衡：
+	黃<font color="#FFFF00">●</font>
+	=
+	白<font color="#FFFFFF">●</font>
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	後退：
+	青<font color="#00FFFF">●</font>
+	退於
+	綠<font color="#00FF00">●</font>
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	前進：
+	品<font color="#FF00FF">●</font>
+	進於
+	紅<font color="#FF0000">●</font>
+	進於
+	橙<font color="#FF7F00">●</font>
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	隱藏：
+	紫<font color="#7F00FF">●</font>
+	明於
+	藍<font color="#0000FF">●</font>
+	明於
+	黑<font color="#000000">●</font>
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;色準&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	綠<font color="#00FF00">●</font>
+	&gt;
+	黃<font color="#FFFF00">●</font>
+	&gt;
+	紅<font color="#FF0000">●</font>
+	&gt;
+	藍<font color="#0000FF">●</font>
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;行為&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	紅<font color="#FF0000">●</font>＝隨機；
+	藍<font color="#0000FF">●</font>＝規律；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	黃<font color="#FFFF00">●</font>＝導引；
+	綠<font color="#00FF00">●</font>＝配合；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	品<font color="#FF00FF">●</font>＝美感；
+	青<font color="#00FFFF">●</font>＝巧妙；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	橙<font color="#FF7F00">●</font>＝喜悅；
+	紫<font color="#7F00FF">●</font>＝靈感；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	白<font color="#FFFFFF">●</font>＝無謀；
+	黑<font color="#000000">●</font>＝智慧。
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;能量&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	紅<font color="#FF0000">●</font>＝深量＋向外；
+	藍<font color="#0000FF">●</font>＝深量＋向內；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	品<font color="#FF00FF">●</font>＝中深量＋向外；
+	紫<font color="#7F00FF">●</font>＝中深量＋向內；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	橙<font color="#FF7F00">●</font>＝中淺量＋向外；
+	綠<font color="#00FF00">●</font>＝中淺量＋向內；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	黃<font color="#FFFF00">●</font>＝淺量＋向外；
+	青<font color="#00FFFF">●</font>＝淺量＋向內；
+</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	白<font color="#FFFFFF">●</font>＝無盡淺＋向外；
+	黑<font color="#000000">●</font>＝無盡深＋向內。
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;消耗順序 ( 快 &gt; 慢 )&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	紅<font color="#FF0000">●</font>
+	&gt;
+	藍<font color="#0000FF">●</font>
+	&gt;
+	綠<font color="#00FF00">●</font>
+	&gt;=
+	橙<font color="#FF7F00">●</font>
+	&gt;=
+	白<font color="#FFFFFF">●</font>
+	&gt;
+<!--
+	青<font color="#00FFFF">●</font>
+	&gt;
+	品<font color="#FF00FF">●</font>
+	&gt;
+	紫<font color="#7F00FF">●</font>
+	&gt;
+-->
+
+	黃<font color="#FFFF00">●</font>
+	&gt;
+	黑<font color="#000000">●</font>
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;數字&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	1＝白<font color="#FFFFFF">●</font>
+	；
+	3＝黃<font color="#FFFF00">●</font>
+	；
+	6＝青<font color="#00FFFF">●</font>
+	；
+	2＝品<font color="#FF00FF">●</font>
+	；
+	7＝紫<font color="#7F00FF">●</font>
+	；
+	<br />
+	0＝黑<font color="#000000">●</font>
+	；
+	8＝橙<font color="#FF7F00">●</font>
+	；
+	4＝綠<font color="#00FF00">●</font>
+	；
+	5＝紅<font color="#FF0000">●</font>
+	；
+	9＝藍<font color="#0000FF">●</font>
+	。
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;五行&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	品<font color="#FF00FF">●</font>、
+	紅<font color="#FF0000">●</font>、
+	橙<font color="#FF7F00">●</font>＝火；
+	<br />
+	青<font color="#00FFFF">●</font>、
+	綠<font color="#00FF00">●</font>＝木；
+	<br />
+	黃<font color="#FFFF00">●</font>＝土；
+	<br />
+	白<font color="#FFFFFF">●</font>＝金；
+	<br />
+	紫<font color="#7F00FF">●</font>、
+	藍<font color="#0000FF">●</font>、
+	黑<font color="#000000">●</font>＝水。
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;形狀&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	三角形<font color="#FF00FF">●</font>；
+	不規則多邊形<font color="#FF0000">●</font>；
+	正多邊形<font color="#FF7F00">●</font>；
+	<br />
+	直線＝青<font color="#00FFFF">●</font>；
+	長方形＝綠<font color="#00FF00">●</font>；
+	<br />
+	正方＝黃<font color="#FFFF00">●</font>；
+	<br />
+	圓形＝白<font color="#FFFFFF">●</font>；
+	<br />
+	弧＝紫<font color="#7F00FF">●</font>；
+	波浪紋＝<font color="#0000FF">●</font>；
+	隱形＝黑<font color="#000000">●</font>。
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">&lt;ABO血型系統&gt;</p>
+<p style="font-size: 19px;color: #FFFFFF;">
+	Ｏ型血＝黃<font color="#FFFF00">●</font>；
+	Ａ型血＝綠<font color="#00FF00">●</font>；
+	Ｂ型血＝紅<font color="#FF0000">●</font>；
+	AB型血＝藍<font color="#0000FF">●</font>。
+</p>
+
+
+<br />
+<p style="font-size: 19px;color: #FFFFFF;">- 上述內容只是本人自己的見解，與現代光學／色彩學可能不相符合。 -</p>
+
+<!--
+<p style="font-size: 19px;color: #FFFFFF;">入正題前，先讓大家體驗一下有趣的事情先。</p>
+<p style="font-size: 19px;color: #000000;">顏色是我們對光的感覺。</p>
+<p style="font-size: 19px;color: #FFFFFF;">等待靈感中，暫無其下內容……</p>
+-->
+
+
+
+</center>
+
+<br /><br />
+<br /><br />
+
+</body>
+
+<!-- < Timer Stop > -->
+<script language="javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+document.write("<p style='line-height: 0%; font-size: 12px;'>Load Time: "+(timerEnd-timerBegin)+"ms</p>");
+</script>
+
+</html>

@@ -1,0 +1,187 @@
+<head>
+<meta charset="big5" />
+<title>堆積矩陣 ( 暴力連加算法 )</title>
+
+<style type="text/css">
+body
+{
+	background-color: #FFFFFF ;
+	color: #000000 ;
+}
+
+font
+{
+	font-size: 14pt ;
+	line-height: 100% ;
+}
+
+td
+{
+	text-align: center ;
+	font-size: 12pt ;
+	color: #000000 ;
+	background-color: #FFFFFF ;
+}
+
+a
+{
+	text-decoration: underline;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- < Timer Start > -->
+<script type="text/javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+<!-- End of < Timer Start > -->
+
+<br />
+<div id="disp_area"></div>
+
+<script type="text/javascript">
+
+/* settings */ // begin
+var t_max = 17 ; // 最高維 t
+var n_max = 18 ; // 最大項 n
+/* settings */ // end
+
+var integral = new Array ;
+var txt2htm ;
+
+function fact(k) // 階乘
+{
+	if( k == 1 || k == 0 )
+	{
+		return 1 ;
+	}
+	else
+	{
+		var fact_v = k * fact(k-1) ;
+		return fact_v ;
+	}
+}
+
+for( var t = 0 ; t <= t_max ; t ++ )
+{
+	// 行 (t維)
+	integral[t] = new Array ;
+
+	// 列 (n項)
+	for(var n = 0 ; n <= n_max ; n++ )
+	{
+		if(n == 0)
+		{
+			if( t == 3 )
+			{
+				integral[t][n] = "四面體" ;
+			}
+			else
+			if( t == 2 )
+			{
+				integral[t][n] = "三角形" ;
+			}
+			else
+			if( t == 1 )
+			{
+				integral[t][n] = "線" ;
+			}
+			else
+			if( t == 0 )
+			{
+				integral[t][n] = "點" ;
+			}
+			else
+			{
+				integral[t][n] = t + "維" ;
+			}
+		}
+		else
+		if( t == 0 || n == 1 )
+		{
+			integral[t][n] = 1 ;
+		}
+		else
+		{
+			integral[t][n] = integral[t][n-1] + integral[t-1][n] ;
+		}
+	}
+}
+
+// output
+txt2htm = "<table border=1 cellspacing=0 cellpadding=3 align='center' >" ;
+for(var t = 0 ; t <= t_max ; t ++)
+{
+	txt2htm += "<tr>" ;
+	for(var n = 0 ; n <= n_max ; n ++ )
+	{
+		txt2htm += "<td>" + integral[t][n] + "</td>" ;
+	}
+	txt2htm += "</tr>" ;
+}
+txt2htm += "</table>" ;
+
+// display
+disp_area.innerHTML = txt2htm ;
+
+
+</script>
+
+<!-- < Timer Stop > -->
+<script type="text/javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+var loadTime=timerEnd-timerBegin,loadTime_disp;
+
+if(loadTime>=1000)
+{
+	var loadTime_ms=loadTime%1000;
+	if(loadTime_ms!=0)
+	{
+		if((loadTime_ms+"").length==3)
+		{
+			if(loadTime_ms%100==0)
+			{
+				loadTime_ms=loadTime_ms/100;
+			}
+			else if(loadTime_ms%10==0)
+			{
+				loadTime_ms=loadTime_ms/10;
+			}
+		}
+		else if((loadTime_ms+"").length==2)
+		{
+			if(loadTime_ms%10==0)
+			{
+				loadTime_ms=loadTime_ms/10;
+			}
+			loadTime_ms="0"+loadTime_ms;
+		}
+		else if((loadTime_ms+"").length==1)
+		{
+			loadTime_ms="00"+loadTime_ms;
+		}
+		loadTime_disp=Math.floor(loadTime/1000)+"."+loadTime_ms+"s";
+	}
+	else
+	{
+		loadTime_disp=Math.floor(loadTime/1000)+"s";
+	}
+}
+else
+{
+	loadTime_disp=loadTime+"ms";
+}
+
+document.write("<br /><br />Load Time: " + loadTime_disp + "<br /><br />");
+</script>
+<!-- End of < Timer Stop > -->
+
+</body>
+
+

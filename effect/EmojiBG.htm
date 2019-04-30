@@ -1,0 +1,62 @@
+<html>
+
+<head>
+<span id="info"></span>
+
+<script>
+
+	function mouseMove(event)
+	{
+		var e = event || window.event ;
+		info.innerHTML = ("x:"+e.clientX+"<br />y:"+e.clientY);
+		for(var n = 128512 ; n <= 128567 ; n++)
+		{
+			var size = 16*(1+Math.random()*2) ; // Emoji大小
+			var r_range = [200,250] ; //半徑值域
+			var r = r_range[0]+(r_range[1]-r_range[0])*Math.random() ; //半徑 A+(B-A)R
+			var theta = Math.random()*2*Math.PI ; // 傾角
+			
+			if(n==128512 ||
+			 n == 128529 ||
+			 n == 128533 ||
+			 n == 128535 ||
+			 n == 128537 ||
+			 n == 128539 ||
+			 n == 128543 ||
+			 n == 128550 ||
+			 n == 128551 ||
+			 n == 128556 ||
+			 n == 128558 ||
+			 n == 128559 ||
+			 n == 128564 ) continue ;
+			eval("EBG"+n+".style.left = \""+(e.clientX+r*Math.sin(theta)-size/2)+"px\";");
+			eval("EBG"+n+".style.top = \""+(e.clientY+r*Math.cos(theta)-size/2)+"px\";");
+			eval("EBG"+n+".style.fontSize = \""+ size +"px\";");
+		}
+	}
+	
+	for(var n = 128512 ; n <= 128567 ; n++)
+	{
+		if(n==128512 ||
+		 n == 128529 ||
+		 n == 128533 ||
+		 n == 128535 ||
+		 n == 128537 ||
+		 n == 128539 ||
+		 n == 128543 ||
+		 n == 128550 ||
+		 n == 128551 ||
+		 n == 128556 ||
+		 n == 128558 ||
+		 n == 128559 ||
+ 		 n == 128564 ) continue ;
+		document.write("<div id=\"EBG"+n+"\" style=\"z-index: -1;font-size: 1px;color: #BFBFBF; position: absolute; left: 0px; top: 0px; \" >&#"+n+";</div>");
+	}
+</script>
+
+</head>
+
+<body onmousemove="mouseMove();">
+</body>
+
+</html>

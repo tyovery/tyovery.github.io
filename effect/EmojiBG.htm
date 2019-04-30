@@ -8,7 +8,7 @@
 	function mouseMove(event)
 	{
 		var e = event || window.event ;
-		info.innerHTML = ("x:"+e.clientX+"<br />y:"+e.clientY);
+		info.innerHTML = ("x:"+e.pageX+"<br />y:"+e.pageY);
 		for(var n = 128512 ; n <= 128567 ; n++)
 		{
 			var size = 16*(1+Math.random()*2) ; // Emoji大小
@@ -29,8 +29,8 @@
 			 n == 128558 ||
 			 n == 128559 ||
 			 n == 128564 ) continue ;
-			eval("EBG"+n+".style.left = \""+(e.clientX+r*Math.sin(theta)-size/2)+"px\";");
-			eval("EBG"+n+".style.top = \""+(e.clientY+r*Math.cos(theta)-size/2)+"px\";");
+			eval("EBG"+n+".style.left = \""+(e.pageX+r*Math.sin(theta)-size/2)+"px\";");
+			eval("EBG"+n+".style.top = \""+(e.pageY+r*Math.cos(theta)-size/2)+"px\";");
 			eval("EBG"+n+".style.fontSize = \""+ size +"px\";");
 		}
 	}

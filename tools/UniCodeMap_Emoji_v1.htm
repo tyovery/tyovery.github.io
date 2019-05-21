@@ -1,0 +1,373 @@
+<!-- < Timer Start > -->
+<script type="text/javascript">
+var timerBegin,timerEnd;
+var timerBegin_get=new Date();
+timerBegin=timerBegin_get.getTime();
+</script>
+<!-- End of < Timer Start > -->
+
+
+<head>
+
+<meta http-equiv="content-type" content="text/html;charset=big5" />
+
+<title>UniCode BitMap 10000 to 1FFFF</title>
+
+<style>
+td{text-align=center;}
+</style>
+
+</head>
+
+<script type="text/javascript">
+function jump()
+{
+	// 補0
+	var j = ioBar2.value.toUpperCase() ;
+	var k="00000"+ j ;
+	k=k.substr(j.length,k.length);
+	
+	window.location.href = "#" + j ;
+	// ioBar1.value = "&#" + String.fromCharCode( parseInt(ioBar2.value , 16 )) + ";" ;
+	// alert( "&#" + parseInt( ioBar2.value , 16 ) + ";");
+	
+	// document.write( document.getElementById(k).innerHTML );
+	ioBar1.value = document.getElementById(k).innerHTML ;
+}
+</script>
+
+<center><br />
+符號：<input id="ioBar1" type="text" style="text-align='center';" size=7 disabled /><br />
+U+<input id="ioBar2" type="text" style="text-align='center';" size=7 \
+	onKeyPress="if(event.keyCode==13) jump();" />
+<a id="toPosition" href="javascript:jump();">移至</a><br /><br />
+
+<!-- Tags -->
+<a href="#2070">上下標</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2150">數字</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2200">數學</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2460">數字(特)</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2600">天文1</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2620">國際符號</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#26A0">跨性別符號</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#27C0">數學(雜A)</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2800">二進位點字</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2980">數學(雜B)</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#2A00">數學(補)</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F300">天文2</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<br />
+<a href="#1F330">食物1</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F380">節日</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F3A0">活動1</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F400">動物1</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F440">手勢</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F490">心心</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F550">時鐘</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F600">表情1</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F910">表情2</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F930">活動2</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F950">食物2</a>
+<font style="font-size: 12px;">&nbsp;</font>
+<a href="#1F980">動物2</a>
+
+<br><br>
+<table border="3" cellspacing="0" cellpadding="5" align="center">
+<tr>
+<td>U+</td>
+
+<script type="text/javascript">
+
+// U+ 個位
+for(var i=0;i<=15;i++)
+{
+	document.write("<td>"+i.toString(16).toUpperCase()+"</td>");
+}
+
+</script>
+
+</tr>
+<tr>
+<script type="text/javascript">
+
+//上下標 2070~209F
+for(var i=8304;i<=8351;i++){
+
+	// 化為大寫的十六進位制
+	var j=i.toString(16).toUpperCase();
+
+	// 補0
+	var k="0000"+j;
+	k=k.substr(j.length,k.length);
+
+	// U+ 十位
+	if(i%16==0)
+	{
+		document.write("</tr><tr><td>"+k+"</td>");
+	}
+
+	if(i==62) // 修 >
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\">\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==60) // 修 <
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"<\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==38) // 修 &
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"&\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else // 其他
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=this.innerHTML;ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+}
+
+// 數字形式 2150~218F
+for(var i=8528;i<=8591;i++){
+
+	// 化為大寫的十六進位制
+	var j=i.toString(16).toUpperCase();
+
+	// 補0
+	var k="0000"+j;
+	k=k.substr(j.length,k.length);
+
+	// U+ 十位
+	if(i%16==0)
+	{
+		document.write("</tr><tr><td>"+k+"</td>");
+	}
+
+	if(i==62) // 修 >
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\">\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==60) // 修 <
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"<\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==38) // 修 &
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"&\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else // 其他
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=this.innerHTML;ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+}
+
+// 數學運算符 2200~230F
+for(var i=8704;i<=8975;i++){
+
+	// 化為大寫的十六進位制
+	var j=i.toString(16).toUpperCase();
+
+	// 補0
+	var k="0000"+j;
+	k=k.substr(j.length,k.length);
+
+	// U+ 十位
+	if(i%16==0)
+	{
+		document.write("</tr><tr><td>"+k+"</td>");
+	}
+
+	if(i==62) // 修 >
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\">\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==60) // 修 <
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"<\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==38) // 修 &
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"&\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else // 其他
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=this.innerHTML;ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+}
+
+// 數字(特) 2460~24FF
+for(var i=9312;i<=9471;i++){
+
+	// 化為大寫的十六進位制
+	var j=i.toString(16).toUpperCase();
+
+	// 補0
+	var k="0000"+j;
+	k=k.substr(j.length,k.length);
+
+	// U+ 十位
+	if(i%16==0)
+	{
+		document.write("</tr><tr><td>"+k+"</td>");
+	}
+
+	if(i==62) // 修 >
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\">\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==60) // 修 <
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"<\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==38) // 修 &
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"&\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else // 其他
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=this.innerHTML;ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+}
+
+// 天文1
+for(var i=9728;i<=11103;i++){
+
+	// 化為大寫的十六進位制
+	var j=i.toString(16).toUpperCase();
+
+	// 補0
+	var k="0000"+j;
+	k=k.substr(j.length,k.length);
+
+	// U+ 十位
+	if(i%16==0)
+	{
+		document.write("</tr><tr><td>"+k+"</td>");
+	}
+
+	if(i==62) // 修 >
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\">\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==60) // 修 <
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"<\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else if(i==38) // 修 &
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"&\";ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+	else // 其他
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=this.innerHTML;ioBar2.value=this.id;toPosition.href=\"#\"+this.id;'>&#"+i+";</td>");
+	}
+}
+
+for(var i=127744;i<=131071;i++){
+
+	// 化為大寫的十六進位制
+	var j=i.toString(16).toUpperCase();
+
+	// 補0
+	var k="00000"+j;
+	k=k.substr(j.length,k.length);
+
+	// U+ 十位
+	if(i%16==0)
+	{
+		document.write("</tr><tr><td>"+k+"</td>");
+	}
+
+	if(i==62) // 修 >
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\">\";ioBar2.value=this.id;'>&#"+i+";</td>");
+	}
+	else if(i==60) // 修 <
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"<\";ioBar2.value=this.id;'>&#"+i+";</td>");
+	}
+	else if(i==38) // 修 &
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=\"&\";ioBar2.value=this.id;'>&#"+i+";</td>");
+	}
+	else // 其他
+	{
+		document.write("<td id='"+k+"' onClick='ioBar1.value=this.innerHTML;ioBar2.value=this.id;'>&#"+i+";</td>");
+	}
+}
+</script>
+</tr>
+</table>
+</center>
+
+
+
+
+
+<!-- < Timer Stop > -->
+<script type="text/javascript">
+var timerEnd_get=new Date();
+timerEnd=timerEnd_get.getTime();
+var loadTime=timerEnd-timerBegin,loadTime_disp;
+
+if(loadTime>=1000)
+{
+	var loadTime_ms=loadTime%1000;
+	if(loadTime_ms!=0)
+	{
+		if((loadTime_ms+"").length==3)
+		{
+			if(loadTime_ms%100==0)
+			{
+				loadTime_ms=loadTime_ms/100;
+			}
+			else if(loadTime_ms%10==0)
+			{
+				loadTime_ms=loadTime_ms/10;
+			}
+		}
+		else if((loadTime_ms+"").length==2)
+		{
+			if(loadTime_ms%10==0)
+			{
+				loadTime_ms=loadTime_ms/10;
+			}
+			loadTime_ms="0"+loadTime_ms;
+		}
+		else if((loadTime_ms+"").length==1)
+		{
+			loadTime_ms="00"+loadTime_ms;
+		}
+		loadTime_disp=Math.floor(loadTime/1000)+"."+loadTime_ms+"s";
+	}
+	else
+	{
+		loadTime_disp=Math.floor(loadTime/1000)+"s";
+	}
+}
+else
+{
+	loadTime_disp=loadTime+"ms";
+}
+
+document.write("<br><br><br>Load Time: "+loadTime_disp);
+</script>
+<!-- End of < Timer Stop > -->

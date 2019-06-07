@@ -1,0 +1,50 @@
+<html lang="zh-Hant-HK">
+<body bgcolor="black">
+
+<div id="flash_box"></div>
+
+
+<script>
+// tested on chrome 75.0.3770.80 & FireFox 67.0.1
+
+var flash_box_amount = 240 ; // flash box 的總數(SSVEP 3.5Hz to 75Hz)
+var flash_box_size = 1500 ; // flash box 的面積(px^2)
+var flash_box_side = flash_box_size ** (1/2) ; // flash box 的邊長
+
+function flash_do(id,time)
+{
+	id.style.visibility = ( id.style.visibility == "hidden" ? "visible" : "hidden" ) ;
+	flash(id,time);
+}
+
+function flash(id,time)
+{
+	setTimeout("flash_do("+id.id+","+time+")",time);
+}
+
+// 繪製 flash box 們
+var txt2htm = "<table border=0 cellspacing=0 cellpadding=0><tr>";
+for (var n = 1 ; n <= flash_box_amount ; n ++)
+{
+	txt2htm += '<td id="block'+n+'" style="display:inline-block; width:'+flash_box_side+'px ; height:'+flash_box_side+'px; background:#003F00; color:#777; visibility:visible;">'+n+'</td>';
+}
+txt2htm += "</tr></table>";
+flash_box.innerHTML = txt2htm;
+
+// 讓 flash box 們按各自的頻率閃爍
+for (var n = 1 ; n <= flash_box_amount ; n ++) eval("flash(block"+n+",500/"+n+");");
+
+
+</script>
+
+
+</body>
+
+</html>
+
+
+
+
+
+
+

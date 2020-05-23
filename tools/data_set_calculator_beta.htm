@@ -10,7 +10,7 @@ div.info{line-height: 150%;}
 <script>
 
 var pop = [] ; // 母體
-var size , sum , mean , sd , md , mode , range , cv , se ; // 樣本數,加總,期望值,標準差,平均差,眾數,全距,變異係數,標準誤
+var size , sum , mean , sd , md , mode , range , range_c , cv , se ; // 樣本數,加總,期望值,標準差,平均差,眾數,全距,全距係數,變異係數,標準誤
 
 function inputClear()
 {
@@ -213,7 +213,10 @@ function inputSub()
 	if(pop.length>0) range = pop[pop.length-1] - pop[0] ;
 	else range = " - " ;
 	
-	
+	// 全距係數
+	if(pop.length>0) range_c = range / ( pop[pop.length-1] + pop[0] ) ;
+	else range_c = " - " ;
+
 	// 輸出
 	DisplayAreaPop.innerHTML = (dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )：" + pop.join(" , ") + "<br />" ;
 
@@ -236,6 +239,7 @@ function inputSub()
 	
 	DisplayArea.innerHTML += "<br />< 分散程度 ><br />" ;
 	DisplayArea.innerHTML += "全距 ( Range )：" + range + "<br />" ;
+	DisplayArea.innerHTML += "全距係數 ( Coefficient of Range )：" + range_c + "<br />" ;
 	DisplayArea.innerHTML += "四分位數 ( Q1 , Q2 , Q3 )："+q1+" , "+median+" , "+q3+"<br />" ;
 	DisplayArea.innerHTML += "平均差 ( MAD )：" + md + "<br />" ;
 	if(dataSet_sample.checked && size==1)

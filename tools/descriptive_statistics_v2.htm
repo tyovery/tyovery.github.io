@@ -1,0 +1,832 @@
+<html lang="zh-Hant-HK">
+<head>
+<title>分布描述 Descriptive Statistics</title>
+<style type="text/css">
+div.pop{line-height: 100%;}
+div.info{line-height: 150%;}
+body
+{
+	background-color: #FFFFFF;
+	color: #000000;
+}
+p
+{
+	line-height: 100%;
+}
+a
+{
+	text-decoration: none;
+}
+thead tr th
+{
+	position: sticky;
+	top: 0;
+}
+th
+{
+	background-color: white;
+}
+</style>
+</head>
+<body>
+<script src="math.js"></script>
+<script>
+
+var pop = [] , poplist = [] ; // data set , data set 表格
+
+var size , sum , mean , mean_geo , mean_har , dev2sum , vari , sd , md , mode , cv , se;
+// 樣本數,加總,期望值,幾何平均數,調和平均數,差方和,變異數,標準差,平均差,眾數,變異係數,標準誤
+var mean_fix , dev2sum_fix , sd_fix ; // 約數
+var fix_d = 6 ; // 約數小數位
+
+var min , max , range_half=[] , range , range_c , range_b , iqr , qd  ;
+// 最小值,最大值,半距,全距,全距係數,平均間距,四分位距,四分位差
+
+function inputClear()
+{
+	pop = [] ;
+	// inputValue.value = "" ;
+	inputSub() ;
+}
+
+function popAdd() // 手動加入樣本到母體
+{
+	if(inputValue.value.length>0)
+	{
+		var txt = inputValue.value + "" ;
+
+		// 清理
+		/*
+		txt = txt.replace(/epi|pie/ig,""); // e , pi
+		txt = txt.replace(/e/ig,","+Math.E+","); // e
+		txt = txt.replace(/pi/ig,","+Math.PI+","); // pi
+		*/
+		txt = txt.replace(/\ |[a-z]/ig,""); // 清除(空格,拉丁字母)
+		
+		// 分析分組
+		for(var k=0 ; k<txt.length ; k++)
+		{
+			if(txt.slice(k,k+1) == "[")
+			{
+				for(var j=k+1 ; j<txt.length ; j++)
+				{
+					if(txt.slice(j,j+1) == "]")
+					{
+						// alert( txt.slice(k,j+1) );
+						pop.push( txt.slice(k,j+1) );
+						txt = txt.slice(0,k) + txt.slice(j+1) ;
+						// alert(txt);
+						k--;
+						break;
+					}
+				}
+			}
+		}
+		
+		// 加到母體
+		pop.push(...txt.split(","));
+	}
+}
+
+function popMinus()
+{
+	pop.shift();
+	pop.pop();
+	inputSub();
+}
+
+function ctrl_click(id,frequency) // 控制button (行數,頻數)
+{
+	// alert(typeof id);
+	var checker = id.split("_") ;
+	// alert(checker);
+	if(checker[0] == "ctrl")
+	{
+		var k = checker[2]*1 ; // 第幾行
+		if(checker[1] == "add") // +1
+		{
+			pop.push(poplist[k][0]);
+		}
+		else if(checker[1] == "del") // -1
+		{
+			for(var j=0 ; j<pop.length ; j++)
+			{
+				if(pop[j] == poplist[k][0])
+				{
+					pop.splice(j,1);
+					break;
+				}
+			}
+		}
+		else if(checker[1] == "edit") // 自定
+		{
+			var f = parseInt(frequency) ;
+			if(f>=0)
+			{
+				if(f > poplist[k][1]) // 增加
+				{
+					for(var n=0 ; n < f - poplist[k][1] ; n++)
+					{
+						pop.push(poplist[k][0]);
+					}
+				}
+				else if(f < poplist[k][1]) // 減少
+				{
+					for(var j=0 ; j<pop.length ; j++)
+					{
+						if(pop[j] == poplist[k][0])
+						{
+							pop.splice(j,poplist[k][1] - f);
+							break;
+						}
+					}
+				}
+			}
+		}
+		inputSub("stay");
+	}
+}
+
+function inputSub(parameter)
+{
+	// 分析參數
+	if(typeof parameter == "undefined") var parameters = [] ;
+	else var parameters = (parameter+"").split(",") ;
+
+	var stay = 0 ; // 頁面位置停留(不移至最底)
+	for(var p = 0 ; p < parameters.length ; p++)
+	{
+		if(parameters[p] == "stay")
+		{
+			stay = 1;
+			break;
+		}
+	}
+
+	// 清理非數字元素
+	// alert(pop.join("\n"));
+	for(var n = 0 ; n < pop.length ; n++)
+	{
+		pop[n] += "";
+		
+		// 檢查是否為分組數據
+		if(pop[n].slice(0,1) == "[")
+		{
+			var grouped = 1;
+			alert(pop.join("\n"));
+		}
+		else var grouped = 0;
+
+		// 處理 多於一個小數點 的狀況
+		var array = pop[n].split(".") ;
+		if(array.length>2) pop[n] = array.shift()+"."+array.join("");
+		/*
+		pop[n] = pop[n].replace(/e/ig,","+Math.E+","); // e
+		pop[n] = pop[n].replace(/pi/ig,","+Math.PI+","); // pi
+		pop[n] = pop[n].replace(/\ |[a-z]/ig,""); // 清除
+		*/
+		pop[n] = eval(pop[n]) ; // 運算
+		pop[n] *= 1 ; // 化為數字
+		if( pop[n].length < 1 || !(pop[n]>=0 || pop[n]<0) )
+		{
+			pop.splice(n,1) ;
+			n-- ;
+		}
+	}
+	
+	pop.sort((a,b)=>a-b); // 排序
+
+	size = pop.length ; // 樣本數
+	
+	sum = 0 ; // 加總
+	for(var k=0 ; k<pop.length ; k++)
+	{
+		sum += pop[k]*1 ;
+	}
+
+	// 期望值 , 算術平均數
+	if(size>0)
+	{
+		mean = sum / size ;
+		mean_fix = mean.toFixed(fix_d) ;
+	}
+	else
+	{
+		mean = "-" ;
+		mean_fix = "-" ;
+	}
+	
+	// 幾何平均數
+	if(size>0)
+	{
+		mean_geo = 1 ;
+		for(var k=0 ; k<size ; k++)
+		{
+			mean_geo *= pop[k]**(1/size) ;
+		}
+		// mean_geo = mean_geo**(1/size) ;
+		if(!(mean_geo>=0||mean_geo<0)) mean_geo = "無法計算" ;
+	}
+	else mean_geo = "-" ;
+	
+	// 調和平均數
+	if(size>0)
+	{
+		mean_har = 0 ;
+		for(var k=0 ; k<size ; k++)
+		{
+			mean_har += 1/pop[k] ;
+		}
+		mean_har = size/mean_har ;
+	}
+	else mean_har = "-" ;
+	
+	// 平均差
+	if(size>0)
+	{	
+		var mdSum = 0 ;
+		for(var n=0; n<pop.length ; n++)
+		{
+			mdSum += Math.abs(pop[n]-mean) ;
+		}
+		md = mdSum/size ; // population or sample
+	}
+	else md = "-" ;
+
+	// 差方和
+	if(size>0)
+	{
+		dev2sum = 0 ;
+		for(var n=0; n<pop.length ; n++)
+		{
+			dev2sum += (pop[n]-mean)**2 ;
+		}
+		dev2sum_fix = dev2sum.toFixed(fix_d) ;
+	}
+	else
+	{
+		dev2sum = "-" ;
+		dev2sum_fix = "-" ;
+	}
+
+	// 變異數
+	if(size>0)
+	{
+		if(dataSet_sample.checked) vari = dev2sum / (size-1) ; // sample
+		else vari = dev2sum / size ; // population
+	}
+	else vari = "-" ;
+	
+	// 標準差
+	if(size>0)
+	{
+		sd = Math.sqrt(vari) ;
+		sd_fix = sd.toFixed(fix_d) ;
+	}
+	else
+	{
+		sd = "-" ;
+		sd_fix = "-" ;
+	}
+
+	// 變異係數
+	if(size>0)
+	{
+		cv = sd/mean ;
+	}
+	else cv = "-" ;
+	
+	// 標準誤
+	if(size>0)
+	{
+		se = Math.sqrt(vari/size) ;
+	}
+	else se = "-" ;
+	
+	// 四分位數
+	var median , q1 , q3 , L , R , pos ; // 四分位數 , 左數列 , 右數列 , 位置
+	if(size>0)
+	{
+		// 中位數
+		if(pop.length%2==1)
+		{
+			pos = (pop.length-1)/2 ;
+			median = pop[pos] ;
+			L = [...pop.slice(0,pos)] ;
+			R = [...pop.slice(pos+1)] ;
+		}
+		else
+		{
+			pos = pop.length/2 ;
+			median = ( pop[pos-1]*1 + pop[pos]*1 ) / 2 ;
+			L = [...pop.slice(0,pos)] ;
+			R = [...pop.slice(pos)] ;
+		}
+		
+		// Q1 , Q3
+		if(L.length>0)
+		{
+			if(L.length%2==1)
+			{
+				pos = (L.length-1)/2 ;
+				q1 = L[pos] ;
+				q3 = R[pos] ;
+			}
+			else
+			{
+				pos = L.length/2 ;
+				q1 = ( L[pos-1]*1 + L[pos]*1 ) / 2 ;
+				q3 = ( R[pos-1]*1 + R[pos]*1 ) / 2 ;
+			}
+		}
+		else
+		{
+			q1 = "-" ;
+			q3 = "-" ;
+		}
+	}
+	else
+	{
+		median = "-" ;
+		q1 = "-" ;
+		q3 = "-" ;
+	}
+
+	// 眾數
+	if(size>0)
+	{
+		mode = [] ; // 眾數[元素,數量]
+		var check = [...new Set(pop)] ; // 樣本(不重複)
+		var count = [] ; // 記錄樣本出現次數
+		for(var n=0 ; n<check.length ; n++)
+		{
+			count[n] = 0 ;
+			for(var m=0 ; m<pop.length ; m++)
+			{
+				if(pop[m] == check[n]) count[n] ++ ;
+			}
+			if(n>0)
+			{
+				if(count[n] > mode[1])
+				{
+					mode[0] = [check[n]] ; // 元素
+					mode[1] = count[n] ; // 數量
+				}
+				else if(count[n] == mode[1])
+				{
+					mode[0].push(check[n]) ; // 元素
+				}
+			}
+			else
+			{
+				mode[0] = [check[0]] ; // 元素
+				mode[1] = count[0] ; // 數量
+			}
+		}
+	}
+	else mode = [["-"],0] ;
+	
+	// 最小值
+	if(pop.length>0) min = pop[0];
+	else min= "-" ;
+		
+	// 最大值
+	if(pop.length>0) max = pop[pop.length-1];
+	else max= "-" ;
+	
+	// 半距
+	if(pop.length>0)
+	{
+		range_half[0] = median - pop[0] ; // 前半距
+		range_half[1] = pop[pop.length-1] - median ; // 後半距
+	}
+	else range_half = [" - "," - "] ;
+	
+	// 全距
+	if(pop.length>0) range = pop[pop.length-1] - pop[0] ;
+	else range = " - " ;
+	
+	// 全距係數
+	if(pop.length>0) range_c = range / ( pop[pop.length-1] + pop[0] ) ;
+	else range_c = " - " ;
+
+	// 平均間距
+	if(pop.length>1) range_b = range / ( pop.length - 1 ) ;
+	else range_b = " - " ;
+	
+	//四分位距
+	if(pop.length>1) iqr = q3-q1 ;
+	else iqr = " - " ;
+	
+	//四分位差
+	if(pop.length>1) qd = iqr/2 ;
+	else qd = " - " ;
+	
+	// 轉成以頻數表示
+	poplist = [] ; // [ 0:數據 , 1:頻數 , 2:累積頻數 , 3:離差 ] 
+	var poplist_match ;
+	for(var k = 0 ; k<pop.length ; k++)
+	{
+		poplist_match = 0;
+		for(var j = 0 ; j<poplist.length ; j++)
+		{
+			if(pop[k] == poplist[j][0]) // 已有
+			{
+				poplist[j][1] ++ ;
+				poplist[j][2] ++ ;
+				poplist_match ++ ;
+				break;
+			}
+		}
+		if(!poplist_match) // 新加
+		{
+			if(poplist.length>=1) 
+			{
+				poplist.push([pop[k],1,poplist[poplist.length-1][2]+1,pop[k]-mean]);
+			}
+			else
+			{
+				poplist.push([pop[k],1,1,pop[k]-mean]);
+			}
+		}
+	}
+	// alert(poplist.join("\n"));
+	
+	// 表格輸出
+	var txt2htm = "<p>"+(dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )</p>" + '<table border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: -12px; background-color: #FFFFFF; text-align: center; color: #000000">\
+	<thead><tr>\
+	<th>控制</th>\
+	<th>x<br />數據</th>\
+	<th>y<br />頻數</th>\
+	<th>&#931;y<br />累積頻數</th>\
+	<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />機率</th>\
+	<th>(&#931;y)/'+(dataSet_sample.checked?'n':'N')+'<br />累積機率</th>\
+	<th>xy<br />加權</th>\
+	<th>z-score<br />標準分</th>\
+	<th>'+(dataSet_sample.checked?'x-x&#772;':'x-&#956;')+'<br />離差</th>\
+	<th>'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup><br />離差平方</th>\
+	</tr></thead><tbody>';
+
+	for(var k = 0 ; k<poplist.length ; k++)
+	{
+		// 累積機率
+		var PobiSum = (poplist[k][2]/size*100).toFixed(2) ;
+		
+		txt2htm +='<tr>\
+		<td><input id="ctrl_edit_'+k+'" type="button" value="修改頻數" onClick="ctrl_click(this.id,prompt(\'頻數更改為：\'));" />\
+		<input id="ctrl_del_'+k+'" type="button" value="-1" onClick="ctrl_click(this.id);" />\
+		<input id="ctrl_add_'+k+'" type="button" value="+1" onClick="ctrl_click(this.id);" /></td>\
+		'+(poplist[k][0]==median?'<td style="background-color: #00AF3F;">':
+		poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][0]+'</td>\
+		'+(poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][1]+'</td>\
+		<td>'+poplist[k][2]+'</td>\
+		'+(poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+(poplist[k][1]/size*100).toFixed(2)+'%</td>\
+		'+(PobiSum>75?'<td style="background-color: #545454;color: #DFDFDF;">':
+		PobiSum>50?'<td style="background-color: #7F7F7F;color: #DFDFDF;">':
+		PobiSum>25?'<td style="background-color: #AAAAAA;">':
+		'<td style="background-color: #D5D5D5;">')+PobiSum+'%</td>\
+		<td>'+poplist[k][0]*poplist[k][1]+'</td>\
+		<td>'+((poplist[k][0]-mean)/sd).toFixed(6)+'</td>\
+		<td>'+(poplist[k][3]).toFixed(6)+'</td>\
+		<td>'+(poplist[k][3]**2).toFixed(6)+'</td>\
+		</tr>';
+	}
+
+	txt2htm +='<tr>\
+	<td></td>\
+	<td>Range<br />= '+range+'</td>\
+	<td></td>\
+	<td>'+(dataSet_sample.checked?'n':'N')+'<br />= '+size+'</td>\
+	<td></td>\
+	<td></td>\
+	<td>&#931;xy<br />= '+sum+'</td>\
+	<td>'+(dataSet_sample.checked?'s':'&#963;')+'<br />= '+sd_fix+'</td>\
+	<td>'+(dataSet_sample.checked?'x&#772;':'&#956;')+'<br />= '+mean_fix+'</td>\
+	<td>&#931;'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup>y<br />= '+dev2sum_fix+'</td>\
+	</tr>';
+
+	txt2htm +='</tbody><tbody></tbody></table>';
+	DisplayAreaPop.innerHTML = txt2htm ;
+	// DisplayAreaPop.innerHTML += pop.join(" , ") + "<br />" ;
+
+	DisplayArea.innerHTML = "數據量 ( N / n / Total Frequency / Data Size )：" + size + "<br />" ;
+	DisplayArea.innerHTML += "加總 ( Sum )：" + sum + "<br />" ;
+	
+	DisplayArea.innerHTML += "<br />< 集中趨勢 ><br />" ;
+	DisplayArea.innerHTML += "期望值 / 算術平均數 ( &#956; / x&#772; / EV / Mean )：" + mean + "<br />" ;
+	DisplayArea.innerHTML += "<span style='color: #00AF3F;'>中位數 ( Median )</span>："+median+"<br />" ;
+	DisplayArea.innerHTML += "<span style='color: #FF3F00;'>眾數 ( Mode )</span>：" ;
+	if((mode[1]==1 && mode[0].length>10)) // 太多時不顯示眾數
+	{
+		DisplayArea.innerHTML += "..." ;
+	}
+	else
+	{
+		DisplayArea.innerHTML += mode[0].join(" , ") ;
+	}
+	DisplayArea.innerHTML += " (各有 " + mode[1] + " 個)<br />" ;
+	DisplayArea.innerHTML += "幾何平均數 ( Geometric mean )：" + mean_geo + "<br />" ;
+	DisplayArea.innerHTML += "調和平均數 ( Harmonic mean )：" + mean_har + "<br />" ;
+
+	DisplayArea.innerHTML += "<br />< 分散程度 ><br />" ;
+	DisplayArea.innerHTML += "邊界 ( Min , Max )："+min+" , "+max+"<br />" ;
+	DisplayArea.innerHTML += "半距 ( Half-Range )："+range_half.join(' , ')+"<br />" ;
+	DisplayArea.innerHTML += "全距 ( Range )：" + range + "<br />" ;
+	DisplayArea.innerHTML += "全距係數 ( Coefficient of Range )：" + range_c + "<br />" ;
+	DisplayArea.innerHTML += "平均間距：" + range_b + "<br />" ;
+	DisplayArea.innerHTML += "四分位數 ( Q1 , <span style='color: #00AF3F;'>Q2</span> , Q3 )："+q1+" , "+median+" , "+q3+"<br />" ;
+	DisplayArea.innerHTML += "四分位距 ( IQR )："+iqr+"<br />" ;
+	DisplayArea.innerHTML += "四分位差 ( QD )："+qd+"<br />" ;
+	DisplayArea.innerHTML += "平均差 ( MAD )：" + md + "<br />" ;
+	if(dataSet_sample.checked && size==1)
+	{
+		DisplayArea.innerHTML += "標準差 ( σ / s / SD )：" + "無法估計" + "<br />" ;
+		DisplayArea.innerHTML += "變異數 ( σ<sup>2</sup> / s<sup>2</sup> / Var )：" + "無法估計" + "<br />" ;
+		DisplayArea.innerHTML += "變異係數 ( CV )：" + "無法估計" + "<br />" ;
+		DisplayArea.innerHTML += "標準誤 ( SE )：" + "無法估計" + "<br />" ;
+	}
+	else
+	{
+		DisplayArea.innerHTML += "標準差 ( σ / s / SD )：" + sd + "<br />" ;
+		DisplayArea.innerHTML += "變異數 ( σ<sup>2</sup> / s<sup>2</sup> / Var )：" + vari + "<br />" ;
+		DisplayArea.innerHTML += "變異係數 ( CV )：" + cv + "<br />" ;
+		DisplayArea.innerHTML += "標準誤 ( SE )：" + se + "<br />" ;
+	}
+	
+	if(stay == 0) window.scrollTo(0,document.body.scrollHeight) ; // 滾到最底
+}
+
+function inputRandom(input,numSet)
+{
+	var array = input.split(","); // [最少,最大,個數]
+	if(array[0]*1>array[1]*1) // 修正範圍
+	{
+		var buf = array[0] ;
+		array[0] = array[1] ;
+		array[1] = buf ;
+	}
+	
+	var RandomNumber ; // 準備產生的隨機數 (未轉換)
+	var change = x => eval(inputChange.value + "") ; // 使用者自定的轉換函數 f(x)
+	for(var n = 0 ; n < array[2]*1 ; n++)
+	{
+		// 判斷 整數or實數，產生相應的隨機數
+		if(numSet=="int") RandomNumber = Math.floor(Math.random()*(array[1]-array[0]+1)+array[0]*1);
+		else RandomNumber = Math.random()*(array[1]-array[0])+array[0]*1;
+		
+		var output = change(RandomNumber) ; // 經使用者自定函數轉換
+		
+		pop.push(output); // 輸出
+	}
+	inputSub();
+}
+
+function randomDelete(max)
+{
+	var pos ;
+	if(max >= pop.length) pop = [] ; // 全部清空
+	else
+	{
+		for(var n = 0 ; n < max ; n ++)
+		{
+			pos = Math.floor(Math.random()*pop.length) ; // 隨機決定位置
+			pop.splice(pos,1); // 移除
+		}
+	}
+	inputSub(); // 更新統計資料
+}
+
+function inputKey()
+{
+	if(event.keyCode==13)
+	{
+		popAdd();
+		inputSub();
+	}
+}
+
+function linearCut(parts) // 平均分段
+{
+	var n = parseInt(parts);
+	if(n>0)
+	{
+		var min = pop[0] ;
+		var max = pop[pop.length-1] ;
+		var space = range/n ;
+		pop = [min,max] ;
+			
+		for(var i = 1 ; i < n ; i ++ )
+		{
+			pop.push(min+space*i);
+		}
+		inputSub() ;
+	}
+	else alert("請輸入正整數。");
+}
+
+function grouping(groupRange) // 分組
+{
+	var r = groupRange * 1;
+	if(r>0)
+	{
+		var group1st = Math.floor(pop[0]/r); // 第一組
+		var groupLast = Math.floor(pop[pop.length-1]/r); // 最後一組
+		/*
+		for(var k = group1st ; k <= groupLast ; k++)
+		{
+			
+		}
+		*/
+	}
+	else alert("請輸入正數。");
+
+}
+
+function addDist_bin(p,n,times) // 二項分布
+// 改由平均值開始計算 插break 提升效率 *留意二項係數的階乘算法可能出事
+{
+	if(n>=0 && p>=0 && p<=1 && times>0)
+	{
+		alert("二項分布\np = "+p+"\nq = "+(1-p)+"\nn = "+n+"\nnp = "+n*p+"\nnq = "+n*(1-p)+"\n產生數據量 = "+times);
+		p *= 1 ; n *= 1 ; times *= 1 ;
+		for(var k = 0 ; k <= n ; k ++)
+		{
+			var f = C(n,k) * (1-p)**(n-k) * p**k * times ;
+			f = f.toFixed(0) ;
+			for(var j = 0 ; j<f ; j ++)
+			{
+				pop.push(k);
+			}
+		}
+		inputSub();
+	}
+	else alert("輸入無效。");
+}
+
+function addDist_ps(mu,times) // 帕松分布
+{
+	if( mu>0 && times>0 )
+	{
+		// alert("帕松分布\n平均值 = "+mu+"\n產生數據量 = "+times);
+		mu *= 1 ; times *= 1 ;
+
+		for(var k = 0 ; k>=0 ; k++) // 平均值 ±k
+		{
+			// 平均值 -k格
+			var x = mu.toFixed(0)*1-k ;
+			var e_mu_expand = mu ; // mu^x/x!
+			for(var i=2 ; i<=x ; i++)
+			{
+				e_mu_expand *= mu/i ;
+			}
+			var fL = Math.exp(-mu) * e_mu_expand * times ; // e^(-mu) * mu^x/x! * times
+			// var fL = Math.exp(-mu) * (mu**x)/fact(x) * times ;
+
+			fL = fL.toFixed(0) ;
+			if(fL>0)
+			{
+				for(var j = 0 ; j<fL ; j ++)
+				{
+					pop.push(x);
+				}
+			}
+			
+			// alert("k="+k+"\n\nx="+x+"\nfL="+fL);
+			
+			// 平均值 +k格
+			if(k>0)
+			{
+				x = mu.toFixed(0)*1+k ;
+				e_mu_expand = mu ; // mu^x/x!
+				for(var i=2 ; i<=x ; i++)
+				{
+					e_mu_expand *= mu/i ;
+				}
+				var fR = Math.exp(-mu) * e_mu_expand * times ; // e^(-mu) * mu^x/x! * times
+				// var fR = Math.exp(-mu) * (mu**x)/fact(x) * times ;
+				fR = fR.toFixed(0) ;
+				if(fR>0)
+				{
+					for(var j = 0 ; j<fR ; j ++)
+					{
+						pop.push(x);
+					}
+				}
+			}
+			else var fR=0 ;
+
+			// alert("k="+k+"\n\nx="+x+"\nfR="+fR);
+			
+			if(fL+fR<=0) break;
+		}
+		inputSub();
+	}
+	else alert("輸入無效。");
+}
+
+function addDist_norm(mu,sigma,times) // 常態分布
+{
+	//alert("常態分布\n平均值 = "+mu+"\n標準差 = "+sigma+"\n產生數據量 = "+times);
+	mu *= 1 ; sigma *= 1 ; times *= 1 ;
+	
+	for(var k = 0 ; k>=0 ; k++) // 平均值 ±k
+	{
+		// 平均值 -k格
+		var x = mu.toFixed(0)*1-k ;
+		var fL = Math.exp(- (((x-mu)/sigma)**2) /2)/(sigma*Math.sqrt(2*Math.PI)) * times ;
+		fL = fL.toFixed(0) ;
+		if(fL>0)
+		{
+			for(var j = 0 ; j<fL ; j ++)
+			{
+				pop.push(x);
+			}
+		}
+		
+		// 平均值 +k格
+		if(k>0)
+		{
+			x = mu.toFixed(0)*1+k ;
+			var fR = Math.exp(- (((x-mu)/sigma)**2) /2)/(sigma*Math.sqrt(2*Math.PI)) * times ;
+			fR = fR.toFixed(0) ;
+			if(fR>0)
+			{
+				for(var j = 0 ; j<fR ; j ++)
+				{
+					pop.push(x);
+				}
+			}
+		}
+
+		if(fL+fR<=0) break;
+	}
+	inputSub();
+}
+
+</script>
+
+<center>
+<div id="DisplayAreaPop" class="pop"></div><br />
+<div id="DisplayArea" class="info"></div>
+<br /><br />
+<form>
+	<span onClick="dataSet_population.checked='checked';inputSub('stay');">
+		<input type="radio" name="dataSet" id="dataSet_population" value="population">母體</input>
+	</span>
+	<span onClick="dataSet_sample.checked='checked';inputSub('stay');">
+		<input type="radio" name="dataSet" id="dataSet_sample" value="sample" checked >樣本</input>
+	</span>
+</form>
+<input type="button" value="清空輸入框" onClick="inputValue.value='';" />
+<input type="button" value="e" onClick="inputValue.value+=',2.718281828459045';" />
+<input type="button" value="pi" onClick="inputValue.value+=',3.141592653589793';" />
+<input id="inputValue" type="text" value="" size="60" onKeyPress="inputKey();" />
+<input type="button" value="加入" onClick="popAdd();inputSub();" />
+<br />
+<input type="button" value="加入 二項分布(...)" onClick="addDist_bin(prompt('請輸入單次成功機率(p)。'),prompt('請輸入試驗次數(n)。'),prompt('請輸入欲產生的數據量'));" />
+<input type="button" value="加入 帕松分布(...)" onClick="addDist_ps(prompt('請輸入平均值。'),prompt('請輸入欲產生的數據量'));" />
+<input type="button" value="加入 常態分布(...)" onClick="addDist_norm(prompt('請輸入平均值。'),prompt('請輸入標準差。'),prompt('請輸入欲產生的數據量'));" />
+<br /><br />
+加入隨機數(最少,最大,個數)：
+<input id="inputRange" type="text" value="0,1,1000" size="30" />
+<input type="button" value="加入整數" onClick="inputRandom(inputRange.value,'int');" />
+<input type="button" value="加入實數" onClick="inputRandom(inputRange.value,'real');" />
+<br />
+<input type="button" value="二項試驗" onClick="inputRange.value='0,1,1000';" />
+<input type="button" value="考試" onClick="inputRange.value='0,100,40';" />
+<input type="button" value="擲骰子" onClick="inputRange.value='1,6,5';" />
+<input type="button" value="撲克牌" onClick="inputRange.value='1,13,13';" />
+<br />
+轉換函數：f(x) = 
+<input id="inputChange" type="text" value="x" size="30" />
+<br />
+<input type="button" value="緩衝" onClick="inputChange.value='x';" />
+<input type="button" value="雙倍" onClick="inputChange.value='x*2';" />
+<input type="button" value="平方" onClick="inputChange.value='x**2';" />
+<input type="button" value="立方" onClick="inputChange.value='x**3';" />
+<br />
+<input type="button" value="對數" onClick="inputChange.value='Math.log(x)';" />
+<input type="button" value="負對數" onClick="inputChange.value='-Math.log(x)';" />
+<input type="button" value="開方" onClick="inputChange.value='x**0.5';" />
+<br />
+<input type="button" value="早熟" onClick="inputChange.value='(2*x**0.5-x)';" />
+<input type="button" value="慢熱" onClick="inputChange.value='(2*(1-(1-x)**0.5)-x)';" />
+<br /><br />
+修改：
+<input type="button" value="平均分段" onClick="linearCut(prompt('分多少段？'));" />
+<input type="button" value="分組(未實裝)" onClick="grouping(prompt('每組的間距？'));" />
+<br /><br />
+隨機移除多少個數據：
+<input id="inputDel" type="text" value="10" size="15" />
+<input type="button" value="隨機移除" onClick="randomDelete(inputDel.value);" />
+<br />
+<input type="button" value="移除首尾項" onClick="popMinus();" />
+<input type="button" value="全部清空" onClick="inputClear();" />
+<br /><br /><br />
+
+
+</center>
+</body>
+</html>
+
+

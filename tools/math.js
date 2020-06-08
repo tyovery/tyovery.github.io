@@ -1,3 +1,76 @@
+function rad(deg) { return deg * Math.PI / 180 ; } // 角度 轉 弧度
+function deg(rad) { return rad * 180 / Math.PI ; } // 弧度 轉 角度
+
+// 複數的四則運算
+function cAdd(z0,z1) // 複數加法
+{
+	while(z0.length<2) z0.push(0);
+	while(z1.length<2) z1.push(0);
+	return [z0[0]+z1[0],z0[1]+z1[1]] ;
+}
+function cMin(z0,z1) // 複數減法
+{
+	while(z0.length<2) z0.push(0);
+	while(z1.length<2) z1.push(0);
+	return [z0[0]-z1[0],z0[1]-z1[1]] ;
+}
+function cTim(z0,z1) // 複數乘法
+{
+	if(z0.length<1) z0.push(1);
+	if(z0.length<2) z0.push(0);
+	if(z1.length<1) z1.push(1);
+	if(z1.length<2) z1.push(0);
+	return [z0[0]*z1[0]-z0[1]*z1[1],z0[1]*z1[0]+z0[0]*z1[1]] ;
+}
+function cDiv(z0,z1) // 複數除法
+{
+	if(z0.length<1) z0.push(1);
+	if(z0.length<2) z0.push(0);
+	if(z1.length<1) z1.push(1);
+	if(z1.length<2) z1.push(0);
+	var r = z1[0]**2+z1[1]**2 ; // 分母
+	return [ (z0[0]*z1[0]+z0[1]*z1[1])/r , (z0[1]*z1[0]-z0[0]*z1[1])/r ] ;
+}
+function cxAdd(list) // 複數連加
+{
+	var sum = [] ;
+	for(var n = 0 ; n < list.length ; n++)
+	{
+		sum = cAdd(sum , list[n]) ;
+	}
+	return sum ;
+}
+function cxTim(list) // 複數連乘
+{
+	var sum = [] ;
+	for(var n = 0 ; n < list.length ; n++)
+	{
+		sum = cTim(sum , list[n]) ;
+	}
+	return sum ;
+}
+
+function fact_near(x) // 階乘 近似式
+{
+	if(x>0) // (x/e)^x √(2πx)
+	{
+		var lg = ( x * ( Math.log(x)-1 ) + Math.log(2*Math.PI*x)/2 ) / Math.log(10);
+		var exp = Math.floor(lg) ; // 10^exp
+		var eff = lg - exp // 有效數字
+		var preOut = 10**eff + (exp>=0?"e+":"e") + exp ;
+		return preOut * 1 ;
+	}
+	else if(x==0) return 1 ; // 0! = 1
+	else // (-x)^x √(-2πx) cosh(x)/-sin(πx)
+	{
+		var lg = ( x * Math.log(-x) + Math.log(-2*Math.PI*x)/2 + Math.log(Math.cosh(x)) ) / Math.log(10);
+		var exp = Math.floor(lg) ; // 10^exp
+		var eff = lg - exp // 有效數字
+		var preOut = 10**eff + (exp>=0?"e+":"e") + exp ;
+		return preOut / (-Math.sin(Math.PI*x));
+	}
+}
+
 function fact_det(n,x,terms) // 階乘 積分定義 展開
 {	// n! = lim(x->∞,terms->∞){ sum(k=0,terms){(-1)^k * x^(n+k+1) / ((n+k+1)*k!) } }
 	var x = 21 , terms = 200 ; // x不需太大 , terms較需要大
@@ -16,23 +89,35 @@ function fact_det(n,x,terms) // 階乘 積分定義 展開
 
 function fact(x) // 階乘(實數)
 {
+	var m=1 ;
+	for(; x>1 ; x--) m*=x ;
+	for(; x<0 ; x++) m/=x+1 ;
+	if(x%1!=0) m *= fact_det(x) ;
+	return m ;
+
+	/*
 	if(x>1) return x * fact(x-1) ;
 	else if(x<0) return fact(x+1) / (x+1) ;
 	else if(x%1!=0) return fact_det(x) ;
 	else return 1 ;
+	*/
+}
+
+function gamma(x) // Γ(x) = (x-1)!
+{
+	return fact(x-1) ;
 }
 
 function P(n,r) // nPr
 {
-	if(n<0 && n%1==0) return (-1)**r * P(r-(n+1),r) ; // 修正因 負階乘 做成的錯誤
-	else return fact(n) / fact(n-r) ;
+	var m = 1 ;
+	for(var k=0 ; k < r ; k++ ) m*=(n-k) ;
+	return m ;
 }
 
 function C(n,r) // nCr
 {
-	if(n<0 && n%1==0 && r<=n) return C(n,n-r) ; // 修正
-	else return P(n,r) / fact(r) ;
+	var m = 1 ;
+	for(var k=0 ; k < r ; k++ ) m*=(n-k)/(k+1) ;
+	return m ;
 }
-
-
-

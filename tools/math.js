@@ -111,13 +111,44 @@ function gamma(x) // Γ(x) = (x-1)!
 function P(n,r) // nPr
 {
 	var m = 1 ;
-	for(var k=0 ; k < r ; k++ ) m*=(n-k) ;
-	return m ;
+	if(r>=0)
+	{
+		for(var k=0 ; k < r ; k++ ) m*=(n-k) ;
+		return m ;
+	}
+	else
+	{
+		if(r%1==0)
+		{
+			for(var k=1 ; k <= -r ; k++ ) m/=(n+k) ;
+			return m ;
+		}
+		else
+		{
+			return fact(n)/fact(n-r) ;
+		}
+	}
 }
 
 function C(n,r) // nCr
 {
 	var m = 1 ;
-	for(var k=0 ; k < r ; k++ ) m*=(n-k)/(k+1) ;
-	return m ;
+	if(r>=0)
+	{
+		
+		for(var k=0 ; k < r ; k++ ) m*=(n-k)/(k+1) ;
+		return m ;
+	}
+	else
+	{
+		if(r%1==0) return 0 ;
+		/*{
+			for(var k=1 ; k <= -r ; k++ ) m*=(1-k)/(n+k) ;
+			return m ;
+		}*/
+		else
+		{
+			return fact(n)/fact(n-r)/fact(r) ;
+		}
+	}
 }

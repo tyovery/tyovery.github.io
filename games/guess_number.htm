@@ -9,11 +9,14 @@
 <p>「正確」代表：有多少個位置正確的數字。</p>
 <p>「錯位」代表：有多少個謎底有出現但位置不正確的數字。</p>
 
+<input id="playerGiveUp" type="button" value="開估" style="visibility: hidden;" onClick="giveup();" />
 <input type="button" value="新遊戲" onClick="newGame_setting();" />
-<input id="playerInput" type="text" value="4" style="text-align: center;width: 180px;" onKeyPress="key();" />
+<input id="playerInput" type="text" value="4" style="text-align: center;width: 180px;" onKeyUp="key_up();" />
 <input id="playerSubmit" type="button" value="確定" />
+<input id="playerExist" type="button" value="存在" style="visibility: hidden;" onClick="exist(playerInput.value);" />
+<input id="playerFlag" type="button" value="否定" style="visibility: hidden;" onClick="flag(playerInput.value);" />
 <br /><br />
-<div id="play_msg">按 "新遊戲" 開始一場新的猜測。</div>
+<div id="play_msg">按「新遊戲」開始一場新的猜測。</div>
 <hr />
 <div id="log">~tyovery~<br />2020-06<br />
 Tested on Chrome 83.0.4103.97</div>
@@ -24,13 +27,25 @@ var times = 0 ;
 var ans ; // 謎底
 var ans_feq ; // 謎底數字頻數表
 
-function key()
+function key_up()
 {
-	if(event.keyCode == 13) eval(playerSubmit.getAttribute("onClick"));
+	if(event.keyCode == 13) eval(playerSubmit.getAttribute("onClick")); // Enter 確定
+	if(event.keyCode == 27) playerInput.value = ""; // Esc 清空輸入框
 }
+
+/*
+function key_press()
+{
+	if(event.keyCode == 43) eval(playerExist.getAttribute("onClick")); // + 存在
+	if(event.keyCode == 45) eval(playerFlag.getAttribute("onClick")); // - 否定
+}
+*/
 
 function newGame_setting()
 {
+	playerGiveUp.style.visibility = "hidden" ; // 隱藏 "開估" 按鈕
+	playerExist.style.visibility = "hidden" ; // 隱藏 "存在" 按鈕
+	playerFlag.style.visibility = "hidden" ; // 隱藏 "否定" 按鈕
 	play_msg.innerHTML="請輸入謎底數字的長度。(1~16)<br />";
 	playerSubmit.setAttribute("onClick","newGame(playerInput.value);");
 }
@@ -64,6 +79,9 @@ function newGame(ans_length)
 		log.innerHTML = txt2log + log.innerHTML ;
 
 		times = 0; // reset times
+		playerGiveUp.style.visibility = "visible" ; // 顯示 "開估" 按鈕
+		playerExist.style.visibility = "visible" ; // 顯示 "存在" 按鈕
+		playerFlag.style.visibility = "visible" ; // 顯示 "否定" 按鈕
 		trying("start"); // 開始遊戲
 	}
 	else
@@ -72,14 +90,73 @@ function newGame(ans_length)
 	}
 }
 
-function trying(source) // start , again
+function trying(source) // start , again , input_error
 {
 	var txt = "" ;
 	if(source == "input_error") txt += "輸入無效。<br />";
 	txt += "謎底長度：" + ans.length + "<br />請輸入您的猜測。<br />"
-	
+	txt += "按「否定」可記錄您認為不可能正確的答案。<br />" ;
+	txt += "輸入一位數字，然後按「否定」，可記錄您認為謎底中沒有的數字。<br />" ;
+
 	if(!(source == "again" && dev)) play_msg.innerHTML = txt ;
 	playerSubmit.setAttribute("onClick","checkAns(playerInput.value);");
+}
+
+function flag(ban) // 玩家認為謎底中沒有的數字
+{
+	if(ban>=0 && ban.length>0 && ban*1 == Math.floor(ban))
+	{
+		var ban_list = [] ;
+		for(var k = 0 ; k < ban.length ; k++)
+		{
+			ban_list.push(ban[k]);
+		}
+		ban_list = [...new Set(ban_list)] ;
+		log.innerHTML = "<font color='#b00'>玩家認為謎底中沒有的數字："+ ban_list.join(" , ") +"</font><br /><br />"+ log.innerHTML ;
+		
+		trying("again");
+	}
+	else
+	{
+		trying("input_error");
+	}
+}
+
+function exist(guess_exist) // 玩家認為謎底中存在的數字
+{
+	if(guess_exist>=0 && guess_exist.length>0 && guess_exist*1 == Math.floor(guess_exist))
+	{
+		var exist_list = [] ;
+		for(var k = 0 ; k < guess_exist.length ; k++)
+		{
+			exist_list.push(guess_exist[k]);
+		}
+		log.innerHTML = "<font color='#070'>玩家認為謎底中存在的數字："+ exist_list.join(" , ") +"</font><br /><br />"+ log.innerHTML ;
+		
+		trying("again");
+	}
+	else
+	{
+		trying("input_error");
+	}
+}
+
+function giveup() // 開估
+{
+	// 按鈕
+	playerGiveUp.style.visibility = "hidden" ; // 隱藏 "開估" 按鈕
+	playerExist.style.visibility = "hidden" ; // 隱藏 "存在" 按鈕
+	playerFlag.style.visibility = "hidden" ; // 隱藏 "否定" 按鈕
+	playerSubmit.setAttribute("onClick","play_msg.innerHTML = '按「新遊戲」開始一場新的猜測。';");
+	
+	// 輸出信息
+	var txt2log = "#玩家放棄了這場遊戲。<br />" ;
+	txt2log += "謎底是：" + ans + "<br />" ;
+	log.innerHTML = txt2log + "<br />" + log.innerHTML ;
+	
+	var txt2msg = "您放棄了這場遊戲。<br />" ;
+	txt2msg += "謎底是：" + ans + "<br />" ;
+	play_msg.innerHTML = txt2msg ;
 }
 
 function checkAns(guess)
@@ -89,11 +166,17 @@ function checkAns(guess)
 		times ++ ;
 		if(guess == ans) // 全中
 		{
+			// 按鈕
+			playerGiveUp.style.visibility = "hidden" ; // 隱藏 "開估" 按鈕
+			playerExist.style.visibility = "hidden" ; // 隱藏 "存在" 按鈕
+			playerFlag.style.visibility = "hidden" ; // 隱藏 "否定" 按鈕
+			playerSubmit.setAttribute("onClick","play_msg.innerHTML = '按「新遊戲」開始一場新的猜測。';");
+			
+			// 輸出信息
 			var txt2log = "玩家第 "+times+" 次猜測：" + guess + "<br />" ;
-			txt2log += "* 恭喜玩家猜中謎底：" + ans + "<br /><br />" ;
+			txt2log += "* 恭喜玩家猜中了謎底：" + ans + "<br /><br />" ;
 			log.innerHTML = txt2log + log.innerHTML ;
-			play_msg.innerHTML = "恭喜玩家猜中謎底：" + ans + "<br />猜測次數："+times;
-			playerSubmit.setAttribute("onClick","play_msg.innerHTML = '按 \"新遊戲\" 開始一場新的猜測。';");
+			play_msg.innerHTML = "恭喜您猜中了謎底：" + ans + "<br />猜測次數："+times;
 		}
 		else
 		{
@@ -137,14 +220,7 @@ function checkAns(guess)
 				txt2alert += C + " = C";
 				play_msg.innerHTML = txt2alert;
 			}
-			/*
-			else
-			{
-				var txt2alert = "玩家第 "+times+" 次猜測：" + guess + "<br />" ;
-				txt2alert += "正確 = " + A + "<br />" ;
-				txt2alert += "錯位 = " + C ;
-			}*/
-			
+
 			// 再讓玩家猜測
 			trying("again");
 		}

@@ -1,0 +1,162 @@
+<html lang="zh-Hant-HK">
+<body>
+<center>
+<br />
+
+<h1>猜數字遊戲</h1>
+<p>說明：電腦會隨機產生一組數字(數字可重複)，玩家來猜測。</p>
+<p>每次猜測後，會有提示。</p>
+<p>「正確」代表：有多少個位置正確的數字。</p>
+<p>「錯位」代表：有多少個謎底有出現但位置不正確的數字。</p>
+
+<input type="button" value="新遊戲" onClick="newGame_setting();" />
+<input id="playerInput" type="text" value="4" style="text-align: center;width: 180px;" onKeyPress="key();" />
+<input id="playerSubmit" type="button" value="確定" />
+<br /><br />
+<div id="play_msg">按 "新遊戲" 開始一場新的猜測。</div>
+<hr />
+<div id="log">~tyovery~<br />2020-06<br />
+Tested on Chrome 83.0.4103.97</div>
+
+<script>
+var dev = 0 ;
+var times = 0 ;
+var ans ; // 謎底
+var ans_feq ; // 謎底數字頻數表
+
+function key()
+{
+	if(event.keyCode == 13) eval(playerSubmit.getAttribute("onClick"));
+}
+
+function newGame_setting()
+{
+	play_msg.innerHTML="請輸入謎底數字的長度。(1~16)<br />";
+	playerSubmit.setAttribute("onClick","newGame(playerInput.value);");
+}
+
+function newGame(ans_length)
+{
+	ans_length = parseInt(ans_length) ;
+	if(ans_length>0 && ans_length<=16)
+	{
+		ans = Math.floor(Math.random()*(10**ans_length)) ; // 隨機生成謎底
+		ans += "" ;
+		while(ans.length<ans_length) ans = "0" + ans ; // 補0
+
+		// count ans各數字的頻數
+		if(dev)
+		{
+			feq_fit = [];
+			for( var k = 0 ; k < 10 ; k ++ ) feq_fit.push(k);
+		}
+		ans_feq = [];
+		for( var k = 0 ; k < 10 ; k ++ ) ans_feq.push(0);
+		for( var k = 0 ; k < ans_length ; k ++ )
+		{
+			ans_feq[ans[k]]++ ;
+		}
+
+		// log
+		var txt2log = "新的遊戲<br />謎底長度："+ans.length ;
+		if(dev) txt2log += "<br />謎底：" + ans + "<br />" ;
+		txt2log += "<hr />" ;
+		log.innerHTML = txt2log + log.innerHTML ;
+
+		times = 0; // reset times
+		trying("start"); // 開始遊戲
+	}
+	else
+	{
+		play_msg.innerHTML = "謎底數字長度必需為 1~16 的整數。<br />" + play_msg.innerHTML;
+	}
+}
+
+function trying(source) // start , again
+{
+	var txt = "" ;
+	if(source == "input_error") txt += "輸入無效。<br />";
+	txt += "謎底長度：" + ans.length + "<br />請輸入您的猜測。<br />"
+	
+	if(!(source == "again" && dev)) play_msg.innerHTML = txt ;
+	playerSubmit.setAttribute("onClick","checkAns(playerInput.value);");
+}
+
+function checkAns(guess)
+{
+	if(guess>=0 && guess.length==ans.length && guess*1 == Math.floor(guess))
+	{
+		times ++ ;
+		if(guess == ans) // 全中
+		{
+			var txt2log = "玩家第 "+times+" 次猜測：" + guess + "<br />" ;
+			txt2log += "* 恭喜玩家猜中謎底：" + ans + "<br /><br />" ;
+			log.innerHTML = txt2log + log.innerHTML ;
+			play_msg.innerHTML = "恭喜玩家猜中謎底：" + ans + "<br />猜測次數："+times;
+			playerSubmit.setAttribute("onClick","play_msg.innerHTML = '按 \"新遊戲\" 開始一場新的猜測。';");
+		}
+		else
+		{
+			var A = 0 ; // 數字與位置都正確
+			var B = 0 ; // 數字正確
+			var C ; // 數字正確 , 但位置不正確 C=B-A
+
+			var guess_feq = [];
+			for( var k = 0 ; k < 10 ; k ++ ) guess_feq.push(0);
+			
+			for( var k = 0 ; k < ans.length ; k ++ )
+			{
+				// count有幾多個A
+				if(guess[k] == ans[k]) A ++ ;
+				
+				// count guess各數字的頻數
+				guess_feq[guess[k]]++ ;
+			}
+			
+			for( var k = 0 ; k < 10 ; k ++ )
+			{
+				B += Math.min(ans_feq[k] , guess_feq[k]);
+			}
+			
+			C = B-A ;
+			
+			// 輸出
+			var txt2log = "玩家第 "+times+" 次猜測：" + guess + "<br />" ;
+			txt2log += "正確 = " + A + "<br />" ;
+			txt2log += "錯位 = " + C + "<br /><br />" ;
+			log.innerHTML = txt2log + log.innerHTML ;
+			if(dev)
+			{
+				var txt2alert = ans + " = 謎底<br />" ;
+				txt2alert += guess + " = 猜測<br />" ;
+				txt2alert += feq_fit.join(" , ") +" = 對應數字<br />";
+				txt2alert += ans_feq.join(" , ") +" = 謎底頻數<br />";
+				txt2alert += guess_feq.join(" , ") +" = 猜測頻數<br />";
+				txt2alert += A + " = A<br />";
+				txt2alert += B + " = B<br />";
+				txt2alert += C + " = C";
+				play_msg.innerHTML = txt2alert;
+			}
+			/*
+			else
+			{
+				var txt2alert = "玩家第 "+times+" 次猜測：" + guess + "<br />" ;
+				txt2alert += "正確 = " + A + "<br />" ;
+				txt2alert += "錯位 = " + C ;
+			}*/
+			
+			// 再讓玩家猜測
+			trying("again");
+		}
+	}
+	else
+	{
+		trying("input_error");
+	}
+}
+
+</script>
+
+</center>
+</body>
+</html>

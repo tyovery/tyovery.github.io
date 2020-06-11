@@ -95,8 +95,8 @@ function trying(source) // start , again , input_error
 	var txt = "" ;
 	if(source == "input_error") txt += "輸入無效。<br />";
 	txt += "謎底長度：" + ans.length + "<br />請輸入您的猜測。<br />"
-	txt += "按「否定」可記錄您認為不可能正確的答案。<br />" ;
-	txt += "輸入一位數字，然後按「否定」，可記錄您認為謎底中沒有的數字。<br />" ;
+	txt += "按「存在」可記錄您認為謎底中<b>存在</b>的數字。<br />" ;
+	txt += "按「否定」可記錄您認為謎底中<b>沒有</b>的數字。<br /><br />" ;
 
 	if(!(source == "again" && dev)) play_msg.innerHTML = txt ;
 	playerSubmit.setAttribute("onClick","checkAns(playerInput.value);");
@@ -104,6 +104,7 @@ function trying(source) // start , again , input_error
 
 function flag(ban) // 玩家認為謎底中沒有的數字
 {
+	ban = ban.replace(/\s+|,|，|、/ig,"");
 	if(ban>=0 && ban.length>0 && ban*1 == Math.floor(ban))
 	{
 		var ban_list = [] ;
@@ -124,6 +125,7 @@ function flag(ban) // 玩家認為謎底中沒有的數字
 
 function exist(guess_exist) // 玩家認為謎底中存在的數字
 {
+	guess_exist = guess_exist.replace(/\s+|,|，|、/ig,"");
 	if(guess_exist>=0 && guess_exist.length>0 && guess_exist*1 == Math.floor(guess_exist))
 	{
 		var exist_list = [] ;

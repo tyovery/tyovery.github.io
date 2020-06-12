@@ -39,8 +39,12 @@ var size , sum , mean , mean_geo , mean_har , dev2sum , vari , sd , md , mode , 
 var mean_fix , dev2sum_fix , sd_fix ; // 約數
 var fix_d = 6 ; // 約數小數位
 
-var min , max , range_half=[] , range , range_c , range_b , iqr , qd  ;
-// 最小值,最大值,半距,全距,全距係數,平均間距,四分位距,四分位差
+var median , q1 , q3 ; // 四分位數
+var mid_hinge , mean_mri ; // 中樞紐 , 三均值
+var mean_iq ; // 四分平均數
+
+var min , max , mid_range , range_half=[] , range , range_c , range_b , iqr , qd  ;
+// 最小值,最大值,中程數,半距,全距,全距係數,平均間距,四分位距,四分位差
 
 function inputClear()
 {
@@ -61,8 +65,8 @@ function popAdd() // 手動加入樣本到母體
 		txt = txt.replace(/e/ig,","+Math.E+","); // e
 		txt = txt.replace(/pi/ig,","+Math.PI+","); // pi
 		*/
-		txt = txt.replace(/\ |[a-z]/ig,""); // 清除(空格,拉丁字母)
-		
+		txt = txt.replace(/\s+|[a-z]/ig,""); // 清除(空格,拉丁字母)
+
 		// 分析分組
 		for(var k=0 ; k<txt.length ; k++)
 		{
@@ -199,7 +203,7 @@ function inputSub(parameter)
 	size = pop.length ; // 樣本數
 	
 	sum = 0 ; // 加總
-	for(var k=0 ; k<pop.length ; k++)
+	for(var k=0 ; k<size ; k++)
 	{
 		sum += pop[k]*1 ;
 	}
@@ -303,8 +307,8 @@ function inputSub(parameter)
 	}
 	else se = "-" ;
 	
-	// 四分位數
-	var median , q1 , q3 , L , R , pos ; // 四分位數 , 左數列 , 右數列 , 位置
+	// 四分位數 ( q1 , median , q3 )
+	var L , R , pos ; // 左數列 , 右數列 , 位置
 	if(size>0)
 	{
 		// 中位數
@@ -338,11 +342,17 @@ function inputSub(parameter)
 				q1 = ( L[pos-1]*1 + L[pos]*1 ) / 2 ;
 				q3 = ( R[pos-1]*1 + R[pos]*1 ) / 2 ;
 			}
+			
+			// 四分平均數
+			mean_iq = 0 ;
+			for(var k = pos ; k < size - pos ; k++ ) mean_iq += pop[k] ;
+			mean_iq /= size - pos*2 ;
 		}
 		else
 		{
 			q1 = "-" ;
 			q3 = "-" ;
+			mean_iq = "-" ;
 		}
 	}
 	else
@@ -350,7 +360,16 @@ function inputSub(parameter)
 		median = "-" ;
 		q1 = "-" ;
 		q3 = "-" ;
+		mean_iq = "-" ;
 	}
+	
+	// 中樞紐 mid_hinge
+	if(size>0 && (q1>=0||q1<0)) mid_hinge = ( q1 + q3 ) / 2 ;
+	else mid_hinge = "-" ;
+
+	// 三均值 mean_mri
+	if(size>0 && (q1>=0||q1<0)) mean_mri = ( median*2 + q1 + q3 ) / 4 ;
+	else mean_mri = "-" ;
 
 	// 眾數
 	if(size>0)
@@ -394,6 +413,10 @@ function inputSub(parameter)
 	if(pop.length>0) max = pop[pop.length-1];
 	else max= "-" ;
 	
+	// 中程數
+	if(pop.length>0) mid_range = (min + max) / 2 ;
+	else mid_range = " - " ;
+
 	// 半距
 	if(pop.length>0)
 	{
@@ -459,8 +482,8 @@ function inputSub(parameter)
 	<th>x<br />數據</th>\
 	<th>y<br />頻數</th>\
 	<th>&#931;y<br />累積頻數</th>\
-	<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />機率</th>\
-	<th>(&#931;y)/'+(dataSet_sample.checked?'n':'N')+'<br />累積機率</th>\
+	<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />比例</th>\
+	<th>(&#931;y)/'+(dataSet_sample.checked?'n':'N')+'<br />累積比例</th>\
 	<th>xy<br />加權</th>\
 	<th>z-score<br />標準分</th>\
 	<th>'+(dataSet_sample.checked?'x-x&#772;':'x-&#956;')+'<br />離差</th>\
@@ -469,7 +492,7 @@ function inputSub(parameter)
 
 	for(var k = 0 ; k<poplist.length ; k++)
 	{
-		// 累積機率
+		// 累積比例
 		var PobiSum = (poplist[k][2]/size*100).toFixed(2) ;
 		
 		txt2htm +='<tr>\
@@ -525,6 +548,10 @@ function inputSub(parameter)
 		DisplayArea.innerHTML += mode[0].join(" , ") ;
 	}
 	DisplayArea.innerHTML += " (各有 " + mode[1] + " 個)<br />" ;
+	DisplayArea.innerHTML += "四分平均數 ( Interquartile Mean )：" + mean_iq + "<br />" ;
+	DisplayArea.innerHTML += "三均值 ( TM / Mrimean )：" + mean_mri + "<br />" ;
+	DisplayArea.innerHTML += "中樞紐 ( Midhinge )：" + mid_hinge + "<br />" ;
+	DisplayArea.innerHTML += "中程數 ( Midrange )：" + mid_range + "<br />" ;
 	DisplayArea.innerHTML += "幾何平均數 ( Geometric mean )：" + mean_geo + "<br />" ;
 	DisplayArea.innerHTML += "調和平均數 ( Harmonic mean )：" + mean_har + "<br />" ;
 
@@ -552,6 +579,11 @@ function inputSub(parameter)
 		DisplayArea.innerHTML += "變異係數 ( CV )：" + cv + "<br />" ;
 		DisplayArea.innerHTML += "標準誤 ( SE )：" + se + "<br />" ;
 	}
+	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
+	DisplayArea.innerHTML += "均勻分布"+"(未寫)"+"<br />" ;
+	DisplayArea.innerHTML += "常態分布"+"(未寫)"+"<br />" ;
+	DisplayArea.innerHTML += "帕松分布"+"(未寫)"+"<br />" ;
+	DisplayArea.innerHTML += "二項分布"+"(未寫)"+"<br />" ;
 	
 	if(stay == 0) window.scrollTo(0,document.body.scrollHeight) ; // 滾到最底
 }
@@ -643,20 +675,61 @@ function grouping(groupRange) // 分組
 }
 
 function addDist_bin(p,n,times) // 二項分布
-// 改由平均值開始計算 插break 提升效率 *留意二項係數的階乘算法可能出事
 {
 	if(n>=0 && p>=0 && p<=1 && times>0)
 	{
-		alert("二項分布\np = "+p+"\nq = "+(1-p)+"\nn = "+n+"\nnp = "+n*p+"\nnq = "+n*(1-p)+"\n產生數據量 = "+times);
+		alert("二項分布\np = "+(p*1)+"\nq = "+(1-p)+"\nn = "+n+"\nnp = "+n*p+"\nnq = "+n*(1-p)+"\n產生數據量 = "+times);
 		p *= 1 ; n *= 1 ; times *= 1 ;
-		for(var k = 0 ; k <= n ; k ++)
+		var mu = n*p ;
+
+		for(var k = 0 ; k >= 0 ; k ++)
 		{
+			// 平均值 -k格
+			var x = mu.toFixed(0)*1-k ;
+			if(x>=0)
+			{
+				var fL = C(n,x) * (1-p)**(n-x) * p**x * times ;
+				fL = fL.toFixed(0) ;
+				if(fL>0)
+				{
+					for(var j = 0 ; j<fL ; j ++)
+					{
+						pop.push(x);
+					}
+				}
+			}
+			else var fL = 0 ;
+			
+			// 平均值 +k格
+			if(k>0)
+			{
+				x = mu.toFixed(0)*1+k ;
+				if(x<=n)
+				{
+					var fR = C(n,x) * (1-p)**(n-x) * p**x * times ;
+					fR = fR.toFixed(0) ;
+					if(fR>0)
+					{
+						for(var j = 0 ; j<fR ; j ++)
+						{
+							pop.push(x);
+						}
+					}
+				}	
+				else var fR=0 ;
+			}
+			else var fR=0 ;
+
+			if(fL+fR<=0) break;
+			
+			/*
 			var f = C(n,k) * (1-p)**(n-k) * p**k * times ;
 			f = f.toFixed(0) ;
 			for(var j = 0 ; j<f ; j ++)
 			{
 				pop.push(k);
 			}
+			*/
 		}
 		inputSub();
 	}
@@ -667,7 +740,7 @@ function addDist_ps(mu,times) // 帕松分布
 {
 	if( mu>0 && times>0 )
 	{
-		// alert("帕松分布\n平均值 = "+mu+"\n產生數據量 = "+times);
+		alert("帕松分布\n平均值 = "+mu+"\n產生數據量 = "+times);
 		mu *= 1 ; times *= 1 ;
 
 		for(var k = 0 ; k>=0 ; k++) // 平均值 ±k
@@ -726,41 +799,46 @@ function addDist_ps(mu,times) // 帕松分布
 
 function addDist_norm(mu,sigma,times) // 常態分布
 {
-	//alert("常態分布\n平均值 = "+mu+"\n標準差 = "+sigma+"\n產生數據量 = "+times);
-	mu *= 1 ; sigma *= 1 ; times *= 1 ;
-	
-	for(var k = 0 ; k>=0 ; k++) // 平均值 ±k
+	if( (mu>=0 || mu<0) && sigma>0 && times>0 )
 	{
-		// 平均值 -k格
-		var x = mu.toFixed(0)*1-k ;
-		var fL = Math.exp(- (((x-mu)/sigma)**2) /2)/(sigma*Math.sqrt(2*Math.PI)) * times ;
-		fL = fL.toFixed(0) ;
-		if(fL>0)
-		{
-			for(var j = 0 ; j<fL ; j ++)
-			{
-				pop.push(x);
-			}
-		}
+		alert("常態分布\n平均值 = "+mu+"\n標準差 = "+sigma+"\n產生數據量 = "+times);
+		mu *= 1 ; sigma *= 1 ; times *= 1 ;
 		
-		// 平均值 +k格
-		if(k>0)
+		for(var k = 0 ; k>=0 ; k++) // 平均值 ±k
 		{
-			x = mu.toFixed(0)*1+k ;
-			var fR = Math.exp(- (((x-mu)/sigma)**2) /2)/(sigma*Math.sqrt(2*Math.PI)) * times ;
-			fR = fR.toFixed(0) ;
-			if(fR>0)
+			// 平均值 -k格
+			var x = mu.toFixed(0)*1-k ;
+			var fL = Math.exp(- (((x-mu)/sigma)**2) /2)/(sigma*Math.sqrt(2*Math.PI)) * times ;
+			fL = fL.toFixed(0) ;
+			if(fL>0)
 			{
-				for(var j = 0 ; j<fR ; j ++)
+				for(var j = 0 ; j<fL ; j ++)
 				{
 					pop.push(x);
 				}
 			}
-		}
+			
+			// 平均值 +k格
+			if(k>0)
+			{
+				x = mu.toFixed(0)*1+k ;
+				var fR = Math.exp(- (((x-mu)/sigma)**2) /2)/(sigma*Math.sqrt(2*Math.PI)) * times ;
+				fR = fR.toFixed(0) ;
+				if(fR>0)
+				{
+					for(var j = 0 ; j<fR ; j ++)
+					{
+						pop.push(x);
+					}
+				}
+			}
+			else var fR=0 ;
 
-		if(fL+fR<=0) break;
+			if(fL+fR<=0) break;
+		}
+		inputSub();
 	}
-	inputSub();
+	else alert("輸入無效。");
 }
 
 </script>

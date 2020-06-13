@@ -9,13 +9,15 @@
 <p>「正確」代表：有多少個位置正確的數字。</p>
 <p>「錯位」代表：有多少個謎底有出現但位置不正確的數字。</p>
 
+<span id="draft"></span>
 <input id="playerGiveUp" type="button" value="開估" style="visibility: hidden;" onClick="giveup();" />
 <input type="button" value="新遊戲" onClick="newGame_setting();" />
 <input id="playerInput" type="text" value="4" style="text-align: center;width: 180px;" onKeyUp="key_up();" />
 <input id="playerSubmit" type="button" value="確定" />
 <input id="playerExist" type="button" value="存在" style="visibility: hidden;" onClick="exist(playerInput.value);" />
 <input id="playerFlag" type="button" value="否定" style="visibility: hidden;" onClick="flag(playerInput.value);" />
-<br /><br />草稿：<textarea cols="20" rows="6"></textarea><br /><br />
+<br /><span id="autoInput"></span>
+<br /><br />
 <div id="play_msg">按「新遊戲」開始一場新的猜測。</div>
 <hr />
 <div id="log">~tyovery~<br />2020-06<br />
@@ -44,9 +46,7 @@ function key_press()
 
 function newGame_setting()
 {
-	playerGiveUp.style.visibility = "hidden" ; // 隱藏 "開估" 按鈕
-	playerExist.style.visibility = "hidden" ; // 隱藏 "存在" 按鈕
-	playerFlag.style.visibility = "hidden" ; // 隱藏 "否定" 按鈕
+	tool(0); // 隱藏工具
 	play_msg.innerHTML="請輸入謎底數字的長度。(1~16)<br />";
 	playerSubmit.setAttribute("onClick","newGame(playerInput.value);");
 }
@@ -82,9 +82,7 @@ function newGame(ans_length)
 		log.innerHTML = txt2log + log.innerHTML ;
 
 		times = 0; // reset times
-		playerGiveUp.style.visibility = "visible" ; // 顯示 "開估" 按鈕
-		playerExist.style.visibility = "visible" ; // 顯示 "存在" 按鈕
-		playerFlag.style.visibility = "visible" ; // 顯示 "否定" 按鈕
+		tool(1) ; // 顯示工具
 		trying("start"); // 開始遊戲
 	}
 	else
@@ -155,9 +153,7 @@ function exist(guess_exist) // 玩家認為謎底中存在的數字
 function giveup() // 開估
 {
 	// 按鈕
-	playerGiveUp.style.visibility = "hidden" ; // 隱藏 "開估" 按鈕
-	playerExist.style.visibility = "hidden" ; // 隱藏 "存在" 按鈕
-	playerFlag.style.visibility = "hidden" ; // 隱藏 "否定" 按鈕
+	tool(0); // 隱藏工具
 	playerSubmit.setAttribute("onClick","play_msg.innerHTML = '按「新遊戲」開始一場新的猜測。';");
 	
 	// 輸出信息
@@ -178,9 +174,7 @@ function checkAns(guess)
 		if(guess == ans) // 全中
 		{
 			// 按鈕
-			playerGiveUp.style.visibility = "hidden" ; // 隱藏 "開估" 按鈕
-			playerExist.style.visibility = "hidden" ; // 隱藏 "存在" 按鈕
-			playerFlag.style.visibility = "hidden" ; // 隱藏 "否定" 按鈕
+			tool(0); // 隱藏工具
 			playerSubmit.setAttribute("onClick","play_msg.innerHTML = '按「新遊戲」開始一場新的猜測。';");
 			
 			// 輸出信息
@@ -239,6 +233,37 @@ function checkAns(guess)
 	else
 	{
 		trying("input_error");
+	}
+}
+
+function tool(show) // 遊戲中的輔助工具的開關
+{
+	if(show)
+	{ // 顯示
+		playerGiveUp.style.visibility = "visible" ; // "開估" 按鈕
+		playerExist.style.visibility = "visible" ; // "存在" 按鈕
+		playerFlag.style.visibility = "visible" ; // "否定" 按鈕
+		draft.innerHTML = '<textarea cols="20" rows="6">草稿框</textarea><br /><br />'; // 草稿框
+
+		// 自動輸入
+		var txt ;
+		for(var k = 0 ; k < 10 ; k++)
+		{
+			txt = "" ;
+			for(var j = 0 ; j < ans.length ; j++)
+			{
+				txt += k ;
+			}
+			autoInput.innerHTML += '<input type="button" value="全'+k+'" onClick="playerInput.value=\''+txt+'\';"/>' ;
+		}
+	}
+	else
+	{ // 隱藏
+		playerGiveUp.style.visibility = "hidden" ; // "開估" 按鈕
+		playerExist.style.visibility = "hidden" ; // "存在" 按鈕
+		playerFlag.style.visibility = "hidden" ; // "否定" 按鈕
+		draft.innerHTML = ''; // 草稿框
+		autoInput.innerHTML = '' ; // 自動輸入
 	}
 }
 

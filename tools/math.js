@@ -152,3 +152,17 @@ function C(n,r) // nCr
 		}
 	}
 }
+
+function separ(number,digit) // 數位分隔符
+{
+	if(!(digit>0)) var digit = 3 ;
+	number += "";
+	number = number.split("") ;
+	var number_length = number.length ;
+	for(var k = 1 ; k <= Math.floor((number_length-1)/digit) ; k++)
+	{
+		number.splice(1-(digit+1)*k,0,",");
+	}
+	return number.join("") ;
+}
+

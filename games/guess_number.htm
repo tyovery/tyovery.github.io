@@ -15,12 +15,13 @@
 <input id="playerSubmit" type="button" value="確定" />
 <input id="playerExist" type="button" value="存在" style="visibility: hidden;" onClick="exist(playerInput.value);" />
 <input id="playerFlag" type="button" value="否定" style="visibility: hidden;" onClick="flag(playerInput.value);" />
-<br /><br />
+<br /><br />草稿：<textarea cols="20" rows="6"></textarea><br /><br />
 <div id="play_msg">按「新遊戲」開始一場新的猜測。</div>
 <hr />
 <div id="log">~tyovery~<br />2020-06<br />
 Tested on Chrome 83.0.4103.97</div>
 
+<script src="https://tyovery.github.io/tools/math.js"></script>
 <script>
 var dev = 0 ;
 var times = 0 ;
@@ -55,7 +56,8 @@ function newGame(ans_length)
 	ans_length = parseInt(ans_length) ;
 	if(ans_length>0 && ans_length<=16)
 	{
-		ans = Math.floor(Math.random()*(10**ans_length)) ; // 隨機生成謎底
+		var comb = 10**ans_length ;
+		ans = Math.floor(Math.random()*comb) ; // 隨機生成謎底
 		ans += "" ;
 		while(ans.length<ans_length) ans = "0" + ans ; // 補0
 
@@ -74,6 +76,7 @@ function newGame(ans_length)
 
 		// log
 		var txt2log = "新的遊戲<br />謎底長度："+ans.length ;
+		txt2log += "<br />變化量："+ separ(comb) ;
 		if(dev) txt2log += "<br />謎底：" + ans + "<br />" ;
 		txt2log += "<hr />" ;
 		log.innerHTML = txt2log + log.innerHTML ;
@@ -96,7 +99,7 @@ function trying(source) // start , again , input_error
 	if(source == "input_error") txt += "輸入無效。<br />";
 	txt += "謎底長度：" + ans.length + "<br />請輸入您的猜測。<br />"
 	txt += "按「存在」可記錄您認為謎底中<b>存在</b>的數字。<br />" ;
-	txt += "按「否定」可記錄您認為謎底中<b>沒有</b>的數字。<br /><br />" ;
+	txt += "按「否定」可記錄您認為謎底中<b>沒有</b>的數字。<br />" ;
 
 	if(!(source == "again" && dev)) play_msg.innerHTML = txt ;
 	playerSubmit.setAttribute("onClick","checkAns(playerInput.value);");
@@ -113,7 +116,10 @@ function flag(ban) // 玩家認為謎底中沒有的數字
 			ban_list.push(ban[k]);
 		}
 		ban_list = [...new Set(ban_list)] ;
-		log.innerHTML = "<font color='#b00'>玩家認為謎底中沒有的數字："+ ban_list.join(" , ") +"</font><br /><br />"+ log.innerHTML ;
+		var txt2log = "<font color='#b00'>玩家認為謎底中沒有的數字："+ ban_list.join(" , ") +"</font><br />" ;
+		// var comb = (10-ban_list.length)**ans.length ;
+		// txt2log += "剩餘變化量：" + separ(comb) + "<br />";
+		log.innerHTML = txt2log + "<br />" + log.innerHTML ;
 		
 		trying("again");
 	}
@@ -133,7 +139,10 @@ function exist(guess_exist) // 玩家認為謎底中存在的數字
 		{
 			exist_list.push(guess_exist[k]);
 		}
-		log.innerHTML = "<font color='#070'>玩家認為謎底中存在的數字："+ exist_list.join(" , ") +"</font><br /><br />"+ log.innerHTML ;
+		var txt2log = "<font color='#070'>玩家認為謎底中存在的數字："+ exist_list.join(" , ") +"</font><br />" ;
+		// var comb = ;
+		// txt2log += "剩餘變化量：" + separ(comb) + "<br />";
+		log.innerHTML = txt2log + "<br />" + log.innerHTML ;
 		
 		trying("again");
 	}
@@ -212,15 +221,15 @@ function checkAns(guess)
 			log.innerHTML = txt2log + log.innerHTML ;
 			if(dev)
 			{
-				var txt2alert = ans + " = 謎底<br />" ;
-				txt2alert += guess + " = 猜測<br />" ;
-				txt2alert += feq_fit.join(" , ") +" = 對應數字<br />";
-				txt2alert += ans_feq.join(" , ") +" = 謎底頻數<br />";
-				txt2alert += guess_feq.join(" , ") +" = 猜測頻數<br />";
-				txt2alert += A + " = A<br />";
-				txt2alert += B + " = B<br />";
-				txt2alert += C + " = C";
-				play_msg.innerHTML = txt2alert;
+				var txt2msg = ans + " = 謎底<br />" ;
+				txt2msg += guess + " = 猜測<br />" ;
+				txt2msg += feq_fit.join(" , ") +" = 對應數字<br />";
+				txt2msg += ans_feq.join(" , ") +" = 謎底頻數<br />";
+				txt2msg += guess_feq.join(" , ") +" = 猜測頻數<br />";
+				txt2msg += A + " = A<br />";
+				txt2msg += B + " = B<br />";
+				txt2msg += C + " = C";
+				play_msg.innerHTML = txt2msg;
 			}
 
 			// 再讓玩家猜測

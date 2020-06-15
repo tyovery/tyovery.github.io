@@ -247,6 +247,34 @@ function tool(show) // 遊戲中的輔助工具的開關
 
 		// 自動輸入
 		var txt ;
+		
+		// 全部向左移一格
+		autoInput.innerHTML += '<input type="button" value="<<" onClick="playerInput.value = playerInput.value.slice(1) + playerInput.value.slice(0,1) ;"/>' ;
+
+		// 單個數字
+		for(var k = 0 ; k < 10 ; k++)
+		{
+			autoInput.innerHTML += '<input type="button" value=" '+k+' " onClick="playerInput.value+=\''+k+'\';if(playerInput.value.length>ans.length) playerInput.value=playerInput.value.slice(-ans.length);"/>' ;
+		}
+		
+		// 全部向右移一格
+		autoInput.innerHTML += '<input type="button" value=">>" onClick="playerInput.value = playerInput.value.slice(-1) + playerInput.value.slice(0,-1) ;"/>' ;
+		
+		autoInput.innerHTML += "<br />";
+		
+		// 蛇
+		for(var k = 0 ; k < 10 ; k++)
+		{
+			txt = "" ;
+			for(var j = 0 ; j < ans.length ; j++)
+			{
+				txt += ( k+j>=10 ? k+j-10 : k+j ) ;
+			}
+			autoInput.innerHTML += '<input type="button" value="蛇'+k+'" onClick="playerInput.value=\''+txt+'\';"/>' ;
+		}
+		autoInput.innerHTML += "<br />";
+		
+		// 全部一樣數字
 		for(var k = 0 ; k < 10 ; k++)
 		{
 			txt = "" ;

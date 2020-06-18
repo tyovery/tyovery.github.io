@@ -8,6 +8,7 @@
 <p>每次猜測後，會有提示。</p>
 <p>「正確」代表：有多少個位置正確的數字。</p>
 <p>「錯位」代表：有多少個謎底有出現但位置不正確的數字。</p>
+<p>建議難度：簡單(0~3位數)、一般(4位數)、難(多於4位數)。</p>
 
 <span id="draft"></span>
 <input id="playerGiveUp" type="button" value="開估" style="visibility: hidden;" onClick="giveup();" />
@@ -47,6 +48,7 @@ function key_press()
 function newGame_setting()
 {
 	tool(0); // 隱藏工具
+	tool(-1); // 數字按鈕 1~16
 	play_msg.innerHTML="請輸入謎底數字的長度。(1~16)<br />";
 	playerSubmit.setAttribute("onClick","newGame(playerInput.value);");
 }
@@ -54,8 +56,9 @@ function newGame_setting()
 function newGame(ans_length)
 {
 	ans_length = parseInt(ans_length) ;
-	if(ans_length>0 && ans_length<=16)
+	if(ans_length>0 && ans_length<=16) // 設定正常
 	{
+		tool(0); // 隱藏工具
 		var comb = 10**ans_length ;
 		ans = Math.floor(Math.random()*comb) ; // 隨機生成謎底
 		ans += "" ;
@@ -236,10 +239,10 @@ function checkAns(guess)
 	}
 }
 
-function tool(show) // 遊戲中的輔助工具的開關
+function tool(show) // 輔助輸入工具的開關
 {
-	if(show)
-	{ // 顯示
+	if(show>0) // 遊戲中
+	{
 		playerGiveUp.style.visibility = "visible" ; // "開估" 按鈕
 		playerExist.style.visibility = "visible" ; // "存在" 按鈕
 		playerFlag.style.visibility = "visible" ; // "否定" 按鈕
@@ -282,11 +285,19 @@ function tool(show) // 遊戲中的輔助工具的開關
 			{
 				txt += k ;
 			}
-			autoInput.innerHTML += '<input type="button" value="全'+k+'" onClick="playerInput.value=\''+txt+'\';"/>' ;
+			autoInput.innerHTML += '<input type="button" value="全'+k+'" onClick="playerInput.value=\''+txt+'\';" />' ;
 		}
 	}
-	else
-	{ // 隱藏
+	else if(show<0) // 設定新遊戲
+	{
+		for( var k = 1 ; k <= 16 ; k ++)
+		{
+			autoInput.innerHTML += '<input type="button" value="'+ (k<10?"0"+k:k) +'" onClick="playerInput.value=\''+k+'\';" />' ;
+			if(k%4==0) autoInput.innerHTML += '<br />' ;
+		}
+	}
+	else // 隱藏
+	{
 		playerGiveUp.style.visibility = "hidden" ; // "開估" 按鈕
 		playerExist.style.visibility = "hidden" ; // "存在" 按鈕
 		playerFlag.style.visibility = "hidden" ; // "否定" 按鈕

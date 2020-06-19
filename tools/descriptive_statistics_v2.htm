@@ -66,6 +66,19 @@ function popAdd() // 手動加入樣本到母體
 		txt = txt.replace(/pi/ig,","+Math.PI+","); // pi
 		*/
 		txt = txt.replace(/\s+|[a-z]/ig,""); // 清除(空格,拉丁字母)
+		txt = txt.replace(/;|，|、|；/g,","); // 分隔號
+		
+		// 數字轉換
+		txt = txt.replace(/０/g,"0");
+		txt = txt.replace(/１/g,"1");
+		txt = txt.replace(/２/g,"2");
+		txt = txt.replace(/３/g,"3");
+		txt = txt.replace(/４/g,"4");
+		txt = txt.replace(/５/g,"5");
+		txt = txt.replace(/６/g,"6");
+		txt = txt.replace(/７/g,"7");
+		txt = txt.replace(/８/g,"8");
+		txt = txt.replace(/９/g,"9");
 
 		// 分析分組
 		for(var k=0 ; k<txt.length ; k++)
@@ -570,15 +583,30 @@ function inputSub(parameter)
 		DisplayArea.innerHTML += "標準差 ( σ / s / SD )：" + "無法估計" + "<br />" ;
 		DisplayArea.innerHTML += "變異數 ( σ<sup>2</sup> / s<sup>2</sup> / Var )：" + "無法估計" + "<br />" ;
 		DisplayArea.innerHTML += "變異係數 ( CV )：" + "無法估計" + "<br />" ;
-		DisplayArea.innerHTML += "標準誤 ( SE )：" + "無法估計" + "<br />" ;
 	}
 	else
 	{
 		DisplayArea.innerHTML += "標準差 ( σ / s / SD )：" + sd + "<br />" ;
 		DisplayArea.innerHTML += "變異數 ( σ<sup>2</sup> / s<sup>2</sup> / Var )：" + vari + "<br />" ;
 		DisplayArea.innerHTML += "變異係數 ( CV )：" + cv + "<br />" ;
+	}
+	
+	DisplayArea.innerHTML += "<br />< 抽樣分布 ><br />" ;
+	if(dataSet_sample.checked && size==1)
+	{
+		DisplayArea.innerHTML += "標準誤 ( SE )：" + "無法估計" + "<br />" ;
+	}
+	else
+	{
 		DisplayArea.innerHTML += "標準誤 ( SE )：" + se + "<br />" ;
 	}
+	DisplayArea.innerHTML += "99% 2尾：z &#8776; &#177; 2.575829<br />" ;
+	DisplayArea.innerHTML += "99% 1尾：z &#8776; &#177; 2.326348<br />" ;
+	DisplayArea.innerHTML += "95% 2尾：z &#8776; &#177; 1.959964<br />" ;
+	DisplayArea.innerHTML += "95% 1尾：z &#8776; &#177; 1.644854<br />" ;
+	DisplayArea.innerHTML += "90% 2尾：z &#8776; &#177; 1.644854<br />" ;
+	DisplayArea.innerHTML += "90% 1尾：z &#8776; &#177; 1.281552<br />" ;
+	
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
 	DisplayArea.innerHTML += "均勻分布"+"(未寫)"+"<br />" ;
 	DisplayArea.innerHTML += "常態分布"+"(未寫)"+"<br />" ;

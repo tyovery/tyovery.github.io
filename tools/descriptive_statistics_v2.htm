@@ -716,7 +716,17 @@ function addDist_bin(p,n,times) // 二項分布
 			var x = mu.toFixed(0)*1-k ;
 			if(x>=0)
 			{
-				var fL = C(n,x) * (1-p)**(n-x) * p**x * times ;
+				var fL = 1 ;
+				for(var i = 0 ; i < x ; i++)
+				{
+					fL *= p*(n-i)/(x-i) ; // nCx * p^x
+					if(i<n-x) fL *= (1-p) ; // * q^(n-x)
+				}
+				for(var i = 0 ; i < n-2*x ; i ++) // 補剩餘的 q
+				{
+					fL *= (1-p) ;
+				}
+				fL *= times ;
 				fL = fL.toFixed(0) ;
 				if(fL>0)
 				{
@@ -734,7 +744,17 @@ function addDist_bin(p,n,times) // 二項分布
 				x = mu.toFixed(0)*1+k ;
 				if(x<=n)
 				{
-					var fR = C(n,x) * (1-p)**(n-x) * p**x * times ;
+					var fR = 1 ;
+					for(var i = 0 ; i < x ; i++)
+					{
+						fR *= p*(n-i)/(x-i) ; // nCx * p^x
+						if(i<n-x) fR *= (1-p) ; // * q^(n-x)
+					}
+					for(var i = 0 ; i < n-2*x ; i ++) // 補剩餘的 q
+					{
+						fR *= (1-p) ;
+					}
+					fR *= times ;
 					fR = fR.toFixed(0) ;
 					if(fR>0)
 					{
@@ -749,15 +769,6 @@ function addDist_bin(p,n,times) // 二項分布
 			else var fR=0 ;
 
 			if(fL+fR<=0) break;
-			
-			/*
-			var f = C(n,k) * (1-p)**(n-k) * p**k * times ;
-			f = f.toFixed(0) ;
-			for(var j = 0 ; j<f ; j ++)
-			{
-				pop.push(k);
-			}
-			*/
 		}
 		inputSub();
 	}
@@ -775,22 +786,26 @@ function addDist_ps(mu,times) // 帕松分布
 		{
 			// 平均值 -k格
 			var x = mu.toFixed(0)*1-k ;
-			var e_mu_expand = mu ; // mu^x/x!
-			for(var i=2 ; i<=x ; i++)
+			if(x>=0)
 			{
-				e_mu_expand *= mu/i ;
-			}
-			var fL = Math.exp(-mu) * e_mu_expand * times ; // e^(-mu) * mu^x/x! * times
-			// var fL = Math.exp(-mu) * (mu**x)/fact(x) * times ;
-
-			fL = fL.toFixed(0) ;
-			if(fL>0)
-			{
-				for(var j = 0 ; j<fL ; j ++)
+				// e^(-mu) * mu^x/x! * times
+				var fL = Math.exp(-mu) ;
+				for(var i=1 ; i<=x ; i++)
 				{
-					pop.push(x);
+					fL *= mu/i ;
+				}
+				fL *= times ;
+				fL = fL.toFixed(0) ;
+
+				if(fL>0)
+				{
+					for(var j = 0 ; j<fL ; j ++)
+					{
+						pop.push(x);
+					}
 				}
 			}
+			else var fL = 0 ;
 			
 			// alert("k="+k+"\n\nx="+x+"\nfL="+fL);
 			
@@ -798,14 +813,16 @@ function addDist_ps(mu,times) // 帕松分布
 			if(k>0)
 			{
 				x = mu.toFixed(0)*1+k ;
-				e_mu_expand = mu ; // mu^x/x!
-				for(var i=2 ; i<=x ; i++)
+				
+				// e^(-mu) * mu^x/x! * times
+				var fR = Math.exp(-mu) ;
+				for(var i=1 ; i<=x ; i++)
 				{
-					e_mu_expand *= mu/i ;
+					fR *= mu/i ;
 				}
-				var fR = Math.exp(-mu) * e_mu_expand * times ; // e^(-mu) * mu^x/x! * times
-				// var fR = Math.exp(-mu) * (mu**x)/fact(x) * times ;
+				fR *= times ;
 				fR = fR.toFixed(0) ;
+				
 				if(fR>0)
 				{
 					for(var j = 0 ; j<fR ; j ++)

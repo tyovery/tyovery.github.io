@@ -28,6 +28,7 @@ Tested on Chrome 83.0.4103.97</div>
 <script>
 var dev = 0 ;
 var times = 0 ;
+var status = 0 ; // 0=未在進行遊戲 , 1=正在進行遊戲
 var ans ; // 謎底
 var ans_feq ; // 謎底數字頻數表
 
@@ -47,10 +48,21 @@ function key_press()
 
 function newGame_setting()
 {
-	tool(0); // 隱藏工具
-	tool(-1); // 數字按鈕 1~16
-	play_msg.innerHTML="請輸入謎底數字的長度。(1~16)<br />";
-	playerSubmit.setAttribute("onClick","newGame(playerInput.value);");
+	if ( status == 1 && confirm("遊戲進行中，是否要中斷當前的遊戲，並開始新的一局？") )
+	{
+		var txt2log = "#玩家中斷了這場遊戲。<br />" ;
+		txt2log += "謎底是："+ans+"<br />" ;
+		log.innerHTML = txt2log + "<br />" + log.innerHTML ;
+
+		status = 0 ;
+	}
+	if( status == 0 )
+	{
+		tool(0); // 隱藏工具
+		tool(-1); // 數字按鈕 1~16
+		play_msg.innerHTML="請輸入謎底數字的長度。(1~16)<br />";
+		playerSubmit.setAttribute("onClick","newGame(playerInput.value);");
+	}
 }
 
 function newGame(ans_length)
@@ -86,6 +98,7 @@ function newGame(ans_length)
 
 		times = 0; // reset times
 		tool(1) ; // 顯示工具
+		status = 1 ; // 遊戲狀態設為正在進行中
 		trying("start"); // 開始遊戲
 	}
 	else
@@ -155,6 +168,7 @@ function exist(guess_exist) // 玩家認為謎底中存在的數字
 
 function giveup() // 開估
 {
+	if(confirm("您真的要放棄這場遊戲嗎？")){
 	// 按鈕
 	tool(0); // 隱藏工具
 	playerSubmit.setAttribute("onClick","play_msg.innerHTML = '按「新遊戲」開始一場新的猜測。';");
@@ -167,6 +181,9 @@ function giveup() // 開估
 	var txt2msg = "您放棄了這場遊戲。<br />" ;
 	txt2msg += "謎底是：" + ans + "<br />" ;
 	play_msg.innerHTML = txt2msg ;
+	
+	status = 0 ; // 遊戲狀態設為未在進行中
+	}
 }
 
 function checkAns(guess)
@@ -185,6 +202,8 @@ function checkAns(guess)
 			txt2log += "* 恭喜玩家猜中了謎底：" + ans + "<br /><br />" ;
 			log.innerHTML = txt2log + log.innerHTML ;
 			play_msg.innerHTML = "恭喜您猜中了謎底：" + ans + "<br />猜測次數："+times;
+			
+			status = 0 ; // 遊戲狀態設為未在進行中
 		}
 		else
 		{

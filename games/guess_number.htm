@@ -117,7 +117,7 @@ function flag(ban) // 玩家認為謎底中沒有的數字
 			ban_list.push(ban[k]);
 		}
 		ban_list = [...new Set(ban_list)] ;
-		var txt2log = "<font color='#b00'>玩家認為謎底中沒有的數字："+ ban_list.join(" , ") +"</font><br />" ;
+		var txt2log = "<font color='#B00'>玩家認為謎底中沒有的數字："+ ban_list.join(" , ") +"</font><br />" ;
 		// var comb = (10-ban_list.length)**ans.length ;
 		// txt2log += "剩餘變化量：" + separ(comb) + "<br />";
 		log.innerHTML = txt2log + "<br />" + log.innerHTML ;
@@ -212,10 +212,14 @@ function checkAns(guess)
 			C = B-A ;
 			
 			// 輸出
-			var txt2log = "玩家第 "+times+" 次猜測：" + guess + "<br />" ;
+			if(B==0) var txt2log = '<font color="#B00">' ;
+			else if(B==ans.length) var txt2log = '<font color="#070">' ;
+			else var txt2log = "<font>" ;
+			txt2log += "玩家第 "+times+" 次猜測：" + guess + "<br />" ;
 			txt2log += "正確 = " + A + "<br />" ;
-			txt2log += "錯位 = " + C + "<br /><br />" ;
-			log.innerHTML = txt2log + log.innerHTML ;
+			txt2log += "錯位 = " + C + "<br />" ;
+			txt2log += "</font>"
+			log.innerHTML = txt2log + "<br />" + log.innerHTML ;
 			if(dev)
 			{
 				var txt2msg = ans + " = 謎底<br />" ;

@@ -46,6 +46,14 @@ var mean_iq ; // 四分平均數
 var min , max , mid_range , range_half=[] , range , range_c , range_b , iqr , qd  ;
 // 最小值,最大值,中程數,半距,全距,全距係數,平均間距,四分位距,四分位差
 
+var z_99_2 , z_99_2_mean = [] ;
+var z_99_1 , z_99_1_mean = [] ;
+var z_95_2 , z_95_2_mean = [] ;
+var z_95_1 , z_95_1_mean = [] ;
+var z_90_2 , z_90_2_mean = [] ;
+var z_90_1 , z_90_1_mean = [] ;
+// 置信區間
+
 function inputClear()
 {
 	pop = [] ;
@@ -458,6 +466,43 @@ function inputSub(parameter)
 	if(pop.length>1) qd = iqr/2 ;
 	else qd = " - " ;
 	
+	// 置信區間
+	if( ( dataSet_sample.checked && size>1 ) || ( dataSet_population.checked && size>0 ) )
+	{
+		z_99_2 = (2.575829 * se).toFixed(6)*1 ;
+		z_99_1 = (2.326348 * se).toFixed(6)*1 ;
+		z_95_2 = (1.959964 * se).toFixed(6)*1 ;
+		z_95_1 = (1.644854 * se).toFixed(6)*1 ;
+		z_90_2 = (1.644854 * se).toFixed(6)*1 ;
+		z_90_1 = (1.281552 * se).toFixed(6)*1 ;
+		
+		// 算術平均數
+		z_99_2_mean = [(mean - z_99_2).toFixed(6)*1 , (mean + z_99_2).toFixed(6)*1] ;
+		z_99_1_mean = [(mean - z_99_1).toFixed(6)*1 , (mean + z_99_1).toFixed(6)*1] ;
+		z_95_2_mean = [(mean - z_95_2).toFixed(6)*1 , (mean + z_95_2).toFixed(6)*1] ;
+		z_95_1_mean = [(mean - z_95_1).toFixed(6)*1 , (mean + z_95_1).toFixed(6)*1] ;
+		z_90_2_mean = [(mean - z_90_2).toFixed(6)*1 , (mean + z_90_2).toFixed(6)*1] ;
+		z_90_1_mean = [(mean - z_90_1).toFixed(6)*1 , (mean + z_90_1).toFixed(6)*1] ;
+
+	}
+	else
+	{
+		z_99_2 = "無法估計" ;
+		z_99_1 = "無法估計" ;
+		z_95_2 = "無法估計" ;
+		z_95_1 = "無法估計" ;
+		z_90_2 = "無法估計" ;
+		z_90_1 = "無法估計" ;
+		
+		// 算術平均數
+		z_99_2_mean = ["無法估計"] ;
+		z_99_1_mean = ["無法估計"] ;
+		z_95_2_mean = ["無法估計"] ;
+		z_95_1_mean = ["無法估計"] ;
+		z_90_2_mean = ["無法估計"] ;
+		z_90_1_mean = ["無法估計"] ;
+	}
+	
 	// 轉成以頻數表示
 	poplist = [] ; // [ 0:數據 , 1:頻數 , 2:累積頻數 , 3:離差 ] 
 	var poplist_match ;
@@ -600,12 +645,24 @@ function inputSub(parameter)
 	{
 		DisplayArea.innerHTML += "標準誤 ( SE )：" + se + "<br />" ;
 	}
-	DisplayArea.innerHTML += "99% 2尾：z &#8776; &#177; 2.575829<br />" ;
-	DisplayArea.innerHTML += "99% 1尾：z &#8776; &#177; 2.326348<br />" ;
-	DisplayArea.innerHTML += "95% 2尾：z &#8776; &#177; 1.959964<br />" ;
-	DisplayArea.innerHTML += "95% 1尾：z &#8776; &#177; 1.644854<br />" ;
-	DisplayArea.innerHTML += "90% 2尾：z &#8776; &#177; 1.644854<br />" ;
-	DisplayArea.innerHTML += "90% 1尾：z &#8776; &#177; 1.281552<br />" ;
+	DisplayArea.innerHTML += "99% 2尾：z &#8776; &#177; 2.575829 , " ;
+	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_2+" , " ;
+	DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_2_mean.join(" , ")+")<br />" ;
+	DisplayArea.innerHTML += "99% 1尾：z &#8776; &#177; 2.326348 , " ;
+	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_1+" , " ;
+	DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_1_mean.join(" , ")+")<br />" ;
+	DisplayArea.innerHTML += "95% 2尾：z &#8776; &#177; 1.959964 , " ;
+	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_95_2+" , " ;
+	DisplayArea.innerHTML += "平均值 &#8776; ("+z_95_2_mean.join(" , ")+")<br />" ;
+	DisplayArea.innerHTML += "95% 1尾：z &#8776; &#177; 1.644854 , " ;
+	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_95_1+" , " ;
+	DisplayArea.innerHTML += "平均值 &#8776; ("+z_95_1_mean.join(" , ")+")<br />" ;
+	DisplayArea.innerHTML += "90% 2尾：z &#8776; &#177; 1.644854 , " ;
+	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_90_2+" , " ;
+	DisplayArea.innerHTML += "平均值 &#8776; ("+z_90_2_mean.join(" , ")+")<br />" ;
+	DisplayArea.innerHTML += "90% 1尾：z &#8776; &#177; 1.281552 , " ;
+	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_90_1+" , " ;
+	DisplayArea.innerHTML += "平均值 &#8776; ("+z_90_1_mean.join(" , ")+")<br />" ;
 	
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
 	DisplayArea.innerHTML += "均勻分布"+"(未寫)"+"<br />" ;

@@ -469,20 +469,20 @@ function inputSub(parameter)
 	// 置信區間
 	if( ( dataSet_sample.checked && size>1 ) || ( dataSet_population.checked && size>0 ) )
 	{
-		z_99_2 = (2.575829 * se).toFixed(6)*1 ;
-		z_99_1 = (2.326348 * se).toFixed(6)*1 ;
-		z_95_2 = (1.959964 * se).toFixed(6)*1 ;
-		z_95_1 = (1.644854 * se).toFixed(6)*1 ;
-		z_90_2 = (1.644854 * se).toFixed(6)*1 ;
-		z_90_1 = (1.281552 * se).toFixed(6)*1 ;
+		z_99_2 = (2.575829 * se).toFixed(6) ;
+		z_99_1 = (2.326348 * se).toFixed(6) ;
+		z_95_2 = (1.959964 * se).toFixed(6) ;
+		z_95_1 = (1.644854 * se).toFixed(6) ;
+		z_90_2 = (1.644854 * se).toFixed(6) ;
+		z_90_1 = (1.281552 * se).toFixed(6) ;
 		
 		// 算術平均數
-		z_99_2_mean = [(mean - z_99_2).toFixed(6)*1 , (mean + z_99_2).toFixed(6)*1] ;
-		z_99_1_mean = [(mean - z_99_1).toFixed(6)*1 , (mean + z_99_1).toFixed(6)*1] ;
-		z_95_2_mean = [(mean - z_95_2).toFixed(6)*1 , (mean + z_95_2).toFixed(6)*1] ;
-		z_95_1_mean = [(mean - z_95_1).toFixed(6)*1 , (mean + z_95_1).toFixed(6)*1] ;
-		z_90_2_mean = [(mean - z_90_2).toFixed(6)*1 , (mean + z_90_2).toFixed(6)*1] ;
-		z_90_1_mean = [(mean - z_90_1).toFixed(6)*1 , (mean + z_90_1).toFixed(6)*1] ;
+		z_99_2_mean = [(mean - z_99_2*1).toFixed(6) , (mean + z_99_2*1).toFixed(6)] ;
+		z_99_1_mean = [(mean - z_99_1*1).toFixed(6) , (mean + z_99_1*1).toFixed(6)] ;
+		z_95_2_mean = [(mean - z_95_2*1).toFixed(6) , (mean + z_95_2*1).toFixed(6)] ;
+		z_95_1_mean = [(mean - z_95_1*1).toFixed(6) , (mean + z_95_1*1).toFixed(6)] ;
+		z_90_2_mean = [(mean - z_90_2*1).toFixed(6) , (mean + z_90_2*1).toFixed(6)] ;
+		z_90_1_mean = [(mean - z_90_1*1).toFixed(6) , (mean + z_90_1*1).toFixed(6)] ;
 
 	}
 	else
@@ -567,7 +567,7 @@ function inputSub(parameter)
 		PobiSum>25?'<td style="background-color: #AAAAAA;">':
 		'<td style="background-color: #D5D5D5;">')+PobiSum+'%</td>\
 		<td>'+poplist[k][0]*poplist[k][1]+'</td>\
-		<td>'+((poplist[k][0]-mean)/sd).toFixed(6)+'</td>\
+		<td>'+(sd>0 ? ((poplist[k][0]-mean)/sd).toFixed(6) : ' - ')+'</td>\
 		<td>'+(poplist[k][3]).toFixed(6)+'</td>\
 		<td>'+(poplist[k][3]**2).toFixed(6)+'</td>\
 		</tr>';
@@ -581,11 +581,12 @@ function inputSub(parameter)
 	<td></td>\
 	<td></td>\
 	<td>&#931;xy<br />= '+sum+'</td>\
-	<td>'+(dataSet_sample.checked?'s':'&#963;')+'<br />= '+sd_fix+'</td>\
+	<td>'+(dataSet_sample.checked?'s':'&#963;')+'<br />= '+(sd>=0?sd_fix:' - ')+'</td>\
 	<td>'+(dataSet_sample.checked?'x&#772;':'&#956;')+'<br />= '+mean_fix+'</td>\
 	<td>&#931;'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup>y<br />= '+dev2sum_fix+'</td>\
 	</tr>';
 
+	// 詳細參數輸出
 	txt2htm +='</tbody><tbody></tbody></table>';
 	DisplayAreaPop.innerHTML = txt2htm ;
 	// DisplayAreaPop.innerHTML += pop.join(" , ") + "<br />" ;

@@ -54,6 +54,9 @@ var z_90_2 , z_90_2_mean = [] ;
 var z_90_1 , z_90_1_mean = [] ;
 // 置信區間
 
+var firstHit_p , firstHit_p_mid , firstHit_mean , firstHit_mean_geo ;
+// 單次機率估計(平均比例) , 單次機率估計(中位比例) , 單次機率估計(算術平均數) , 單次機率估計(幾何平均值)
+
 function inputClear()
 {
 	pop = [] ;
@@ -458,11 +461,11 @@ function inputSub(parameter)
 	if(pop.length>1) range_b = range / ( pop.length - 1 ) ;
 	else range_b = " - " ;
 	
-	//四分位距
+	// 四分位距
 	if(pop.length>1) iqr = q3-q1 ;
 	else iqr = " - " ;
 	
-	//四分位差
+	// 四分位差
 	if(pop.length>1) qd = iqr/2 ;
 	else qd = " - " ;
 	
@@ -532,6 +535,43 @@ function inputSub(parameter)
 		}
 	}
 	// alert(poplist.join("\n"));
+	
+	// 單次機率估計(平均比例)
+	if(size>0)
+	{
+		firstHit_p = size / sum ;
+	}
+	else firstHit_p = "-" ;
+	
+	// 單次機率估計(中位比例)
+	if(size>0)
+	{
+		firstHit_p_mid = 1/median ;
+	}
+	else firstHit_p_mid = "-" ;
+
+	// 單次機率估計(算術平均值)
+	if(size>0)
+	{
+		firstHit_mean = 0 ;
+		for(var k = 0 ; k< poplist.length ; k ++)
+		{
+			firstHit_mean += poplist[k][1]/poplist[k][0] ;
+		}
+		firstHit_mean /= size ;
+	}
+	else firstHit_mean = "-" ;
+	
+	// 單次機率估計(幾何平均值)
+	if(size>0)
+	{
+		firstHit_mean_geo = 1 ;
+		for(var k = 0 ; k< poplist.length ; k ++)
+		{
+			firstHit_mean_geo /= poplist[k][0]**(poplist[k][1]/size) ;
+		}
+	}
+	else firstHit_mean_geo = "-" ;
 	
 	// 表格輸出
 	var txt2htm = "<p>"+(dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )</p>" + '<table border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: -12px; background-color: #FFFFFF; text-align: center; color: #000000">\
@@ -637,6 +677,14 @@ function inputSub(parameter)
 		DisplayArea.innerHTML += "變異係數 ( CV )：" + cv + "<br />" ;
 	}
 	
+	// 單次機率估計
+	DisplayArea.innerHTML += "<br />< 單次機率估計 ><br />" ;
+	DisplayArea.innerHTML += "平均比例："+firstHit_p+"<br />" ;
+	DisplayArea.innerHTML += "中位比例："+firstHit_p_mid+"<br />" ;
+	DisplayArea.innerHTML += "幾何平均值："+firstHit_mean_geo+"<br />" ;
+	DisplayArea.innerHTML += "算術平均值："+firstHit_mean+"<br />" ;
+
+	// 抽樣分布
 	DisplayArea.innerHTML += "<br />< 抽樣分布 ><br />" ;
 	if(dataSet_sample.checked && size==1)
 	{
@@ -664,7 +712,7 @@ function inputSub(parameter)
 	DisplayArea.innerHTML += "90% 1尾：z &#8776; &#177; 1.281552 , " ;
 	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_90_1+" , " ;
 	DisplayArea.innerHTML += "平均值 &#8776; ("+z_90_1_mean.join(" , ")+")<br />" ;
-	
+
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
 	DisplayArea.innerHTML += "均勻分布"+"(未寫)"+"<br />" ;
 	DisplayArea.innerHTML += "常態分布"+"(未寫)"+"<br />" ;
@@ -676,14 +724,14 @@ function inputSub(parameter)
 
 function inputRandom(input,numSet)
 {
-	var array = input.split(","); // [最少,最大,個數]
+	var array = input.split(","); // [最少,最大,個數,出現該數即停止]
 	if(array[0]*1>array[1]*1) // 修正範圍
 	{
 		var buf = array[0] ;
 		array[0] = array[1] ;
 		array[1] = buf ;
 	}
-	
+
 	var RandomNumber ; // 準備產生的隨機數 (未轉換)
 	var change = x => eval(inputChange.value + "") ; // 使用者自定的轉換函數 f(x)
 	for(var n = 0 ; n < array[2]*1 ; n++)
@@ -693,10 +741,12 @@ function inputRandom(input,numSet)
 		else RandomNumber = Math.random()*(array[1]-array[0])+array[0]*1;
 		
 		var output = change(RandomNumber) ; // 經使用者自定函數轉換
-		
+
 		pop.push(output); // 輸出
+		
+		if(output == array[3]) break ; // 出現特定數字,停止.
 	}
-	inputSub();
+	inputSub("stay");
 }
 
 function randomDelete(max)
@@ -968,7 +1018,7 @@ function addDist_norm(mu,sigma,times) // 常態分布
 <input type="button" value="加入 帕松分布(...)" onClick="addDist_ps(prompt('請輸入平均值。'),prompt('請輸入欲產生的數據量'));" />
 <input type="button" value="加入 常態分布(...)" onClick="addDist_norm(prompt('請輸入平均值。'),prompt('請輸入標準差。'),prompt('請輸入欲產生的數據量'));" />
 <br /><br />
-加入隨機數(最少,最大,個數)：
+加入隨機數(最少,最大,個數,目標數字)：
 <input id="inputRange" type="text" value="0,1,1000" size="30" />
 <input type="button" value="加入整數" onClick="inputRandom(inputRange.value,'int');" />
 <input type="button" value="加入實數" onClick="inputRandom(inputRange.value,'real');" />

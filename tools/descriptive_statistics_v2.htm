@@ -695,8 +695,8 @@ function inputSub(parameter)
 
 	// 單次機率估計
 	DisplayArea.innerHTML += "<br />< 單次機率估計 >" ;
-	help_firstHit = "當 x 在表示成功間距時(至上次成功後，第 x 次試驗成功)，";
-	help_firstHit += "用以估計單次的成功機率(p)。\n\n" ;
+	help_firstHit = "x 表示成功間距。即是，自上次成功後，接下來第 x 次試驗成功。\n\n";
+	help_firstHit += "這些數值用以估計單次的成功機率(p)。\n" ;
 	help_firstHit += "其估計值為集中趨勢的倒數。" ;
 	DisplayArea.innerHTML += ' <input type="button" value="?" onClick="alert(help_firstHit);"/><br />' ;
 	DisplayArea.innerHTML += "算術平均數比例："+firstHit_mean+"<br />" ;

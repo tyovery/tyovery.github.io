@@ -55,14 +55,15 @@ var z_90_2 , z_90_2_mean = [] ;
 var z_90_1 , z_90_1_mean = [] ;
 
 // 單次機率估計
-var firstHit_mean , firstHit_median , firstHit_mean_geo , firstHit_mean_har ;
-// 算術平均比例 , 中位數比例 , 幾何平均比例 , 調和平均比例
+var firstHit_mean , firstHit_median , firstHit_mode , firstHit_mean_geo , firstHit_mean_har ;
+// 算術平均比例 , 中位數比例 , 眾數比例 , 幾何平均比例 , 調和平均比例
 
 // 說明
 var help_cenTen ; // 集中趨勢
 var help_firstHit ; // 單次機率估計
 var help_disper ; // 分散程度
 var help_samDist ; // 抽樣分布
+var help_exportData ; // 導出數據
 
 function inputClear()
 {
@@ -405,7 +406,7 @@ function inputSub(parameter)
 	// 眾數
 	if(size>0)
 	{
-		mode = [] ; // 眾數[元素,數量]
+		mode = [] ; // 眾數[元素,數量,平均值]
 		var check = [...new Set(pop)] ; // 樣本(不重複)
 		var count = [] ; // 記錄樣本出現次數
 		for(var n=0 ; n<check.length ; n++)
@@ -433,8 +434,15 @@ function inputSub(parameter)
 				mode[1] = count[0] ; // 數量
 			}
 		}
+		// 眾數平均值
+		mode[2] = 0 ;
+		for(var k=0 ; k < mode[0].length ; k ++)
+		{
+			mode[2] += mode[0][k] ;
+		}
+		mode[2] /= mode[0].length ;
 	}
-	else mode = [["-"],0] ;
+	else mode = [["-"],0,"-"] ;
 	
 	// 最小值
 	if(pop.length>0) min = pop[0];
@@ -556,6 +564,15 @@ function inputSub(parameter)
 		firstHit_median = 1/median ;
 	}
 	else firstHit_median = "-" ;
+	
+	// 單次機率估計(眾數比例)
+	if(size>0)
+	{
+		//if(mode[0].length == 1)
+		firstHit_mode = 1/mode[2] ;
+		// else firstHit_mode = "眾數不唯一" ;
+	}
+	else firstHit_mode = "-" ;
 
 	// 單次機率估計(幾何平均數比例)
 	if(size>0)
@@ -649,8 +666,8 @@ function inputSub(parameter)
 	// 集中趨勢
 	DisplayArea.innerHTML += "<br />< 集中趨勢 >" ;
 	help_cenTen = "反映數據的集中狀況，或可理解為長遠回報。\n\n" ;
-	help_cenTen += "由於每個數據都對「算術平均數」有貢獻，" ;
-	help_cenTen += "好處是根據力度強，壞處是易受極端值影響其準確性。\n\n" ;
+	help_cenTen += "每個數據都對「算術平均數」有貢獻。\n" ;
+	help_cenTen += "好處是根據力度強；壞處是易受極端值影響。\n\n" ;
 	help_cenTen += "「中位數」以數據大小順序為基準，故不易受極端值影響。\n" ;
 	help_cenTen += "可是對於集中於兩端的數據，不能表達其集中性。\n\n" ;
 	help_cenTen += "「眾數」是出現得最多的數字，有利於表達具有明確集中處的數據。";
@@ -668,6 +685,7 @@ function inputSub(parameter)
 		DisplayArea.innerHTML += mode[0].join(" , ") ;
 	}
 	DisplayArea.innerHTML += " (各有 " + mode[1] + " 個)<br />" ;
+	DisplayArea.innerHTML += "眾數平均值 ( Mean of Mode )：" + mode[2] + "<br />" ;
 	DisplayArea.innerHTML += "四分平均數 ( Interquartile Mean )：" + mean_iq + "<br />" ;
 	DisplayArea.innerHTML += "三均值 ( TM / Mrimean )：" + mean_mri + "<br />" ;
 	DisplayArea.innerHTML += "中樞紐 ( Midhinge )：" + mid_hinge + "<br />" ;
@@ -677,11 +695,13 @@ function inputSub(parameter)
 
 	// 單次機率估計
 	DisplayArea.innerHTML += "<br />< 單次機率估計 >" ;
-	help_firstHit = "當 x 在表示成功間距時，用以估計單次的成功機率(p)。\n" ;
+	help_firstHit = "當 x 在表示成功間距時(至上次成功後，第 x 次試驗成功)，";
+	help_firstHit += "用以估計單次的成功機率(p)。\n\n" ;
 	help_firstHit += "其估計值為集中趨勢的倒數。" ;
 	DisplayArea.innerHTML += ' <input type="button" value="?" onClick="alert(help_firstHit);"/><br />' ;
 	DisplayArea.innerHTML += "算術平均數比例："+firstHit_mean+"<br />" ;
 	DisplayArea.innerHTML += "中位數比例："+firstHit_median+"<br />" ;
+	DisplayArea.innerHTML += "眾數比例："+firstHit_mode+"<br />" ;
 	DisplayArea.innerHTML += "幾何平均數比例："+firstHit_mean_geo+"<br />" ;
 	DisplayArea.innerHTML += "調和平均數比例："+firstHit_mean_har+"<br />" ;
 
@@ -1034,6 +1054,12 @@ function addDist_norm(mu,sigma,times) // 常態分布
 	else alert("輸入無效。");
 }
 
+function exportData() // 導出數據
+{
+	export_area.innerHTML = '<textarea cols="100%" rows="20" >'+pop+'</textarea>' ;
+}
+help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
+
 </script>
 
 <center>
@@ -1093,6 +1119,11 @@ function addDist_norm(mu,sigma,times) // 常態分布
 <br />
 <input type="button" value="移除首尾項" onClick="popMinus();" />
 <input type="button" value="全部清空" onClick="inputClear();" />
+<br /><br />
+<input type="button" value="導出數據" onClick="exportData();" />
+<input type="button" value="?" onClick="alert(help_exportData);" />
+<br />
+<div id="export_area" ></div>
 <br /><br /><br />
 
 

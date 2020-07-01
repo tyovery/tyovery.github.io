@@ -36,7 +36,7 @@ var pop = [] , poplist = [] ; // data set , data set 表格
 
 var size , sum , mean , mean_geo , mean_har , dev2sum , vari , sd , md , mode , cv , se;
 // 樣本數,加總,期望值,幾何平均數,調和平均數,差方和,變異數,標準差,平均差,眾數,變異係數,標準誤
-var mean_fix , dev2sum_fix , sd_fix ; // 約數
+var mean_fix , dev2sum_fix , sd_fix , se_fix ; // 約數
 var fix_d = 6 ; // 約數小數位
 
 var median , q1 , q3 ; // 四分位數
@@ -336,8 +336,13 @@ function inputSub(parameter)
 	if(size>0)
 	{
 		se = Math.sqrt(vari/size) ;
+		se_fix = se.toFixed(fix_d) ;
 	}
-	else se = "-" ;
+	else
+	{
+		se = "-" ;
+		se_fix = "-" ;
+	}
 	
 	// 四分位數 ( q1 , median , q3 )
 	var L , R , pos ; // 左數列 , 右數列 , 位置
@@ -602,58 +607,85 @@ function inputSub(parameter)
 	}
 	else firstHit_mean_har = "-" ;
 
-	// 表格輸出
-	var txt2htm = "<p>"+(dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )</p>" + '<table border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: -12px; background-color: #FFFFFF; text-align: center; color: #000000">\
-	<thead><tr>\
-	<th>控制</th>\
-	<th>x<br />數據</th>\
-	<th>y<br />頻數</th>\
-	<th>&#931;y<br />累積頻數</th>\
-	<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />比例</th>\
-	<th>(&#931;y)/'+(dataSet_sample.checked?'n':'N')+'<br />累積比例</th>\
-	<th>xy<br />加權</th>\
-	<th>z-score<br />標準分</th>\
-	<th>'+(dataSet_sample.checked?'x-x&#772;':'x-&#956;')+'<br />離差</th>\
-	<th>'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup><br />離差平方</th>\
-	</tr></thead><tbody>';
+	// 表格輸出 - 頭部
+	var txt2htm = "<p>"+(dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )</p>" + '<table border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: -12px; background-color: #FFFFFF; text-align: center; color: #000000">';
+	txt2htm += '<thead><tr>';
+	txt2htm += '<th>控制</th>';
+	txt2htm += '<th>x<br />數據</th>';
+	txt2htm += '<th>y<br />頻數</th>';
+	txt2htm += '<th>&#931;y<br />累積頻數</th>';
+	txt2htm += '<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />比例</th>';
+	txt2htm += '<th>(&#931;y)/'+(dataSet_sample.checked?'n':'N')+'<br />累積比例</th>';
+	txt2htm += '<th>xy<br />加權</th>';
+	txt2htm += '<th>z-score<br />標準分</th>';
+	txt2htm += '<th>Sampling z<br />抽樣標準分</th>';
+	txt2htm += '<th>'+(dataSet_sample.checked?'x-x&#772;':'x-&#956;')+'<br />離差</th>';
+	txt2htm += '<th>'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup><br />離差平方</th>';
+	txt2htm += '</tr></thead><tbody>';
 
+	// 表格輸出 - 軀幹
 	for(var k = 0 ; k<poplist.length ; k++)
 	{
 		// 累積比例
 		var PobiSum = (poplist[k][2]/size*100).toFixed(2) ;
 		
-		txt2htm +='<tr>\
+		// 控制
+		txt2htm += '<tr>\
 		<td><input id="ctrl_edit_'+k+'" type="button" value="修改頻數" onClick="ctrl_click(this.id,prompt(\'頻數更改為：\'));" />\
 		<input id="ctrl_del_'+k+'" type="button" value="-1" onClick="ctrl_click(this.id);" />\
-		<input id="ctrl_add_'+k+'" type="button" value="+1" onClick="ctrl_click(this.id);" /></td>\
-		'+(poplist[k][0]==median?'<td style="background-color: #00AF3F;">':
-		poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][0]+'</td>\
-		'+(poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][1]+'</td>\
-		<td>'+poplist[k][2]+'</td>\
-		'+(poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+(poplist[k][1]/size*100).toFixed(2)+'%</td>\
-		'+(PobiSum>75?'<td style="background-color: #545454;color: #DFDFDF;">':
+		<input id="ctrl_add_'+k+'" type="button" value="+1" onClick="ctrl_click(this.id);" /></td>';
+		
+		// 數據(x)
+		txt2htm += (poplist[k][0]==median?'<td style="background-color: #00AF3F;">':
+		poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][0]+'</td>';
+		
+		// 頻數(y)
+		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][1]+'</td>';
+		
+		// 累積頻數
+		txt2htm += '<td>'+poplist[k][2]+'</td>';
+		
+		// 比例
+		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+(poplist[k][1]/size*100).toFixed(2)+'%</td>';
+		
+		// 累積比例
+		txt2htm += (PobiSum>75?'<td style="background-color: #545454;color: #DFDFDF;">':
 		PobiSum>50?'<td style="background-color: #7F7F7F;color: #DFDFDF;">':
 		PobiSum>25?'<td style="background-color: #AAAAAA;">':
-		'<td style="background-color: #D5D5D5;">')+PobiSum+'%</td>\
-		<td>'+poplist[k][0]*poplist[k][1]+'</td>\
-		<td>'+(sd>0 ? ((poplist[k][0]-mean)/sd).toFixed(6) : ' - ')+'</td>\
-		<td>'+(poplist[k][3]).toFixed(6)+'</td>\
-		<td>'+(poplist[k][3]**2).toFixed(6)+'</td>\
-		</tr>';
+		'<td style="background-color: #D5D5D5;">')+PobiSum+'%</td>';
+		
+		// 加權(xy)
+		txt2htm += '<td>'+poplist[k][0]*poplist[k][1]+'</td>';
+		
+		// 標準分
+		txt2htm += '<td>'+(sd>0 ? ((poplist[k][0]-mean)/sd).toFixed(6) : ' - ')+'</td>';
+
+		// 抽樣標準分
+		txt2htm += '<td>'+(se>0 ? ((poplist[k][0]-mean)/se).toFixed(6) : ' - ')+'</td>';
+		
+		// 離差
+		txt2htm += '<td>'+(poplist[k][3]).toFixed(6)+'</td>';
+		
+		// 離差平方
+		txt2htm += '<td>'+(poplist[k][3]**2).toFixed(6)+'</td>';
+		
+		txt2htm += '</tr>';
 	}
 
-	txt2htm +='<tr>\
-	<td></td>\
-	<td>Range<br />= '+range+'</td>\
-	<td></td>\
-	<td>'+(dataSet_sample.checked?'n':'N')+'<br />= '+size+'</td>\
-	<td></td>\
-	<td></td>\
-	<td>&#931;xy<br />= '+sum+'</td>\
-	<td>'+(dataSet_sample.checked?'s':'&#963;')+'<br />= '+(sd>=0?sd_fix:' - ')+'</td>\
-	<td>'+(dataSet_sample.checked?'x&#772;':'&#956;')+'<br />= '+mean_fix+'</td>\
-	<td>&#931;'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup>y<br />= '+dev2sum_fix+'</td>\
-	</tr>';
+	// 表格輸出 - 尾部
+	txt2htm += '<tr>';
+	txt2htm += '<td></td>';
+	txt2htm += '<td>Range<br />= '+range+'</td>';
+	txt2htm += '<td></td>';
+	txt2htm += '<td>'+(dataSet_sample.checked?'n':'N')+'<br />= '+size+'</td>';
+	txt2htm += '<td></td>';
+	txt2htm += '<td></td>';
+	txt2htm += '<td>&#931;xy<br />= '+sum+'</td>';
+	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&#963;')+'<br />= '+(sd>=0?sd_fix:' - ')+'</td>';
+	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&#963;')+'/&#8730;n<br />= '+(se>=0?se_fix:' - ')+'</td>';
+	txt2htm += '<td>'+(dataSet_sample.checked?'x&#772;':'&#956;')+'<br />= '+mean_fix+'</td>';
+	txt2htm += '<td>&#931;'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup>y<br />= '+dev2sum_fix+'</td>';
+	txt2htm += '</tr>';
 
 	// 詳細參數輸出
 	txt2htm +='</tbody><tbody></tbody></table>';
@@ -737,13 +769,17 @@ function inputSub(parameter)
 	// 抽樣分布
 	DisplayArea.innerHTML += "<br />< 抽樣分布 >" ;
 	help_samDist = "用於抽樣估計或抽樣檢驗。\n\n" ;
-	help_samDist += "標準誤(Standard Error)作為抽樣分布的標準差。\n\n" ;
+	help_samDist += "標準誤(Standard Error)，作為抽樣分布的標準差。\n\n" ;
+	
 	help_samDist += "抽樣估計：\n" ;
-	help_samDist += "以樣本參數作為母體參數的「點估計」，兩側張開一定範圍，有某機率包含母體參數。\n\n" ;
+	help_samDist += "以「樣本參數」作為「母體參數」的「估計點」，\n" ;
+	help_samDist += "兩側張開一定範圍作為「估計區間」，有某機率(置信度)包含「母體參數」。\n\n" ;
+	
 	help_samDist += "抽樣檢驗：\n" ;
-	help_samDist += "以母體參數作為樣本參數的「點估計」，兩側張開一定範圍，";
-	help_samDist += "樣本參數有某機率落在這區間內。" ;
-	help_samDist += "抽取樣本，檢驗是否落在該區間內。\n\n" ;
+	help_samDist += "以「母體參數」作為「樣本參數」的「估計點」，\n";
+	help_samDist += "兩側張開一定範圍作為「估計區間」，「樣本參數」有某機率(置信度)落在這區間內。\n" ;
+	help_samDist += "抽取樣本，檢驗「樣本參數」是否落在該區間內。\n\n" ;
+	
 	help_samDist += "若參數在區間外，代表有顯著性差異。" ;
 	DisplayArea.innerHTML += ' <input type="button" value="?" onClick="alert(help_samDist);"/><br />' ;
 	if(dataSet_sample.checked && size==1)

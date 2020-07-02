@@ -608,9 +608,9 @@ function inputSub(parameter)
 	else firstHit_mean_har = "-" ;
 
 	// 表格輸出 - 頭部
-	var txt2htm = "<p>"+(dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )</p>" + '<table border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: -12px; background-color: #FFFFFF; text-align: center; color: #000000">';
+	var txt2htm = "<p>"+(dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )</p>" + '<table id="dataTable" border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: -12px; background-color: #FFFFFF; text-align: center; color: #000000">';
 	txt2htm += '<thead><tr>';
-	txt2htm += '<th>控制</th>';
+	txt2htm += '<th>控制項</th>';
 	txt2htm += '<th>x<br />數據</th>';
 	txt2htm += '<th>y<br />頻數</th>';
 	txt2htm += '<th>&#931;y<br />累積頻數</th>';
@@ -674,7 +674,8 @@ function inputSub(parameter)
 
 	// 表格輸出 - 尾部
 	txt2htm += '<tr>';
-	txt2htm += '<td></td>';
+	txt2htm += '<td><input type="button" value="v 其他控制項 v" \
+	onClick="inputValue.focus();inputValue.select();" /></td>';
 	txt2htm += '<td>Range<br />= '+range+'</td>';
 	txt2htm += '<td></td>';
 	txt2htm += '<td>'+(dataSet_sample.checked?'n':'N')+'<br />= '+size+'</td>';
@@ -1118,7 +1119,9 @@ function addDist_norm(mu,sigma,times) // 常態分布
 
 function exportData() // 導出數據
 {
-	export_area.innerHTML = '<textarea cols="100%" rows="20" >'+pop+'</textarea>' ;
+	export_area.innerHTML = '<textarea id="exportBox" cols="95%" rows="20" >'+pop+'</textarea>' ;
+	exportBox.focus();
+	exportBox.select();
 }
 help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 
@@ -1136,6 +1139,8 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 		<input type="radio" name="dataSet" id="dataSet_sample" value="sample" checked >樣本</input>
 	</span>
 </form>
+<a href="#dataTable"><input type="button" value="^ 移到表格 ^" /></a>
+<br /><br />
 <input type="button" value="清空輸入框" onClick="inputValue.value='';" />
 <input type="button" value="e" onClick="inputValue.value+=',2.718281828459045';" />
 <input type="button" value="pi" onClick="inputValue.value+=',3.141592653589793';" />

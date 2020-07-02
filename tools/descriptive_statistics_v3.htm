@@ -156,7 +156,7 @@ function ctrl_click(id,frequency) // 控制button (行數,頻數)
 		}
 		else if(checker[1] == "edit") // 自定
 		{
-			var f = parseInt(frequency) ;
+			var f = eval(frequency).toFixed(0) ;
 			if(f>=0)
 			{
 				if(f > poplist[k][1]) // 增加

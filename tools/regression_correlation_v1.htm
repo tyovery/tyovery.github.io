@@ -1,0 +1,366 @@
+<html lang="zh-Hant-HK">
+<head>
+<title>回歸 與 相關</title>
+<style>
+
+</style>
+</head>
+<body>
+<center>
+<div id="outputTable"></div><br />
+<div id="outputInfo"></div>
+<input id="userInput" type="text" value="" style="width: 500px" onKeyPress="keyPress();" />
+<input id="userAddButton" type="button" value="加入" onClick="userAdd();cal();" /><br />
+<p>點輸入格式：(x<sub>1</sub> , y<sub>1</sub>) (x<sub>2</sub> , y<sub>2</sub>) (x<sub>3</sub> , y<sub>3</sub>) ...</p>
+<p>序列輸入格式：y<sub>1</sub> , y<sub>2</sub> , y<sub>3</sub> , ...</p>
+<input type="button" value="消除" onClick="point=[];cal();" /><br />
+
+<script>
+var point = [] , size , x_bar , y_bar ;
+var sum_xy , sum_xx , sum_yy , Sxy , Sxx , Syy ;
+var a1 , b1 , r , r_2 , r_s ;
+
+// order
+var orderList = [[],[]] ; // x-order , y-order
+var orderIndex = [] ; // index
+var pointBuf = [] ; // 暫存的data
+var d , d_2 , sum_d_2 ; // 次序差
+
+var x_title = "" , y_title = "" ;
+var fixLength = 6 ; // 準確至幾位少數
+
+function keyPress()
+{
+	if(event.keyCode==13) eval(userAddButton.getAttribute("onClick")) ;
+}
+
+function userAdd()
+{
+	var inputString = userInput.value ;
+	inputString = inputString.replace(/\s+|[a-z]/ig,"");
+
+	// 以()分割 存入 point 陣列
+	var exist_bracket = 0 ; // 找到的開括號數量 , =0時視為Time Series
+	for(var k=0 ; k < inputString.length ; k++)
+	{
+		if(inputString.slice(k,k+1) == "(" )
+		{
+			exist_bracket ++ ;
+			for(var j=k+1 ; j < inputString.length ; j++)
+			{
+				if(inputString.slice(j,j+1) == ")" )
+				{
+					point.push(inputString.slice(k+1,j));
+					break;
+				}
+			}
+		}
+	}
+	if(!exist_bracket)
+	{	// Time Series
+		var inputArray = inputString.split(",");
+		for(var k=0 ; k < inputArray.length ; k++)
+		{
+			point.push([point.length+1,inputArray[k]]);
+		}
+	}
+	// alert(inputString);
+	// alert(point.join("\n"));
+	// 清理
+	for(var k = 0 ; k< point.length ; k++)
+	{
+		//alert("k = " + k + "\n" +point.join("\n"));
+		
+		// 以 , 分割
+		if(typeof point[k] == "string") point[k] = point[k].split(",");
+
+		if(point[k].length == 2 )
+		{
+			// 移除(x,y)座標不都是實數的項
+			for(var j = 0 ; j < 2 ; j++)
+			{
+				// alert(point[k][j]+"\n"+typeof point[k][j]) ;
+				if( !(point[k][j] > 0 || point[k][j] < 0 || ( point[k][j] == 0 && (point[k][j]+"").length>0 ) ) )
+				{
+					point.splice(k,1);
+					k-- ;
+					break;
+				}
+			}
+		}
+		else // 移除長度不等於2的項
+		{
+			point.splice(k,1);
+			k-- ;
+		}
+		//alert("k = " + k + "\n" +point.join("\n"));
+	}
+	// alert(point.length);
+	// alert(point.join("\n"));
+	
+	// 修正x的排序 (待修效率問題)
+	if(!exist_bracket) fixTimeSeries(1) ;
+}
+
+function titleEdit(axis) // 0=x , 1=y 
+{
+	if(axis==0)
+	{
+		var input = prompt("請輸入x標題") ;
+		if(typeof input == "string")
+		{
+			x_title = input ;
+			cal();
+		}
+	}
+	else
+	{
+		var input = prompt("請輸入y標題") ;
+		if(typeof input == "string")
+		{
+			y_title = input ;
+			cal();
+		}
+	}
+	
+}
+
+function cal()
+{
+	size = point.length ;
+	
+	// 全部轉為數字
+	for(var k = 0 ; k < size ; k ++)
+	{
+		for(var j = 0 ; j < 2 ; j ++)
+		{
+			point[k][j] *= 1 ;
+		}
+	}
+
+	// reset
+	x_bar = 0 ;
+	y_bar = 0 ;
+	sum_xy = 0 ;
+	sum_xx = 0 ;
+	sum_yy = 0 ;
+	
+	// 公式
+	for(var k = 0 ; k < size ; k ++)
+	{
+		x_bar += point[k][0] ;
+		y_bar += point[k][1] ;
+		
+		sum_xy += point[k][0]*point[k][1] ;
+		sum_xx += point[k][0]**2 ;
+		sum_yy += point[k][1]**2 ;
+	}
+	x_bar /= size ;
+	y_bar /= size ;
+	Sxy = sum_xy - size * x_bar * y_bar ;
+	Sxx = sum_xx - size * x_bar**2 ;
+	Syy = sum_yy - size * y_bar**2 ;
+	a1 = Sxy / Sxx ;
+	b1 = y_bar - a1 * x_bar ;
+
+	r = Sxy / (Sxx * Syy)**0.5 ;
+	r_2 = Sxy**2 / (Sxx * Syy) ;
+	
+	// reset x,y排序
+	orderList[0] = [] ;
+	orderList[1] = [] ;
+	
+	// 排序x,y
+	order(0);
+	order(1);
+	
+	// 輸出表格
+	var txt2htm = '<table border="1px" cellspacing="1px" cellpadding="5px" style="text-align: center;">';
+
+	txt2htm += '<tr>' ;
+	txt2htm += '<td onClick="titleEdit(0);return;">x<br/>'+x_title+'</td>' ;
+	txt2htm += '<td onClick="titleEdit(1);return;">y<br/>'+y_title+'</td>' ;
+	txt2htm += '<td>y&#770;<sub>1</sub><br />一次估計</td>' ;
+	txt2htm += '<td>e<sub>1</sub><br />一次殘差</td>' ;
+	txt2htm += '<td>x-order</td>' ;
+	txt2htm += '<td>y-order</td>' ;
+	txt2htm += '<td>d</td>' ;
+	txt2htm += '<td>d&#178;</td>' ;
+	txt2htm += '</tr>' ;
+
+	var est = [] , res = [] , res_sum = [,0] ; // 估計 , 殘差 , 殘差和
+	sum_d_2 = 0 ; // reset Σd²
+	for(var k=0 ; k<size ; k++)
+	{
+		txt2htm += '<tr>' ;
+		txt2htm += '<td>'+point[k][0]+'</td>' ;
+		txt2htm += '<td>'+point[k][1]+'</td>' ;
+		est[1] = a1*point[k][0]+b1 ; // 估計值
+		res[1] = point[k][1] - est[1] ; // 殘差
+		if( (est[1]+"") != "NaN")
+		{
+			res_sum[1] += res[1] ;
+			res[1] = res[1].toFixed(fixLength) ;
+		}
+		else
+		{
+			est[1] = res[1] = "無法估計" ;
+		}
+		txt2htm += '<td>'+ est[1] +'</td>' ; // y^_1 = ax + b
+		txt2htm += '<td>'+ res[1] +'</td>' ; // e_1 = y - (ax + b)
+		txt2htm += '<td>'+ orderList[0][k] +'</td>' ;
+		txt2htm += '<td>'+ orderList[1][k] +'</td>' ;
+		d = orderList[1][k]-orderList[0][k] ;
+		d_2 = d ** 2 ;
+		sum_d_2 += d_2 ;
+		txt2htm += '<td>'+ d +'</td>' ;
+		txt2htm += '<td>'+ d_2 +'</td>' ;
+		txt2htm += '</tr>' ;
+	}
+	
+	txt2htm += '<tr>' ;
+	txt2htm += '<td><input type="button" value="時間序列" onClick="fixTimeSeries();" /></td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td>殘差和 檢驗<br />= '+res_sum[1]+'</td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td>&Sigma;d&#178;<br />= '+sum_d_2+'</td>' ;
+	txt2htm += '</tr>' ;
+
+	txt2htm += '</table>' ;
+	outputTable.innerHTML = txt2htm ;
+
+	// 公式
+	r_s = 1 - sum_d_2 * 6 / ( (size-1) * size * (size+1) )  ;
+
+	// 詳細信息輸出 - 回歸方程
+	var txt2info = "< 回歸方程 ><br />";
+	var a1_show , b1_show ;
+	a1_show = a1==1 ? "" : a1==-1 ? " - " : a1 ;
+	b1_show = (b1>0 ? ( a1!=0 ? " + " : "" ) + b1 : b1<0 ? " - "+(-b1) : (a1!=0?"":"0")) ;
+	if( (a1+"") != "NaN" )
+	{
+		txt2info += "y&#770;<sub>1</sub> = "+ ( a1!=0 ? a1_show+" x " : "" )+ b1_show ;
+		txt2info += ' <input type="button" value="估計" onClick="est1();" />' ;
+		if (r_2>=0) txt2info += " " + (r_2*100).toFixed(0) + "% 擬合" ;
+		txt2info += " (" + (a1>0?"正關係":a1<0?"負關係":"無關") + ")<br />" ;
+	}
+	else
+	{
+		txt2info += "y&#770;<sub>1</sub> = 無法估計<br />" ;
+	}
+	txt2info += "<br />" ;
+
+	// 詳細信息輸出 - 相關性
+	txt2info += "< 相關性 ><br />" ;
+	txt2info += "r&#178; = "+((r_2+"")!="NaN" ? r_2 : "無法計算")+"<br />" ;
+	txt2info += "r = "+((r+"")!="NaN"?r:"無法計算")+"<br />" ;
+	txt2info += "r<sub>s</sub> = "+((r_s+"")!="NaN"?r_s:"無法計算")+"<br />" ;
+	txt2info += "<br />" ;
+
+	
+
+	outputInfo.innerHTML = txt2info ;
+	
+	/* // test
+	var txt2alert = "point: "+ point +"\nn = "+ size +"\nx_bar = "+ x_bar +"\ny_bar = " + y_bar ;
+	txt2alert += "\nsum_xy = "+ sum_xy+"\nsum_xx = "+ sum_xx +"\nsum_yy = "+ sum_yy +"\nSxy = "+ Sxy +"\nSxx = "+ Sxx +"\nSyy = "+ Syy ;
+	alert(txt2alert);
+	*/
+}
+
+function getMinIndex() // 抽取最細值的編號
+{
+	var minIndex = 0 ;
+	var minNumber = pointBuf[0][1] ;
+	for(var k = 1 ; k< pointBuf.length ; k++)
+	{
+		if( pointBuf[k][1] < minNumber )
+		{
+			minIndex = k ;
+			minNumber = pointBuf[k][1] ;
+		}
+	}
+	
+	orderIndex.push(pointBuf[minIndex][0]) ; // 記錄最小值的編號
+	pointBuf.splice(minIndex,1) ; // 從 Array 中移除最小值的項
+}
+
+function order(axis) // 排序函數   axis: x = 0 , y = 1
+{
+	// reset
+	orderIndex = [] ; 
+	pointBuf = [] ;
+	
+	for(var k = 0 ; k<size ; k++)
+	{
+		pointBuf.push( [k , point[k][axis] ] ) ; // index , data
+	}
+
+	// 不斷取最小值 編序
+	while(pointBuf.length>0) getMinIndex() ;
+	
+	// 代回次序
+	for(var k = 0 ; k < size ; k ++ )
+	{
+		orderList[axis][orderIndex[k]] = k+1 ;
+	}
+
+	// 修正次序
+	for(var k = 0 ; k < size-1 ; k ++ )
+	{
+		for(var j = k+1 ; j < size ; j ++ )
+		{
+			if( point[orderIndex[k]][axis] < point[orderIndex[j]][axis] || j == size-1 )
+			{
+				if(j>k+1 || point[orderIndex[j-1]][axis] == point[orderIndex[j]][axis] )
+				{
+					if( j==size-1 && point[orderIndex[j-1]][axis]==point[orderIndex[j]][axis] )
+					{
+						j++ ;
+					}
+					var start = orderList[axis][orderIndex[k]] ;
+					var n = j-k ; // 多少個相同數字
+					var fixOrder = start + (n-1)/2 ; // 修正後的 order
+					for(var i = 0 ; i < n ; i++) // 修改 order
+					{
+						orderList[axis][orderIndex[k+i]] = fixOrder ;
+					}
+					
+					// alert("k = "+k +"\ny = "+point[orderIndex[k]][axis]+"\nstart = "+start+"\nn = "+n+"\nfixOrder = "+fixOrder);
+
+					k = j-1 ; // 跳過己檢查項
+				}
+				break ;
+			}
+		}
+	}
+}
+
+function fixTimeSeries(auto)
+{
+	if(auto||confirm("是否要把 x 變成 1 , 2 , 3 , 4 , 5 , 6 , ...？"))
+	{
+		for(var k = 0 ; k < point.length ; k ++)
+		{
+			point[k][0] = k+1 ;
+		}
+		cal();
+	}
+}
+
+function est1()
+{
+	var x = prompt("請輸入x值") ;
+	var y = a1 * x + b1 ;
+	alert("x = " + x + "\ny = " + y ) ;
+}
+
+</script>
+
+</center>
+</body>
+</html>
+

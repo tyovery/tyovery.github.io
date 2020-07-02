@@ -906,6 +906,32 @@ function grouping(groupRange) // 分組
 
 }
 
+function addDist_geo(p,times) // 幾何分布
+{
+	if(p>=0 && p<=1 && times>0)
+	{
+		alert("幾何分布\np = "+(p*1)+"\nq = "+(1-p)+"\n產生數據量 = "+times);
+		p *= 1 ; times *= 1 ;
+		
+		for(var k = 0 ; k>=0 ; k ++ )
+		{
+			f = (1-p)**k * p ;
+			f *= times ;
+			f = f.toFixed(0) ;
+			
+			if(f>0)
+			{
+				for(var j=0 ; j<f ; j++)
+				{
+					pop.push(k+1);
+				}
+			}
+			else break ;
+		}
+		inputSub();
+	}
+}
+
 function addDist_bin(p,n,times) // 二項分布
 {
 	if(n>=0 && p>=0 && p<=1 && times>0)
@@ -1116,6 +1142,7 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 <input id="inputValue" type="text" value="" size="60" onKeyPress="inputKey();" />
 <input type="button" value="加入" onClick="popAdd();inputSub();" />
 <br />
+<input type="button" value="加入 幾何分布(...)" onClick="addDist_geo(prompt('請輸入單次成功機率(p)。'),prompt('請輸入欲產生的數據量'));" />
 <input type="button" value="加入 二項分布(...)" onClick="addDist_bin(prompt('請輸入單次成功機率(p)。'),prompt('請輸入試驗次數(n)。'),prompt('請輸入欲產生的數據量'));" />
 <input type="button" value="加入 帕松分布(...)" onClick="addDist_ps(prompt('請輸入平均值。'),prompt('請輸入欲產生的數據量'));" />
 <input type="button" value="加入 常態分布(...)" onClick="addDist_norm(prompt('請輸入平均值。'),prompt('請輸入標準差。'),prompt('請輸入欲產生的數據量'));" />

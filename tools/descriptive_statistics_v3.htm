@@ -721,7 +721,7 @@ function inputSub(parameter)
 	// 表格輸出 - 尾部
 	txt2htm += '<tr>';
 	txt2htm += '<td>\
-	<a href="#dataTable"><input type="button" value="^" /></a>\
+	<a href="#DisplayAreaPop"><input type="button" value="^" /></a>\
 	<input id="portal_input" type="button" value="v 其他控制項 v" \
 	onClick="inputValue.focus();inputValue.select();" /></td>';
 	txt2htm += '<td>Range<br />= '+range+'</td>';
@@ -730,8 +730,8 @@ function inputSub(parameter)
 	txt2htm += '<td></td>';
 	txt2htm += '<td></td>';
 	txt2htm += '<td>&#931;xy<br />= '+sum+'</td>';
-	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&#963;')+'<br />= '+(sd>=0?sd_fix:' - ')+'</td>';
-	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&#963;')+'/&#8730;n<br />= '+(se>=0?se_fix:' - ')+'</td>';
+	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&sigma;')+'<br />= '+(sd>=0?sd_fix:' - ')+'</td>';
+	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&sigma;')+'/&#8730;n<br />= '+(se>=0?se_fix:' - ')+'</td>';
 	txt2htm += '<td>'+(dataSet_sample.checked?'x&#772;':'&#956;')+'<br />= '+mean_fix+'</td>';
 	txt2htm += '<td>&#931;'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup>y<br />= '+dev2sum_fix+'</td>';
 	txt2htm += '</tr>';
@@ -1227,7 +1227,9 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 		<input type="radio" name="dataSet" id="dataSet_sample" value="sample" checked >樣本</input>
 	</span>
 </form>
-<a href="#dataTable"><input type="button" value="^ 移到表格 ^" /></a>
+<a href="#DisplayAreaPop"><input type="button" value="^^ 表格頂部 ^^" /></a>
+<input type="button" value="^ 表格底部 ^" onClick="portal_input.focus();" />
+<a href="#DisplayArea"><input type="button" value="^ 詳細數值 ^" /></a>
 <br /><br />
 <input type="button" value="清空輸入框" onClick="inputValue.value='';" />
 <input type="button" value="e" onClick="inputValue.value+=',2.718281828459045';" />

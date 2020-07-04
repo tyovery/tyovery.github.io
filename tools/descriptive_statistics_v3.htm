@@ -652,7 +652,11 @@ function inputSub(parameter)
 	// 表格輸出 - 頭部
 	var txt2htm = "<p>"+(dataSet_sample.checked ? "樣本數據 ( Sample" : "母體數據 ( Population") + " Data Set )</p>" + '<table id="dataTable" border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: -12px; background-color: #FFFFFF; text-align: center; color: #000000">';
 	txt2htm += '<thead><tr>';
-	txt2htm += '<th>控制項</th>';
+	txt2htm += '<th>\
+	<input type="button" value="v" onClick="portal_input.focus();" />\
+	控制項\
+	<input type="button" value="w" onClick="inputValue.focus();inputValue.select();" />\
+	</th>';
 	txt2htm += '<th>x<br />數據</th>';
 	txt2htm += '<th>y<br />頻數</th>';
 	txt2htm += '<th>&#931;y<br />累積頻數</th>';
@@ -716,7 +720,9 @@ function inputSub(parameter)
 
 	// 表格輸出 - 尾部
 	txt2htm += '<tr>';
-	txt2htm += '<td><input type="button" value="v 其他控制項 v" \
+	txt2htm += '<td>\
+	<a href="#dataTable"><input type="button" value="^" /></a>\
+	<input id="portal_input" type="button" value="v 其他控制項 v" \
 	onClick="inputValue.focus();inputValue.select();" /></td>';
 	txt2htm += '<td>Range<br />= '+range+'</td>';
 	txt2htm += '<td></td>';
@@ -823,7 +829,11 @@ function inputSub(parameter)
 	help_samDist += "兩側張開一定範圍作為「估計區間」，「樣本參數」有某機率(置信度)落在這區間內。\n" ;
 	help_samDist += "抽取樣本，檢驗「樣本參數」是否落在該區間內。\n\n" ;
 	
-	help_samDist += "若參數在區間外，代表有顯著性差異。" ;
+	help_samDist += "若參數在區間外，代表有顯著性差異。\n\n" ;
+	
+	help_samDist += "當知道「母體標準差」時，使用 z (標準常態分布)；\n" ;
+	help_samDist += "當不知道「母體標準差」時，以「樣本標準差」取代，使用 t 修正。\n" ;
+	help_samDist += "樣本數越大，t 與 z 越接近。" ;
 	DisplayArea.innerHTML += ' <input type="button" value="?" onClick="alert(help_samDist);"/><br />' ;
 	if(dataSet_sample.checked && size==1)
 	{
@@ -833,45 +843,60 @@ function inputSub(parameter)
 	{
 		DisplayArea.innerHTML += "標準誤 ( SE )：" + se + "<br />" ;
 	}
-	// z
-	DisplayArea.innerHTML += "99% 2尾：z &#8776; &#177; 2.575829 , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_2+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_2_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "99% 1尾：z &#8776; &#177; 2.326348 , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_1+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_1_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "95% 2尾：z &#8776; &#177; 1.959964 , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_95_2+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+z_95_2_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "95% 1尾：z &#8776; &#177; 1.644854 , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_95_1+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+z_95_1_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "90% 2尾：z &#8776; &#177; 1.644854 , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_90_2+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+z_90_2_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "90% 1尾：z &#8776; &#177; 1.281552 , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_90_1+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+z_90_1_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "<br />" ;
-	// t
-	DisplayArea.innerHTML += "99% 2尾：t &#8776; &#177; "+t_99_2_table[size-2].toFixed(6)+" , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_99_2+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+t_99_2_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "99% 1尾：t &#8776; &#177; "+t_99_1_table[size-2].toFixed(6)+" , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_99_1+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+t_99_1_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "95% 2尾：t &#8776; &#177; "+t_95_2_table[size-2].toFixed(6)+" , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_95_2+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+t_95_2_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "95% 1尾：t &#8776; &#177; "+t_95_1_table[size-2].toFixed(6)+" , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_95_1+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+t_95_1_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "90% 2尾：t &#8776; &#177; "+t_90_2_table[size-2].toFixed(6)+" , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_90_2+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+t_90_2_mean.join(" , ")+")<br />" ;
-	DisplayArea.innerHTML += "90% 1尾：t &#8776; &#177; "+t_90_1_table[size-2].toFixed(6)+" , " ;
-	DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_90_1+" , " ;
-	DisplayArea.innerHTML += "平均值 &#8776; ("+t_90_1_mean.join(" , ")+")<br />" ;
+	
+	if(size>=2)
+	{
+		DisplayArea.innerHTML += "<br />" ;
+		
+		// z
+		DisplayArea.innerHTML += "99% 2尾：z &#8776; &#177; 2.575829 , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_2+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_2_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "99% 1尾：z &#8776; &#177; 2.326348 , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_1+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_1_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "95% 2尾：z &#8776; &#177; 1.959964 , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_95_2+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+z_95_2_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "95% 1尾：z &#8776; &#177; 1.644854 , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_95_1+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+z_95_1_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "90% 2尾：z &#8776; &#177; 1.644854 , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_90_2+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+z_90_2_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "90% 1尾：z &#8776; &#177; 1.281552 , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_90_1+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+z_90_1_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "<br />" ;
+
+		// t
+		if( size-1 <= t_99_2_table.length )
+		{
+		DisplayArea.innerHTML += "99% 2尾：t &#8776; &#177; "+t_99_2_table[size-2].toFixed(6)+" , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_99_2+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+t_99_2_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "99% 1尾：t &#8776; &#177; "+t_99_1_table[size-2].toFixed(6)+" , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_99_1+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+t_99_1_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "95% 2尾：t &#8776; &#177; "+t_95_2_table[size-2].toFixed(6)+" , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_95_2+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+t_95_2_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "95% 1尾：t &#8776; &#177; "+t_95_1_table[size-2].toFixed(6)+" , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_95_1+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+t_95_1_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "90% 2尾：t &#8776; &#177; "+t_90_2_table[size-2].toFixed(6)+" , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_90_2+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+t_90_2_mean.join(" , ")+")<br />" ;
+		DisplayArea.innerHTML += "90% 1尾：t &#8776; &#177; "+t_90_1_table[size-2].toFixed(6)+" , " ;
+		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_90_1+" , " ;
+		DisplayArea.innerHTML += "平均值 &#8776; ("+t_90_1_mean.join(" , ")+")<br />" ;
+		}
+		else
+		{
+			DisplayArea.innerHTML += "樣本數足夠大，z 與 t 差不多。<br />" ;
+		}
+	}
+	else DisplayArea.innerHTML += "至少 2 個數據才能估計。<br />" ;
 
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
 	DisplayArea.innerHTML += "均勻分布"+"(未寫)"+"<br />" ;

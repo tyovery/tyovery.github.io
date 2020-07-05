@@ -663,10 +663,12 @@ function inputSub(parameter)
 	txt2htm += '<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />比例</th>';
 	txt2htm += '<th>(&#931;y)/'+(dataSet_sample.checked?'n':'N')+'<br />累積比例</th>';
 	txt2htm += '<th>xy<br />加權</th>';
+	txt2htm += '<th>'+(dataSet_sample.checked?'x-x&#772;':'x-&mu;')+'<br />離差</th>';
 	txt2htm += '<th>z-score<br />標準分</th>';
 	txt2htm += '<th>Sampling z<br />抽樣標準分</th>';
-	txt2htm += '<th>'+(dataSet_sample.checked?'x-x&#772;':'x-&#956;')+'<br />離差</th>';
-	txt2htm += '<th>'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup><br />離差平方</th>';
+	txt2htm += '<th>Proportion SE<br />比例標準誤</th>';
+	txt2htm += '<th>95% 2尾 z<br />比例置信區間</th>';
+	// txt2htm += '<th>'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&mu;)')+'<sup>2</sup><br />離差平方</th>';
 	txt2htm += '</tr></thead><tbody>';
 
 	// 表格輸出 - 軀幹
@@ -692,7 +694,8 @@ function inputSub(parameter)
 		txt2htm += '<td>'+poplist[k][2]+'</td>';
 		
 		// 比例
-		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+(poplist[k][1]/size*100).toFixed(2)+'%</td>';
+		var prop = poplist[k][1]/size ;
+		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+(prop*100).toFixed(2)+'%</td>';
 		
 		// 累積比例
 		txt2htm += (PobiSum>75?'<td style="background-color: #545454;color: #DFDFDF;">':
@@ -703,17 +706,29 @@ function inputSub(parameter)
 		// 加權(xy)
 		txt2htm += '<td>'+poplist[k][0]*poplist[k][1]+'</td>';
 		
+		// 離差
+		txt2htm += '<td>'+(poplist[k][3]).toFixed(fix_d)+'</td>';
+		
 		// 標準分
-		txt2htm += '<td>'+(sd>0 ? ((poplist[k][0]-mean)/sd).toFixed(6) : ' - ')+'</td>';
+		txt2htm += '<td>'+(sd>0 ? ((poplist[k][0]-mean)/sd).toFixed(fix_d) : ' - ')+'</td>';
 
 		// 抽樣標準分
-		txt2htm += '<td>'+(se>0 ? ((poplist[k][0]-mean)/se).toFixed(6) : ' - ')+'</td>';
+		txt2htm += '<td>'+(se>0 ? ((poplist[k][0]-mean)/se).toFixed(fix_d) : ' - ')+'</td>';
 		
-		// 離差
-		txt2htm += '<td>'+(poplist[k][3]).toFixed(6)+'</td>';
+		// 比例標準誤 (比例SE)
+		var prop_se = (prop * (1-prop) / size)**0.5 ;
+		txt2htm += '<td>'+(prop_se*100).toFixed(fix_d)+'%</td>';
+		
+		// 比例置信區間 (95% 2尾 z)
+		var prop_est = [prop - prop_se * 1.959964] ;
+		prop_est[1] = [prop + prop_se * 1.959964] ;
+		if(prop_est[0]<0) prop_est[0] = 0 ; // 修正左界
+		if(prop_est[1]>1) prop_est[1] = 1 ; // 修正右界
+		txt2htm += '<td>'+(prop_est[0]*100).toFixed(2)+'% , ' ;
+		txt2htm += (prop_est[1]*100).toFixed(2)+'%</td>' ;
 		
 		// 離差平方
-		txt2htm += '<td>'+(poplist[k][3]**2).toFixed(6)+'</td>';
+		// txt2htm += '<td>'+(poplist[k][3]**2).toFixed(fix_d)+'</td>';
 		
 		txt2htm += '</tr>';
 	}
@@ -730,10 +745,12 @@ function inputSub(parameter)
 	txt2htm += '<td></td>';
 	txt2htm += '<td></td>';
 	txt2htm += '<td>&#931;xy<br />= '+sum+'</td>';
+	txt2htm += '<td>'+(dataSet_sample.checked?'x&#772;':'&mu;')+'<br />= '+mean_fix+'</td>';
 	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&sigma;')+'<br />= '+(sd>=0?sd_fix:' - ')+'</td>';
 	txt2htm += '<td>'+(dataSet_sample.checked?'s':'&sigma;')+'/&#8730;n<br />= '+(se>=0?se_fix:' - ')+'</td>';
-	txt2htm += '<td>'+(dataSet_sample.checked?'x&#772;':'&#956;')+'<br />= '+mean_fix+'</td>';
-	txt2htm += '<td>&#931;'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&#956;)')+'<sup>2</sup>y<br />= '+dev2sum_fix+'</td>';
+	txt2htm += '<td>';
+	txt2htm += '<td>';
+	// txt2htm += '<td>&#931;'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&mu;)')+'<sup>2</sup>y<br />= '+dev2sum_fix+'</td>';
 	txt2htm += '</tr>';
 
 	// 詳細參數輸出
@@ -754,7 +771,7 @@ function inputSub(parameter)
 	help_cenTen += "「眾數」是出現得最多的數字，有利於表達具有明確集中處的數據。";
 	help_cenTen += "然而對於較平均的分布，不是很好的參考。" ;
 	DisplayArea.innerHTML += ' <input type="button" value="?" onClick="alert(help_cenTen);"/><br />' ;
-	DisplayArea.innerHTML += "期望值 / 算術平均數 ( &#956; / x&#772; / EV / Mean )：" + mean + "<br />" ;
+	DisplayArea.innerHTML += "期望值 / 算術平均數 ( &mu; / x&#772; / EV / Mean )：" + mean + "<br />" ;
 	DisplayArea.innerHTML += "<span style='color: #00AF3F;'>中位數 ( Median )</span>："+median+"<br />" ;
 	DisplayArea.innerHTML += "<span style='color: #FF3F00;'>眾數 ( Mode )</span>：" ;
 	if((mode[1]==1 && mode[0].length>10)) // 太多時不顯示眾數
@@ -804,14 +821,14 @@ function inputSub(parameter)
 	DisplayArea.innerHTML += "平均差 ( MAD )：" + md + "<br />" ;
 	if(dataSet_sample.checked && size==1)
 	{
-		DisplayArea.innerHTML += "標準差 ( σ / s / SD )：" + "無法估計" + "<br />" ;
-		DisplayArea.innerHTML += "變異數 ( σ<sup>2</sup> / s<sup>2</sup> / Var )：" + "無法估計" + "<br />" ;
+		DisplayArea.innerHTML += "標準差 ( &sigma; / s / SD )：" + "無法估計" + "<br />" ;
+		DisplayArea.innerHTML += "變異數 ( &sigma;<sup>2</sup> / s<sup>2</sup> / Var )：" + "無法估計" + "<br />" ;
 		DisplayArea.innerHTML += "變異係數 ( CV )：" + "無法估計" + "<br />" ;
 	}
 	else
 	{
-		DisplayArea.innerHTML += "標準差 ( σ / s / SD )：" + sd + "<br />" ;
-		DisplayArea.innerHTML += "變異數 ( σ<sup>2</sup> / s<sup>2</sup> / Var )：" + vari + "<br />" ;
+		DisplayArea.innerHTML += "標準差 ( &sigma; / s / SD )：" + sd + "<br />" ;
+		DisplayArea.innerHTML += "變異數 ( &sigma;<sup>2</sup> / s<sup>2</sup> / Var )：" + vari + "<br />" ;
 		DisplayArea.innerHTML += "變異係數 ( CV )：" + cv + "<br />" ;
 	}
 	

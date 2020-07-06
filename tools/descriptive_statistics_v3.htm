@@ -101,7 +101,7 @@ function inputClear()
 	inputSub() ;
 }
 
-function popAdd() // 手動加入樣本到母體
+function popAdd() // 手動加入data
 {
 	if(inputValue.value.length>0)
 	{
@@ -148,7 +148,7 @@ function popAdd() // 手動加入樣本到母體
 			}
 		}
 		
-		// 加到母體
+		// 加到dataset
 		pop.push(...txt.split(","));
 	}
 }
@@ -212,7 +212,7 @@ function ctrl_click(id,frequency) // 控制button (行數,頻數)
 	}
 }
 
-function inputSub(parameter)
+function inputSub(parameter) // 處理&分析 dataset
 {
 	// 分析參數
 	if(typeof parameter == "undefined") var parameters = [] ;
@@ -250,6 +250,19 @@ function inputSub(parameter)
 		pop[n] = pop[n].replace(/pi/ig,","+Math.PI+","); // pi
 		pop[n] = pop[n].replace(/\ |[a-z]/ig,""); // 清除
 		*/
+		
+		// 處理60進位 ( X:XX:XX )
+		var radix_60 = pop[n].split(":");
+		if (radix_60.length > 1)
+		{
+		// alert(radix_60.length);
+			pop[n] = 0 ;
+			while(radix_60.length>0)
+			{
+				pop[n] += radix_60.shift() * (60**radix_60.length) ;
+			}
+		}
+
 		pop[n] = eval(pop[n]) ; // 運算
 		pop[n] *= 1 ; // 化為數字
 		if( pop[n].length < 1 || !(pop[n]>=0 || pop[n]<0) )
@@ -1113,6 +1126,20 @@ function linearCut(parts) // 平均分段
 	else alert("請輸入正整數。");
 }
 
+function changeEachData() // 改變每個數據
+{
+	var input = inputChangeEachData.value ;
+	if(confirm("是否根據下式改變現有的每個數據？\nf(x)="+input))
+	{
+		var f = x => eval(input) ; // 函數式
+		for(var k = 0 ; k < size ; k++ )
+		{
+			pop[k] = f(pop[k]) ; // 變換
+		}
+		inputSub();
+	}
+}
+
 function grouping(groupRange) // 分組
 {
 	var r = groupRange * 1;
@@ -1355,6 +1382,8 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 <div id="DisplayAreaPop" class="pop"></div><br />
 <div id="DisplayArea" class="info"></div>
 <br /><br />
+<table border="1px" cellspacing="3px" cellpadding="8px" style="text-align: center; background-color: #FFF; color: #000;">
+<tr><td style="background-color: #AAA;">
 <form>
 	<span onClick="dataSet_population.checked='checked';inputSub('stay');">
 		<input type="radio" name="dataSet" id="dataSet_population" value="population">母體</input>
@@ -1366,7 +1395,11 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 <a href="#DisplayAreaPop"><input type="button" value="^^ 表格頂部 ^^" /></a>
 <input type="button" value="^ 表格底部 ^" onClick="portal_input.focus();" />
 <a href="#DisplayArea"><input type="button" value="^ 詳細數值 ^" /></a>
-<br /><br />
+</td></tr>
+<tr><td style="background-color: #5A0;">
+< 加入 >
+</td></tr>
+<tr><td style="background-color: #5A0;">
 <input type="button" value="清空輸入框" onClick="inputValue.value='';" />
 <input type="button" value="e" onClick="inputValue.value+=',2.718281828459045';" />
 <input type="button" value="pi" onClick="inputValue.value+=',3.141592653589793';" />
@@ -1377,8 +1410,9 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 <input type="button" value="加入 二項分布(...)" onClick="addDist_bin(prompt('請輸入單次成功機率(p)。'),prompt('請輸入試驗次數(n)。'),prompt('請輸入欲產生的數據量'));" />
 <input type="button" value="加入 帕松分布(...)" onClick="addDist_ps(prompt('請輸入平均值。'),prompt('請輸入欲產生的數據量'));" />
 <input type="button" value="加入 常態分布(...)" onClick="addDist_norm(prompt('請輸入平均值。'),prompt('請輸入標準差。'),prompt('請輸入欲產生的數據量'));" />
-<br /><br />
-加入隨機數(最少,最大,個數,目標數字)：
+</td></tr>
+<tr><td style="background-color: #5A0;">
+隨機數(最少 , 最大 , 個數 , 目標數字)：
 <input id="inputRange" type="text" value="0,1,1000" size="30" />
 <input type="button" value="加入整數" onClick="inputRandom(inputRange.value,'int');" />
 <input type="button" value="加入實數" onClick="inputRandom(inputRange.value,'real');" />
@@ -1402,25 +1436,46 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 <br />
 <input type="button" value="早熟" onClick="inputChange.value='(2*x**0.5-x)';" />
 <input type="button" value="慢熱" onClick="inputChange.value='(2*(1-(1-x)**0.5)-x)';" />
-<br /><br />
-修改：
+</td></tr>
+<tr><td style="background-color: #AA0;">
+< 修改 >
+</td></tr>
+<tr><td style="background-color: #AA0;">
+f(x) = <input id="inputChangeEachData" type="text" value="x*100" size="30" />
+<input type="button" value="改變每個數據" onClick="changeEachData();" />
+<br />
+<input type="button" value="乘以100" onClick="inputChangeEachData.value='x*100';" />
+<input type="button" value="除以100" onClick="inputChangeEachData.value='x/100';" />
+<input type="button" value="減以平均值" onClick="inputChangeEachData.value='x-mean';" />
+<input type="button" value="除以標準差" onClick="inputChangeEachData.value='x/sd';" />
+<br />
+<input type="button" value="平方" onClick="inputChangeEachData.value='x**2';" />
+<input type="button" value="開方" onClick="inputChangeEachData.value='x**0.5';" />
+</td></tr>
+<tr><td style="background-color: #AA0;">
 <input type="button" value="平均分段" onClick="linearCut(prompt('分多少段？'));" />
 <input type="button" value="分組(未實裝)" onClick="grouping(prompt('每組的間距？'));" />
-<br /><br />
+</td></tr>
+<tr><td style="background-color: #A50;">
+< 移除 >
+</td></tr>
+<tr><td style="background-color: #A50;">
 隨機移除多少個數據：
 <input id="inputDel" type="text" value="10" size="15" />
 <input type="button" value="隨機移除" onClick="randomDelete(inputDel.value);" />
 <br />
 <input type="button" value="移除首尾項" onClick="popMinus();" />
 <input type="button" value="全部清空" onClick="inputClear();" />
-<br /><br />
+</td></tr>
+<tr><td style="background-color: #AAA;">
 <input type="button" value="導出數據" onClick="exportData();" />
 <input type="button" value="?" onClick="alert(help_exportData);" />
 <br />
 <div id="export_area" ></div>
+</td></tr>
+</table>
+
 <br /><br /><br />
-
-
 </center>
 </body>
 </html>

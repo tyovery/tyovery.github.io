@@ -58,6 +58,7 @@ var help_samDist ; // 抽樣分布
 var help_exportData ; // 導出數據
 
 // 置信區間(z)
+var sd_est = -1 , se_est = -1 ; // 用作估計的標準差 , 標準誤 (母體)
 var z_99_2 , z_99_2_mean = [] ;
 var z_99_1 , z_99_1_mean = [] ;
 var z_95_2 , z_95_2_mean = [] ;
@@ -96,8 +97,9 @@ var chiSq_90_1 = [] , chiSq_90_1_sd = [] ;
 
 function inputClear()
 {
-	pop = [] ;
-	// inputValue.value = "" ;
+	pop = [] ; // 清空 dataset
+	sd_est = -1 ; // 清空 替代標準差
+
 	inputSub() ;
 }
 
@@ -535,12 +537,25 @@ function inputSub(parameter) // 處理&分析 dataset
 	if(size>=2)
 	{
 		// z
-		z_99_2 = (2.575829 * se).toFixed(6) ;
-		z_99_1 = (2.326348 * se).toFixed(6) ;
-		z_95_2 = (1.959964 * se).toFixed(6) ;
-		z_95_1 = (1.644854 * se).toFixed(6) ;
-		z_90_2 = (1.644854 * se).toFixed(6) ;
-		z_90_1 = (1.281552 * se).toFixed(6) ;
+		if(sd_est<0) // 母體標準差 未知
+		{
+			z_99_2 = (2.575829 * se).toFixed(6) ;
+			z_99_1 = (2.326348 * se).toFixed(6) ;
+			z_95_2 = (1.959964 * se).toFixed(6) ;
+			z_95_1 = (1.644854 * se).toFixed(6) ;
+			z_90_2 = (1.644854 * se).toFixed(6) ;
+			z_90_1 = (1.281552 * se).toFixed(6) ;
+		}
+		else // 母體標準差 已知
+		{
+			se_est = sd_est / size**0.5 ; // 母體標準誤
+			z_99_2 = (2.575829 * se_est).toFixed(6) ;
+			z_99_1 = (2.326348 * se_est).toFixed(6) ;
+			z_95_2 = (1.959964 * se_est).toFixed(6) ;
+			z_95_1 = (1.644854 * se_est).toFixed(6) ;
+			z_90_2 = (1.644854 * se_est).toFixed(6) ;
+			z_90_1 = (1.281552 * se_est).toFixed(6) ;
+		}
 		
 		// z 算術平均數
 		z_99_2_mean = [(mean - z_99_2*1).toFixed(6) , (mean + z_99_2*1).toFixed(6)] ;
@@ -973,11 +988,18 @@ function inputSub(parameter) // 處理&分析 dataset
 		DisplayArea.innerHTML += "標準誤 ( SE )：" + se + "<br />" ;
 	}
 	
+	if(sd_est >= 0)
+	{
+		DisplayArea.innerHTML += "替代標準誤：" + se_est ;
+		DisplayArea.innerHTML += ' <input type="button" value="清除" onClick="sd_switch(-1);" /><br />' ;
+	}
+
 	if(size>=2)
 	{
 		DisplayArea.innerHTML += "<br />" ;
 		
 		// z
+		DisplayArea.innerHTML += '<input type="button" value="輸入/更改母體標準差以作估計" onClick="sd_switch();" /><br />' ;
 		DisplayArea.innerHTML += "99% 2尾：z &#8776; &#177; 2.575829 , " ;
 		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_2+" , " ;
 		DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_2_mean.join(" , ")+")<br />" ;
@@ -1054,6 +1076,21 @@ function inputSub(parameter) // 處理&分析 dataset
 	DisplayArea.innerHTML += "二項分布"+"(未寫)"+"<br />" ;
 	
 	if(stay == 0) window.scrollTo(0,document.body.scrollHeight) ; // 滾到最底
+}
+
+function sd_switch(cls)
+{
+	if (cls == -1)
+	{
+		sd_est = -1 ; // 清空替代標準差
+	}
+	else
+	{
+		var input = prompt("請輸入替代的標準差。") ;
+		if (input >= 0 && input.length>0) sd_est = input ;
+		else alert("輸入無效。");
+	}
+	inputSub("stay");
 }
 
 function inputRandom(input,numSet)

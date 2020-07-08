@@ -1478,16 +1478,35 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 < 修改 >
 </td></tr>
 <tr><td style="background-color: #AA0;">
-f(x) = <input id="inputChangeEachData" type="text" value="x*100" size="30" />
+f(x) = <input id="inputChangeEachData" type="text" value="x*60" size="30" />
 <input type="button" value="改變每個數據" onClick="changeEachData();" />
 <br />
-<input type="button" value="乘以100" onClick="inputChangeEachData.value='x*100';" />
-<input type="button" value="除以100" onClick="inputChangeEachData.value='x/100';" />
-<input type="button" value="減以平均值" onClick="inputChangeEachData.value='x-mean';" />
-<input type="button" value="除以標準差" onClick="inputChangeEachData.value='x/sd';" />
+平移：
+<input type="button" value="由 0 開始" onClick="inputChangeEachData.value='x-min';" />
+<input type="button" value="由 1 開始" onClick="inputChangeEachData.value='x-min+1';" />
+<input type="button" value="平均值 -> 0" onClick="inputChangeEachData.value='x-mean';" />
+<input type="button" value="中位值 -> 0" onClick="inputChangeEachData.value='x-median';" />
 <br />
+線性縮放：
+<input type="button" value="60倍" onClick="inputChangeEachData.value='x*60';" />
+<input type="button" value="除以60" onClick="inputChangeEachData.value='x/60';" />
+<input type="button" value="100倍" onClick="inputChangeEachData.value='x*100';" />
+<input type="button" value="除以100" onClick="inputChangeEachData.value='x/100';" />
+<input type="button" value="反數" onClick="inputChangeEachData.value='-x';" />
+<input type="button" value="標準差 -> 1" onClick="inputChangeEachData.value='x/sd';" />
+<br />
+縮放&平移：
+<input type="button" value="0 ~ 1" onClick="inputChangeEachData.value='(x-min)/range';" />
+<input type="button" value="-1 ~ 1" onClick="inputChangeEachData.value='(x-min)/range*2-1';" />
+<input type="button" value="0 ~ 100" onClick="inputChangeEachData.value='(x-min)/range*100';" />
+<input type="button" value="標準化" onClick="inputChangeEachData.value='(x-mean)/sd';" />
+<br />
+非線性縮放：
+<input type="button" value="倒數" onClick="inputChangeEachData.value='1/x';" />
 <input type="button" value="平方" onClick="inputChangeEachData.value='x**2';" />
 <input type="button" value="開方" onClick="inputChangeEachData.value='x**0.5';" />
+<input type="button" value="Ln" onClick="inputChangeEachData.value='Math.log(Math.abs(x))';" />
+<input type="button" value="Exp" onClick="inputChangeEachData.value='Math.exp(x)';" />
 </td></tr>
 <tr><td style="background-color: #AA0;">
 <input type="button" value="平均分段" onClick="linearCut(prompt('分多少段？'));" />

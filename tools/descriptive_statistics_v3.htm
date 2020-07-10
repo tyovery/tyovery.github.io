@@ -1197,6 +1197,13 @@ function grouping(groupRange) // 分組
 
 function addDist_geo(p,times) // 幾何分布
 {
+	try
+	{
+		p = eval(p) ;
+		times = eval(times) ;
+	}
+	catch(e){}
+
 	if(p>=0 && p<=1 && times>0)
 	{
 		alert("幾何分布\np = "+(p*1)+"\nq = "+(1-p)+"\n產生數據量 = "+times);
@@ -1219,10 +1226,19 @@ function addDist_geo(p,times) // 幾何分布
 		}
 		inputSub();
 	}
+	else alert("輸入無效。");
 }
 
 function addDist_bin(p,n,times) // 二項分布
 {
+	try
+	{
+		p = eval(p) ;
+		n = eval(n) ;
+		times = eval(times) ;
+	}
+	catch(e){}
+	
 	if(n>=0 && p>=0 && p<=1 && times>0)
 	{
 		alert("二項分布\np = "+(p*1)+"\nq = "+(1-p)+"\nn = "+n+"\nnp = "+n*p+"\nnq = "+n*(1-p)+"\n產生數據量 = "+times);
@@ -1296,6 +1312,13 @@ function addDist_bin(p,n,times) // 二項分布
 
 function addDist_ps(mu,times) // 帕松分布
 {
+	try
+	{
+		mu = eval(mu) ;
+		times = eval(times) ;
+	}
+	catch(e){}
+	
 	if( mu>0 && times>0 )
 	{
 		alert("帕松分布\n平均值 = "+mu+"\n產生數據量 = "+times);
@@ -1363,6 +1386,14 @@ function addDist_ps(mu,times) // 帕松分布
 
 function addDist_norm(mu,sigma,times) // 常態分布
 {
+	try
+	{
+		mu = eval(mu) ;
+		sigma = eval(sigma) ;
+		times = eval(times) ;
+	}
+	catch(e){}
+	
 	if( (mu>=0 || mu<0) && sigma>0 && times>0 )
 	{
 		alert("常態分布\n平均值 = "+mu+"\n標準差 = "+sigma+"\n產生數據量 = "+times);
@@ -1407,7 +1438,7 @@ function addDist_norm(mu,sigma,times) // 常態分布
 
 function exportData() // 導出數據
 {
-	export_area.innerHTML = '<textarea id="exportBox" cols="95%" rows="20" >'+pop+'</textarea>' ;
+	export_area.innerHTML = '<textarea id="exportBox" cols="80%" rows="20" >'+pop+'</textarea>' ;
 	exportBox.focus();
 	exportBox.select();
 }

@@ -103,58 +103,6 @@ function inputClear()
 	inputSub() ;
 }
 
-function popAdd() // 手動加入data
-{
-	if(inputValue.value.length>0)
-	{
-		var txt = inputValue.value + "" ;
-
-		// 清理
-		/*
-		txt = txt.replace(/epi|pie/ig,""); // e , pi
-		txt = txt.replace(/e/ig,","+Math.E+","); // e
-		txt = txt.replace(/pi/ig,","+Math.PI+","); // pi
-		*/
-		txt = txt.replace(/\s+|[a-z]/ig,""); // 清除(空格,拉丁字母)
-		txt = txt.replace(/;|，|、|；/g,","); // 分隔號
-		
-		// 數字轉換
-		txt = txt.replace(/０/g,"0");
-		txt = txt.replace(/１/g,"1");
-		txt = txt.replace(/２/g,"2");
-		txt = txt.replace(/３/g,"3");
-		txt = txt.replace(/４/g,"4");
-		txt = txt.replace(/５/g,"5");
-		txt = txt.replace(/６/g,"6");
-		txt = txt.replace(/７/g,"7");
-		txt = txt.replace(/８/g,"8");
-		txt = txt.replace(/９/g,"9");
-
-		// 分析分組
-		for(var k=0 ; k<txt.length ; k++)
-		{
-			if(txt.slice(k,k+1) == "[")
-			{
-				for(var j=k+1 ; j<txt.length ; j++)
-				{
-					if(txt.slice(j,j+1) == "]")
-					{
-						// alert( txt.slice(k,j+1) );
-						pop.push( txt.slice(k,j+1) );
-						txt = txt.slice(0,k) + txt.slice(j+1) ;
-						// alert(txt);
-						k--;
-						break;
-					}
-				}
-			}
-		}
-		
-		// 加到dataset
-		pop.push(...txt.split(","));
-	}
-}
-
 function popMinus()
 {
 	pop.shift();
@@ -214,6 +162,61 @@ function ctrl_click(id,frequency) // 控制button (行數,頻數)
 	}
 }
 
+function popAdd() // 手動加入data
+{
+	if(inputValue.value.length>0)
+	{
+		var txt = inputValue.value + "" ;
+
+		// 清理
+		/*
+		txt = txt.replace(/epi|pie/ig,""); // e , pi
+		txt = txt.replace(/e/ig,","+Math.E+","); // e
+		txt = txt.replace(/pi/ig,","+Math.PI+","); // pi
+		*/
+		txt = txt.replace(/\s+|[a-z]/ig,""); // 清除(空格,拉丁字母)
+		txt = txt.replace(/;|，|、|；/g,","); // 分隔號
+		txt = txt.replace(/：/g,":"); // 60進位號
+		txt = txt.replace(/＂/g,'"'); // 60進位號(小數)
+
+		// 數字轉換
+		txt = txt.replace(/０/g,"0");
+		txt = txt.replace(/１/g,"1");
+		txt = txt.replace(/２/g,"2");
+		txt = txt.replace(/３/g,"3");
+		txt = txt.replace(/４/g,"4");
+		txt = txt.replace(/５/g,"5");
+		txt = txt.replace(/６/g,"6");
+		txt = txt.replace(/７/g,"7");
+		txt = txt.replace(/８/g,"8");
+		txt = txt.replace(/９/g,"9");
+		txt = txt.replace(/。/g,"."); // 小數點
+
+		// 分析分組
+		for(var k=0 ; k<txt.length ; k++)
+		{
+			if(txt.slice(k,k+1) == "[")
+			{
+				for(var j=k+1 ; j<txt.length ; j++)
+				{
+					if(txt.slice(j,j+1) == "]")
+					{
+						// alert( txt.slice(k,j+1) );
+						pop.push( txt.slice(k,j+1) );
+						txt = txt.slice(0,k) + txt.slice(j+1) ;
+						// alert(txt);
+						k--;
+						break;
+					}
+				}
+			}
+		}
+		
+		// 加到dataset
+		pop.push(...txt.split(","));
+	}
+}
+
 function inputSub(parameter) // 處理&分析 dataset
 {
 	// 分析參數
@@ -245,26 +248,34 @@ function inputSub(parameter) // 處理&分析 dataset
 		else var grouped = 0;
 
 		// 處理 多於一個小數點 的狀況
-		var array = pop[n].split(".") ;
-		if(array.length>2) pop[n] = array.shift()+"."+array.join("");
-		/*
-		pop[n] = pop[n].replace(/e/ig,","+Math.E+","); // e
-		pop[n] = pop[n].replace(/pi/ig,","+Math.PI+","); // pi
-		pop[n] = pop[n].replace(/\ |[a-z]/ig,""); // 清除
-		*/
-		
-		// 處理60進位 ( X:XX:XX )
+		// var array = pop[n].split(".") ;
+		// if(array.length>2) pop[n] = array.shift()+"."+array.join("");
+
+		// 處理60進位 ( ...:c:b:a = a + b*60 + c*60^2 + ... )
 		var radix_60 = pop[n].split(":");
 		if (radix_60.length > 1)
 		{
-		// alert(radix_60.length);
+			// alert(radix_60.join("\n"));
 			pop[n] = 0 ;
 			while(radix_60.length>0)
 			{
-				pop[n] += radix_60.shift() * (60**radix_60.length) ;
+				pop[n] += floatFix(radix_60.shift()) * (60**radix_60.length) ;
 			}
 		}
 
+		// 處理60進位 小數 ( a"b"c"... = a + b/60 + c/60^2 + ... )
+		var radix_60_dec = (pop[n]+"").split('"');
+		if (radix_60_dec.length > 1)
+		{
+			// alert(radix_60_dec.join("\n"));
+			pop[n] = 0 ;
+			while(radix_60_dec.length>0)
+			{
+				pop[n] += floatFix(radix_60_dec.pop()) / (60**radix_60_dec.length) ;
+			}
+		}
+
+		pop[n] = floatFix(pop[n]) ; // 處理 多於一個小數點 的狀況
 		pop[n] = eval(pop[n]) ; // 運算
 		pop[n] *= 1 ; // 化為數字
 		if( pop[n].length < 1 || !(pop[n]>=0 || pop[n]<0) )
@@ -812,7 +823,7 @@ function inputSub(parameter) // 處理&分析 dataset
 		
 		// 數據(x)
 		txt2htm += (poplist[k][0]==median?'<td style="background-color: #00AF3F;">':
-		poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][0]+'</td>';
+		poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+separ(poplist[k][0])+'</td>';
 		
 		// 頻數(y)
 		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][1]+'</td>';

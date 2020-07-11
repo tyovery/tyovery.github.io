@@ -153,16 +153,36 @@ function C(n,r) // nCr
 	}
 }
 
-function separ(number,digit) // 數位分隔符
+function separ(number,digit,symbol) // 數位分隔符 (字串 , 間隔位數 , 分隔符)
 {
-	if(!(digit>0)) var digit = 3 ;
-	number += "";
-	number = number.split("") ;
-	var number_length = number.length ;
-	for(var k = 1 ; k <= Math.floor((number_length-1)/digit) ; k++)
+	if(!(digit>0)) digit = 3 ; // 預設 3位
+	symbol += "" ;
+	if(!(symbol.length>0) || symbol == "undefined") symbol = "," ; // 預設 分隔符
+	number += "" ; // 化作 String
+	number = number.split("") ; // 化作 Array
+
+	var dot_pos = number.length ; // 小數點位置
+	for(var k = 0 ; k < number.length ; k ++ )
 	{
-		number.splice(1-(digit+1)*k,0,",");
+		if(number[k] == ".")
+		{
+			dot_pos = k ; // 記錄小數點位置
+			break ;
+		}
+	}
+
+	var number_length = number.length ;
+	for(var k = 1 ; k <= Math.floor((dot_pos-1)/digit) ; k++)
+	{
+		number.splice(1-(digit+1)*k +dot_pos-number_length , 0 , symbol); // 插入分隔符
 	}
 	return number.join("") ;
 }
 
+function floatFix(number) // 處理 多於一個小數點 的狀況
+{
+	number += "" ;
+	var array = number.split(".") ;
+	if(array.length>2) number = array.shift()+"."+array.join("");
+	return number ;
+}

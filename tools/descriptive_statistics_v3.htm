@@ -169,15 +169,18 @@ function popAdd() // 手動加入data
 		var txt = inputValue.value + "" ;
 
 		// 清理
-		/*
-		txt = txt.replace(/epi|pie/ig,""); // e , pi
-		txt = txt.replace(/e/ig,","+Math.E+","); // e
-		txt = txt.replace(/pi/ig,","+Math.PI+","); // pi
-		*/
-		txt = txt.replace(/\s+|[a-z]/ig,""); // 清除(空格,拉丁字母)
+		txt = txt.replace(/\s+/ig,""); // 清除 空格
+		// txt = txt.replace(/[a-z]/ig,""); // 清除 拉丁字母
+		
+		// 符號轉換
 		txt = txt.replace(/;|，|、|；/g,","); // 分隔號
 		txt = txt.replace(/：/g,":"); // 60進位號
 		txt = txt.replace(/＂/g,'"'); // 60進位號(小數)
+		txt = txt.replace(/＋/g,"+"); // 加
+		txt = txt.replace(/－/g,"-"); // 減
+		txt = txt.replace(/＊/g,"*"); // 乘
+		txt = txt.replace(/／/g,"/"); // 除
+		txt = txt.replace(/\^|︿/g,"**"); // 冪
 
 		// 數字轉換
 		txt = txt.replace(/０/g,"0");
@@ -235,56 +238,76 @@ function inputSub(parameter) // 處理&分析 dataset
 
 	// 清理非數字元素
 	// alert(pop.join("\n"));
+	var errorTerms = 0 ; // 記錄有多少 問題項
+	var errorTerms_list = [] ; // 記錄錯誤項的內容
 	for(var n = 0 ; n < pop.length ; n++)
 	{
-		pop[n] += "";
-		
-		// 檢查是否為分組數據
-		if(pop[n].slice(0,1) == "[")
+		try
 		{
-			var grouped = 1;
-			alert(pop.join("\n"));
-		}
-		else var grouped = 0;
-
-		// 處理 多於一個小數點 的狀況
-		// var array = pop[n].split(".") ;
-		// if(array.length>2) pop[n] = array.shift()+"."+array.join("");
-
-		// 處理60進位 ( ...:c:b:a = a + b*60 + c*60^2 + ... )
-		var radix_60 = pop[n].split(":");
-		if (radix_60.length > 1)
-		{
-			// alert(radix_60.join("\n"));
-			pop[n] = 0 ;
-			while(radix_60.length>0)
+			pop[n] += "";
+			
+			// 檢查是否為分組數據
+			if(pop[n].slice(0,1) == "[")
 			{
-				pop[n] += floatFix(radix_60.shift()) * (60**radix_60.length) ;
+				var grouped = 1;
+				alert(pop.join("\n"));
+			}
+			else var grouped = 0;
+
+			// 處理 多於一個小數點 的狀況
+			// var array = pop[n].split(".") ;
+			// if(array.length>2) pop[n] = array.shift()+"."+array.join("");
+
+			// 處理60進位 ( ...:c:b:a = a + b*60 + c*60^2 + ... )
+			var radix_60 = pop[n].split(":");
+			if (radix_60.length > 1)
+			{
+				pop[n] = 0 ;
+				while(radix_60.length>0)
+				{
+					pop[n] += eval(radix_60.shift()) * (60**radix_60.length) ;
+				}
+			}
+
+			// 處理60進位 小數 ( a"b"c"... = a + b/60 + c/60^2 + ... )
+			var radix_60_dec = (pop[n]+"").split('"');
+			if (radix_60_dec.length > 1)
+			{
+				pop[n] = 0 ;
+				while(radix_60_dec.length>0)
+				{
+					pop[n] += eval(radix_60_dec.pop()) / (60**radix_60_dec.length) ;
+				}
+			}
+
+			pop[n] = eval(pop[n]) ; // 運算
+			// pop[n] = floatFix(pop[n]) ; // 處理 多於一個小數點 的狀況
+			pop[n] *= 1 ; // 化為數字
+			
+			// 若本項不是數字，則移除本項
+			if( pop[n].length < 1 || !(pop[n]>=0 || pop[n]<0) )
+			{
+				pop.splice(n,1) ;
+				n-- ;
 			}
 		}
-
-		// 處理60進位 小數 ( a"b"c"... = a + b/60 + c/60^2 + ... )
-		var radix_60_dec = (pop[n]+"").split('"');
-		if (radix_60_dec.length > 1)
+		catch(e) // 移除無法處理的項目
 		{
-			// alert(radix_60_dec.join("\n"));
-			pop[n] = 0 ;
-			while(radix_60_dec.length>0)
-			{
-				pop[n] += floatFix(radix_60_dec.pop()) / (60**radix_60_dec.length) ;
-			}
-		}
-
-		pop[n] = floatFix(pop[n]) ; // 處理 多於一個小數點 的狀況
-		pop[n] = eval(pop[n]) ; // 運算
-		pop[n] *= 1 ; // 化為數字
-		if( pop[n].length < 1 || !(pop[n]>=0 || pop[n]<0) )
-		{
-			pop.splice(n,1) ;
+			// alert("錯誤詳情："+e.description);
+			errorTerms_list.push(pop.splice(n,1)) ;
 			n-- ;
+			errorTerms ++ ;
 		}
 	}
-	
+
+	// 報錯
+	if(errorTerms > 0)
+	{
+		var txt2alert = "輸入有誤！\n已跳過 "+errorTerms+" 個問題項：" ;
+		txt2alert += "\n" + errorTerms_list.join("\n") ;
+		alert(txt2alert) ;
+	}
+
 	pop.sort((a,b)=>a-b); // 排序
 
 	size = pop.length ; // 樣本數
@@ -1520,7 +1543,7 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 < 修改 >
 </td></tr>
 <tr><td style="background-color: #AA0;">
-f(x) = <input id="inputChangeEachData" type="text" value="x*60" size="30" />
+f(x) = <input id="inputChangeEachData" type="text" value="x/60" size="30" />
 <input type="button" value="改變每個數據" onClick="changeEachData();" />
 <br />
 平移：

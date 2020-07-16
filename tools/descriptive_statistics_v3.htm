@@ -172,11 +172,11 @@ function popAdd() // 手動加入data
 		var txt = inputValue.value + "" ;
 
 		// 清理
-		txt = txt.replace(/\s+/ig,""); // 清除 空格
+		txt = txt.replace(/\s+|'/ig,""); // 清除 空格,十進位分隔號
 		// txt = txt.replace(/[a-z]/ig,""); // 清除 拉丁字母
 		
 		// 符號轉換
-		txt = txt.replace(/;|，|、|；/g,","); // 分隔號
+		txt = txt.replace(/;|，|、|；/g,","); // 項目分隔號
 		txt = txt.replace(/：/g,":"); // 60進位號
 		txt = txt.replace(/＂/g,'"'); // 60進位號(小數)
 		txt = txt.replace(/＋/g,"+"); // 加
@@ -864,23 +864,28 @@ function inputSub(parameter) // 處理&分析 dataset
 				data_show = Math.floor( poplist[k][0] % 60 ) ; // 個位
 				var buff = Math.floor( poplist[k][0] / 60 ) ; // 其餘整數部分
 				var buff_small = poplist[k][0] % 1 ; // 小數部分
+				var buff_add ; // 準備增加的數值
 
 				while(buff >= 60) // 整數部分
 				{
-					data_show = buff % 60 + ":" + data_show ;
+					buff_add = buff % 60 + "" ;
+					while(buff_add.length<2) buff_add = "0" + buff_add ;
+					data_show = buff_add + ":" + data_show ;
 					buff = Math.floor( buff / 60 ) ;
 				}
 				if(buff>0) data_show = buff + ":" + data_show ;
 				
 				while(buff_small > 0) // 小數部分
 				{
-					data_show += '"' + Math.floor( buff_small * 60 ) ;
+					buff_add = Math.floor( buff_small * 60 ) + "" ;
+					while(buff_add.length<2) buff_add = "0" + buff_add ;
+					data_show += '"' + buff_add ;
 					buff_small = (buff_small * 60) % 1 ;
 				}
 			}
 			else // 16,2,8 進位制
 			{
-				var separ_interval = data_showMode != 8 ? 4 : 3 ;
+				var separ_interval = data_showMode != 8 ? 4 : 3 ; // 分隔位數
 				data_show = separ(poplist[k][0].toString(data_showMode).toUpperCase(),separ_interval," ") ;
 				data_show += "<sub>" + data_showMode + "</sub>" ;
 			}
@@ -1550,7 +1555,7 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 < 加入 >
 </td></tr>
 <tr><td style="background-color: #5A0;">
-<input type="button" value="清空輸入框" onClick="inputValue.value='';" />
+<input type="button" value="清空輸入框" onClick="inputValue.value='';inputValue.focus();" />
 <input type="button" value="e" onClick="inputValue.value+=',2.718281828459045';" />
 <input type="button" value="pi" onClick="inputValue.value+=',3.141592653589793';" />
 <input id="inputValue" type="text" value="" size="60" onKeyPress="inputKey();" />

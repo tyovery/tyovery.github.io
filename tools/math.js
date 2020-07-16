@@ -157,7 +157,7 @@ function separ(number,digit,symbol) // 數位分隔符 (字串 , 間隔位數 , 
 {
 	if(!(digit>0)) digit = 3 ; // 預設 3位
 	symbol += "" ;
-	if(!(symbol.length>0) || symbol == "undefined") symbol = "," ; // 預設 分隔符
+	if(!(symbol.length>0) || symbol == "undefined") symbol = "'" ; // 預設 分隔符
 	number += "" ; // 化作 String
 	number = number.split("") ; // 化作 Array
 

@@ -60,8 +60,10 @@ var help_disper ; // 分散程度
 var help_samDist ; // 抽樣分布
 var help_exportData ; // 導出數據
 
+// 用作估計的 標準差(母體) , 變異數(母體) , 標準誤(母體) , X²(觀察值)
+var sd_est = -1 , vari_est = -1 ,  se_est = -1 , chiSq_est = -1 ;
+
 // 置信區間(z)
-var sd_est = -1 , se_est = -1 ; // 用作估計的標準差 , 標準誤 (母體)
 var z_99_2 , z_99_2_mean = [] ;
 var z_99_1 , z_99_1_mean = [] ;
 var z_95_2 , z_95_2_mean = [] ;
@@ -108,9 +110,11 @@ function inputClear()
 
 function popMinus()
 {
+	var del = Math.min(2,pop.length) ;
 	pop.shift();
 	pop.pop();
 	inputSub();
+	alert("已移除 "+del+" 個數據。");
 }
 
 function ctrl_click(id,frequency) // 控制button (行數,頻數)
@@ -252,8 +256,8 @@ function inputSub(parameter) // 處理&分析 dataset
 			// 檢查是否為分組數據
 			if(pop[n].slice(0,1) == "[")
 			{
-				var grouped = 1;
-				alert(pop.join("\n"));
+				var grouped = 1 ;
+				// alert(pop.join("\n"));
 			}
 			else var grouped = 0;
 
@@ -307,7 +311,18 @@ function inputSub(parameter) // 處理&分析 dataset
 	if(errorTerms > 0)
 	{
 		var txt2alert = "輸入有誤！\n已跳過 "+errorTerms+" 個問題項：" ;
-		txt2alert += "\n" + errorTerms_list.join("\n") ;
+		for(var k=0 ; k < errorTerms_list.length ; k++ )
+		{
+			if(txt2alert.length + (errorTerms_list[k]+"").length <= 1e3) // 最多1000字
+			{
+				txt2alert += "\n" + errorTerms_list[k] ;
+			}
+			else
+			{
+				txt2alert += "\n..." ;
+				break ;
+			}
+		}
 		alert(txt2alert) ;
 	}
 
@@ -571,6 +586,16 @@ function inputSub(parameter) // 處理&分析 dataset
 	else qd = " - " ;
 
 	// 置信區間
+	if(sd_est>=0)
+	{
+		vari_est = sd_est**2 ; // 母體變異數 (pop vari)
+		if(size>0)
+		{
+			se_est = sd_est / size**0.5 ; // 母體標準誤 (pop se)
+		}
+		else se_est = "-" ;
+	}
+
 	if(size>=2)
 	{
 		// z
@@ -585,7 +610,6 @@ function inputSub(parameter) // 處理&分析 dataset
 		}
 		else // 母體標準差 已知
 		{
-			se_est = sd_est / size**0.5 ; // 母體標準誤
 			z_99_2 = (2.575829 * se_est).toFixed(6) ;
 			z_99_1 = (2.326348 * se_est).toFixed(6) ;
 			z_95_2 = (1.959964 * se_est).toFixed(6) ;
@@ -622,6 +646,11 @@ function inputSub(parameter) // 處理&分析 dataset
 		}
 
 		// X²
+		if(sd_est>=0)
+		{
+			chiSq_est = (size-1) * vari/vari_est ; // 觀察卡方值
+		}
+		
 		if( size-1 > chiSq_99_2_table_L.length ) // 超出卡方表,以最高自由度估算
 		{
 			chiSq_99_2[0] = chiSq_99_2_table_L[chiSq_99_2_table_L.length-1].toFixed(6) ;
@@ -681,57 +710,7 @@ function inputSub(parameter) // 處理&分析 dataset
 			chiSq_90_1_sd[1] = ((vari * (size-1) / chiSq_90_1[1])**0.5).toFixed(6) ;
 		}
 	}
-	/*else
-	{
-		// z
-		z_99_2 = "無法估計" ;
-		z_99_1 = "無法估計" ;
-		z_95_2 = "無法估計" ;
-		z_95_1 = "無法估計" ;
-		z_90_2 = "無法估計" ;
-		z_90_1 = "無法估計" ;
-		
-		// z 算術平均數
-		z_99_2_mean = ["無法估計"] ;
-		z_99_1_mean = ["無法估計"] ;
-		z_95_2_mean = ["無法估計"] ;
-		z_95_1_mean = ["無法估計"] ;
-		z_90_2_mean = ["無法估計"] ;
-		z_90_1_mean = ["無法估計"] ;
-		
-		// t
-		t_99_2 = "無法估計" ;
-		t_99_1 = "無法估計" ;
-		t_95_2 = "無法估計" ;
-		t_95_1 = "無法估計" ;
-		t_90_2 = "無法估計" ;
-		t_90_1 = "無法估計" ;
-		
-		// t 算術平均數
-		t_99_2_mean = ["無法估計"] ;
-		t_99_1_mean = ["無法估計"] ;
-		t_95_2_mean = ["無法估計"] ;
-		t_95_1_mean = ["無法估計"] ;
-		t_90_2_mean = ["無法估計"] ;
-		t_90_1_mean = ["無法估計"] ;
-		
-		// X²
-		chiSq_99_2 = ["無法估計"] ;
-		chiSq_99_1 = ["無法估計"] ;
-		chiSq_95_2 = ["無法估計"] ;
-		chiSq_95_1 = ["無法估計"] ;
-		chiSq_90_2 = ["無法估計"] ;
-		chiSq_90_1 = ["無法估計"] ;
-		
-		// X² 標準差
-		chiSq_99_2_sd = ["無法估計"] ;
-		chiSq_99_1_sd = ["無法估計"] ;
-		chiSq_95_2_sd = ["無法估計"] ;
-		chiSq_95_1_sd = ["無法估計"] ;
-		chiSq_90_2_sd = ["無法估計"] ;
-		chiSq_90_1_sd = ["無法估計"] ;
-	}*/
-	
+
 	// 轉成以頻數表示
 	poplist = [] ; // [ 0:數據 , 1:頻數 , 2:累積頻數 , 3:離差 ] 
 	var poplist_match ;
@@ -1069,18 +1048,20 @@ function inputSub(parameter) // 處理&分析 dataset
 		DisplayArea.innerHTML += "標準誤 ( SE )：" + se + "<br />" ;
 	}
 	
+	DisplayArea.innerHTML += '<input type="button" value="輸入/更改母體標準差以作估計" onClick="sd_switch();" />' ;
 	if(sd_est >= 0)
 	{
-		DisplayArea.innerHTML += "替代標準誤：" + se_est ;
-		DisplayArea.innerHTML += ' <input type="button" value="清除" onClick="sd_switch(-1);" /><br />' ;
+		DisplayArea.innerHTML += ' <input type="button" value="清除" onClick="sd_switch(-1);" />' ;
+		DisplayArea.innerHTML += "<br />替代標準差 ( Pop SD )：" + sd_est ;
+		DisplayArea.innerHTML += "<br />替代變異數 ( Pop Var )：" + vari_est ;
+		DisplayArea.innerHTML += "<br />替代標準誤 ( Pop SE )：" + se_est ;
 	}
 
 	if(size>=2)
 	{
-		DisplayArea.innerHTML += "<br />" ;
+		DisplayArea.innerHTML += "<br /><br />" ;
 		
 		// z
-		DisplayArea.innerHTML += '<input type="button" value="輸入/更改母體標準差以作估計" onClick="sd_switch();" /><br />' ;
 		DisplayArea.innerHTML += "99% 2尾：z &#8776; &#177; 2.575829 , " ;
 		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+z_99_2+" , " ;
 		DisplayArea.innerHTML += "平均值 &#8776; ("+z_99_2_mean.join(" , ")+")<br />" ;
@@ -1122,7 +1103,6 @@ function inputSub(parameter) // 處理&分析 dataset
 		DisplayArea.innerHTML += "90% 1尾：t &#8776; &#177; "+t_90_1_table[size-2].toFixed(6)+" , " ;
 		DisplayArea.innerHTML += "置信區間 &#8776; &#177; "+t_90_1+" , " ;
 		DisplayArea.innerHTML += "平均值 &#8776; ("+t_90_1_mean.join(" , ")+")<br />" ;
-		DisplayArea.innerHTML += "<br />" ;
 		}
 		else
 		{
@@ -1130,25 +1110,30 @@ function inputSub(parameter) // 處理&分析 dataset
 		}
 
 		// X²
+		if(sd_est>=0)
+		{
+			DisplayArea.innerHTML += "<br />觀察的卡方值："+chiSq_est ;
+		}
 		if( size-1 > chiSq_99_2_table_L.length )
 		{
-			DisplayArea.innerHTML += "<br />以自由度(df) "+chiSq_99_2_table_L.length+" 進行估計：<br />" ;
+			DisplayArea.innerHTML += "<br />以自由度(df) "+chiSq_99_2_table_L.length+" 進行估計：" ;
 		}
-		DisplayArea.innerHTML += "99% 2尾：X&#178; &#8776; ("+chiSq_99_2.join(" , ")+") , " ;
+		DisplayArea.innerHTML += "<br />" ;
+		DisplayArea.innerHTML += "99% 2尾：X&#178; &#8776; ("+chiSq_99_2[1]+" , "+chiSq_99_2[0]+") , " ;
 		DisplayArea.innerHTML += "標準差 &#8776; ("+chiSq_99_2_sd.join(" , ")+")<br />" ;
-		DisplayArea.innerHTML += "99% 1尾：X&#178; &#8776; ("+chiSq_99_1.join(" , ")+") , " ;
+		DisplayArea.innerHTML += "99% 1尾：X&#178; &#8776; ("+chiSq_99_1[1]+" , "+chiSq_99_1[0]+") , " ;
 		DisplayArea.innerHTML += "標準差 &#8776; ("+chiSq_99_1_sd.join(" , ")+")<br />" ;
-		DisplayArea.innerHTML += "95% 2尾：X&#178; &#8776; ("+chiSq_95_2.join(" , ")+") , " ;
+		DisplayArea.innerHTML += "95% 2尾：X&#178; &#8776; ("+chiSq_95_2[1]+" , "+chiSq_95_2[0]+") , " ;
 		DisplayArea.innerHTML += "標準差 &#8776; ("+chiSq_95_2_sd.join(" , ")+")<br />" ;
-		DisplayArea.innerHTML += "95% 1尾：X&#178; &#8776; ("+chiSq_95_1.join(" , ")+") , " ;
+		DisplayArea.innerHTML += "95% 1尾：X&#178; &#8776; ("+chiSq_95_1[1]+" , "+chiSq_95_1[0]+") , " ;
 		DisplayArea.innerHTML += "標準差 &#8776; ("+chiSq_95_1_sd.join(" , ")+")<br />" ;
-		DisplayArea.innerHTML += "90% 2尾：X&#178; &#8776; ("+chiSq_90_2.join(" , ")+") , " ;
+		DisplayArea.innerHTML += "90% 2尾：X&#178; &#8776; ("+chiSq_90_2[1]+" , "+chiSq_90_2[0]+") , " ;
 		DisplayArea.innerHTML += "標準差 &#8776; ("+chiSq_90_2_sd.join(" , ")+")<br />" ;
-		DisplayArea.innerHTML += "90% 1尾：X&#178; &#8776; ("+chiSq_90_1.join(" , ")+") , " ;
+		DisplayArea.innerHTML += "90% 1尾：X&#178; &#8776; ("+chiSq_90_1[1]+" , "+chiSq_90_1[0]+") , " ;
 		DisplayArea.innerHTML += "標準差 &#8776; ("+chiSq_90_1_sd.join(" , ")+")<br />" ;
 		DisplayArea.innerHTML += "<br />" ;
 	}
-	else DisplayArea.innerHTML += "至少 2 個數據才能估計。<br />" ;
+	else DisplayArea.innerHTML += "<br /><br />至少 2 個數據才能估計。<br />" ;
 
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
 	DisplayArea.innerHTML += "均勻分布"+"(未寫)"+"<br />" ;
@@ -1168,8 +1153,19 @@ function sd_switch(cls)
 	else
 	{
 		var input = prompt("請輸入替代的標準差。") ;
-		if (input >= 0 && input.length>0) sd_est = input ;
-		else alert("輸入無效。");
+		if(input != null)
+		{
+			try
+			{
+				var try_eval = eval(input) ;
+				if( try_eval>=0 && (try_eval+"").length>0 ) sd_est = try_eval ;
+				else alert("輸入無效。");
+			}
+			catch(e)
+			{
+				alert("輸入無效。");
+			}
+		}
 	}
 	inputSub("stay");
 }
@@ -1204,16 +1200,22 @@ function inputRandom(input,numSet)
 function randomDelete(max)
 {
 	var pos ;
-	if(max >= pop.length) pop = [] ; // 全部清空
+	if(max >= pop.length)
+	{
+		var del = pop.length ;
+		pop = [] ; // 全部清空
+	}
 	else
 	{
-		for(var n = 0 ; n < max ; n ++)
+		var del = max ;
+		for(var k = 0 ; k < max ; k ++)
 		{
 			pos = Math.floor(Math.random()*pop.length) ; // 隨機決定位置
 			pop.splice(pos,1); // 移除
 		}
 	}
-	inputSub(); // 更新統計資料
+	inputSub("stay"); // 更新統計資料
+	alert("已移除 "+ del +" 個數據。");
 }
 
 function inputKey()

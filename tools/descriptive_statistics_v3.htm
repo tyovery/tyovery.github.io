@@ -253,7 +253,7 @@ function inputSub(parameter) // 處理&分析 dataset
 	{
 		try
 		{
-			pop[n] += "";
+			pop[n] += "" ;
 			
 			// 檢查是否為分組數據
 			if(pop[n].slice(0,1) == "[")
@@ -274,6 +274,15 @@ function inputSub(parameter) // 處理&分析 dataset
 				pop[n] = 0 ;
 				while(radix_60.length>0)
 				{
+					for(var j = 0 ; j<radix_60.length ; j++)
+					{
+						// 清除開頭的0
+						while(radix_60[j].slice(0,1) == "0")
+						{
+							radix_60[j] = radix_60[j].slice(1) ;
+						}
+						if(radix_60[j].length == 0) radix_60[j] = "0" ; // 空字串補0
+					}
 					pop[n] += eval(radix_60.shift()) * (60**radix_60.length) ;
 				}
 			}
@@ -285,14 +294,29 @@ function inputSub(parameter) // 處理&分析 dataset
 				pop[n] = 0 ;
 				while(radix_60_dec.length>0)
 				{
+					for(var j = 0 ; j<radix_60_dec.length ; j++)
+					{
+						// 清除開頭的0
+						while(radix_60_dec[j].slice(0,1) == "0")
+						{
+							radix_60_dec[j] = radix_60_dec[j].slice(1) ;
+						}
+						if(radix_60_dec[j].length == 0) radix_60_dec[j] = "0" ; // 空字串補0
+					}
 					pop[n] += eval(radix_60_dec.pop()) / (60**radix_60_dec.length) ;
 				}
+			}
+
+			pop[n] += "" ;
+			while(pop[n].slice(0,1)=="0" && pop[n].length>=2 ) // 清除開頭的0
+			{
+				pop[n] = pop[n].slice(1) ;
 			}
 
 			pop[n] = eval(pop[n]) ; // 運算
 			// pop[n] = floatFix(pop[n]) ; // 處理 多於一個小數點 的狀況
 			pop[n] *= 1 ; // 化為數字
-			
+
 			// 若本項不是數字，則移除本項
 			if( pop[n].length < 1 || !(pop[n]>=0 || pop[n]<0) )
 			{
@@ -851,7 +875,8 @@ function inputSub(parameter) // 處理&分析 dataset
 			{
 				if( !(data_show == "Infinity" || data_show == "-Infinity") )
 				{
-					data_show = Math.floor( poplist[k][0] % 60 ) ; // 個位
+					data_show = Math.floor( poplist[k][0] % 60 ) + "" ; // 個位
+					while(data_show.length<2) data_show = "0" + data_show ; // 補0
 					var buff = Math.floor( poplist[k][0] / 60 ) ; // 其餘整數部分
 					var buff_small = poplist[k][0] % 1 ; // 小數部分
 					var buff_add ; // 準備增加的數值
@@ -859,16 +884,21 @@ function inputSub(parameter) // 處理&分析 dataset
 					while(buff >= 60) // 整數部分
 					{
 						buff_add = buff % 60 + "" ;
-						while(buff_add.length<2) buff_add = "0" + buff_add ;
+						while(buff_add.length<2) buff_add = "0" + buff_add ; // 補0
 						data_show = buff_add + ":" + data_show ;
 						buff = Math.floor( buff / 60 ) ;
 					}
-					if(buff>0) data_show = buff + ":" + data_show ;
-					
+					if(buff>0) // 最高位
+					{
+						buff += "" ;
+						while(buff.length<2) buff = "0" + buff ; // 補0
+						data_show = buff + ":" + data_show ;
+					}
+
 					while(buff_small > 0) // 小數部分
 					{
 						buff_add = Math.floor( buff_small * 60 ) + "" ;
-						while(buff_add.length<2) buff_add = "0" + buff_add ;
+						while(buff_add.length<2) buff_add = "0" + buff_add ; // 補0
 						data_show += '"' + buff_add ;
 						buff_small = (buff_small * 60) % 1 ;
 					}

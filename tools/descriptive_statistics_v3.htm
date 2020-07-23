@@ -46,7 +46,8 @@ var mean_iq ; // 四分平均數
 var min , max , mid_range , range_half=[] , range , range_c , range_b , iqr , qd  ;
 // 最小值,最大值,中程數,半距,全距,全距係數,平均間距,四分位距,四分位差
 
-var freq_mean , freq_sd , freq_cv ; // 頻數平均值 , 頻數標準差
+var freq_show_dir = 0 , freq_mean , freq_sd , freq_cv ;
+// 頻數 顯示方向 (0=正 ; 1=反) , 頻數 平均值 , 頻數 標準差 , 頻數 變異係數
 
 var prop_show_dir = 0 ; // 累積比例 顯示方向 (0=正 ; 1=反)
 
@@ -63,11 +64,24 @@ var help_firstHit ; // 單次機率估計
 var help_disper ; // 分散程度
 var help_samDist ; // 抽樣分布
 var help_exportData ; // 導出數據
+var help_propEst ; // 比例置信區間
 
 // 用作估計的 標準差(母體) , 變異數(母體) , 標準誤(母體) , X²(觀察值)
 var sd_est = -1 , vari_est = -1 ,  se_est = -1 , chiSq_est = -1 ;
 
+var prop , propSum ; // 比例 , 累積比例
+
+// 比例置信區間
+var prop_est=[] , prop_se ; // 置信區間 , 比例標準誤
+var prop_est_set_cl = .95 , prop_est_set_tail = 2 ; // 設定 置信 , 2or1尾
+
 // 置信區間(z)
+var z_99_2_table = 2.575829 ;
+var z_99_1_table = 2.326348 ;
+var z_95_2_table = 1.959964 ;
+var z_95_1_table = 1.644854 ;
+var z_90_2_table = 1.644854 ;
+var z_90_1_table = 1.281552 ;
 var z_99_2 , z_99_2_mean = [] ;
 var z_99_1 , z_99_1_mean = [] ;
 var z_95_2 , z_95_2_mean = [] ;
@@ -837,7 +851,17 @@ function inputSub(parameter) // 處理&分析 dataset
 	txt2htm += '<input type="button" value="2" onClick="data_show_change(this.value);" />'; // 2進位制
 	txt2htm += '<input type="button" value="8" onClick="data_show_change(this.value);" />'; // 8進位制
 	txt2htm += '</th>';
-	txt2htm += '<th>y<br />頻數</th>';
+	if(freq_show_dir != 1)
+	{
+		txt2htm += '<th>y<br />頻數<br />';
+	}
+	else
+	{
+		txt2htm += '<th>'+(dataSet_sample.checked?'n':'N')+'-y<br />反頻數<br />';
+	}
+	txt2htm += '<input type="button" value="正" onClick="freq_show_dir=0;inputSub(\'stay\');" />' ;
+	txt2htm += '<input type="button" value="反" onClick="freq_show_dir=1;inputSub(\'stay\');" />' ;
+	txt2htm += '</th>';
 	txt2htm += '<th>&#931;y<br />累積頻數</th>';
 	txt2htm += '<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />比例</th>';
 	txt2htm += '<th>&#931;y/'+(dataSet_sample.checked?'n':'N')+'<br />累積比例<br />';
@@ -849,7 +873,19 @@ function inputSub(parameter) // 處理&分析 dataset
 	txt2htm += '<th>z-score<br />標準分</th>';
 	txt2htm += '<th>Sampling z<br />抽樣標準分</th>';
 	txt2htm += '<th>Proportion SE<br />比例標準誤</th>';
-	txt2htm += '<th>95% 2尾 z<br />比例置信區間</th>';
+	txt2htm += '<th>'+prop_est_set_cl*100+'% '+prop_est_set_tail+'尾 z<br />比例置信區間<br />';
+	txt2htm += '<input type="button" value=".99" onClick="prop_est_set_cl=.99;inputSub(\'stay\');" />';
+	txt2htm += '<input type="button" value=".95" onClick="prop_est_set_cl=.95;inputSub(\'stay\');" />';
+	txt2htm += '<input type="button" value=".90" onClick="prop_est_set_cl=.90;inputSub(\'stay\');" />';
+	txt2htm += '<br />';
+	txt2htm += '<input type="button" value="2T" onClick="prop_est_set_tail=2;inputSub(\'stay\');" />';
+	txt2htm += '<input type="button" value="1T" onClick="prop_est_set_tail=1;inputSub(\'stay\');" />';
+	help_propEst = "以常態分布作估計，" ;
+	help_propEst += "要求 頻數(左尾) 與 反頻數(右尾) 同時大於 5。\n\n" ;
+	help_propEst += "要求 np > 5 即是 y > 5\n並且 nq > 5 即是 n-y > 5" ;
+	help_propEst += "\n\n可使用正/反按鈕，在 頻數 與 反頻數 之間切換顯示。" ;
+	txt2htm += '<input type="button" value="?" onClick="alert(help_propEst);" />';
+	txt2htm += '</th>';
 	// txt2htm += '<th>'+(dataSet_sample.checked?'(x-x&#772;)':'(x-&mu;)')+'<sup>2</sup><br />離差平方</th>';
 	txt2htm += '</tr></thead><tbody>';
 
@@ -858,7 +894,7 @@ function inputSub(parameter) // 處理&分析 dataset
 	{
 		// 控制
 		txt2htm += '<tr>\
-		<td><input id="ctrl_edit_'+k+'" type="button" value="修改頻數" onClick="ctrl_click(this.id,prompt(\'頻數更改為：\'));" />\
+		<td><input id="ctrl_edit_'+k+'" type="button" value="改頻數" onClick="ctrl_click(this.id,prompt(\'把頻數更改為：\'));" />\
 		<input id="ctrl_del_'+k+'" type="button" value="-1" onClick="ctrl_click(this.id);" />\
 		<input id="ctrl_add_'+k+'" type="button" value="+1" onClick="ctrl_click(this.id);" /></td>';
 		
@@ -928,24 +964,25 @@ function inputSub(parameter) // 處理&分析 dataset
 		poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+data_show+'</td>';
 		
 		// 頻數(y)
-		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+poplist[k][1]+'</td>';
+		txt2htm += poplist[k][1]==mode[1] ? '<td style="background-color: #FF3F00;">' : '<td>' ;
+		txt2htm += ( freq_show_dir!=1 ? poplist[k][1] : size-poplist[k][1]) + '</td>' ;
 		
 		// 累積頻數
 		txt2htm += '<td>'+poplist[k][2]+'</td>';
 		
 		// 比例
-		var prop = poplist[k][1]/size ;
+		prop = poplist[k][1]/size ;
 		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+(prop*100).toFixed(2)+'%</td>';
-		
+
 		// 累積比例
 		if( prop_show_dir != 1 ) // 正向
 		{
-			var propSum = ( poplist[k][2] / size * 100 ).toFixed(2) ;
+			propSum = ( poplist[k][2] / size * 100 ).toFixed(2) ;
 		}
 		else // 反向
 		{
-			if(k >= 1) var propSum = ( ( 1 - poplist[k-1][2] / size ) * 100 ).toFixed(2) ;
-			else var propSum = "100.00" ; // 首項
+			if(k >= 1) propSum = ( ( 1 - poplist[k-1][2] / size ) * 100 ).toFixed(2) ;
+			else propSum = "100.00" ; // 首項
 		}
 		txt2htm += (propSum>75?'<td style="background-color: #545454;color: #DFDFDF;">':
 		propSum>50?'<td style="background-color: #7F7F7F;color: #DFDFDF;">':
@@ -965,12 +1002,13 @@ function inputSub(parameter) // 處理&分析 dataset
 		txt2htm += '<td>'+(se>0 ? ((poplist[k][0]-mean)/se).toFixed(fix_d) : ' - ')+'</td>';
 		
 		// 比例標準誤 (比例SE)
-		var prop_se = (prop * (1-prop) / size)**0.5 ;
+		prop_se = (prop * (1-prop) / size)**0.5 ;
 		txt2htm += '<td>'+(prop_se*100).toFixed(fix_d)+'%</td>';
 		
-		// 比例置信區間 (95% 2尾 z)
-		var prop_est = [prop - prop_se * 1.959964] ;
-		prop_est[1] = [prop + prop_se * 1.959964] ;
+		// 比例置信區間
+		var z_selectTable = eval("z_"+prop_est_set_cl*100+"_"+prop_est_set_tail+"_table") ;
+		prop_est = [prop - prop_se * z_selectTable] ;
+		prop_est[1] = [prop + prop_se * z_selectTable] ;
 		if(prop_est[0]<0) prop_est[0] = 0 ; // 修正左界
 		if(prop_est[1]>1) prop_est[1] = 1 ; // 修正右界
 		txt2htm += '<td>'+(prop_est[0]*100).toFixed(2)+'% , ' ;
@@ -993,7 +1031,7 @@ function inputSub(parameter) // 處理&分析 dataset
 	// 平均頻數
 	if(size>0) freq_mean = size / poplist.length ;
 	else freq_mean = "-" ;
-	txt2htm += '<td>平均頻數<br />= '+ freq_mean +'</td>';
+	txt2htm += '<td>y&#772;<br />= '+ (size>0?freq_mean.toFixed(fix_d):freq_mean) +'</td>';
 	
 	txt2htm += '<td>'+(dataSet_sample.checked?'n':'N')+'<br />= '+size+'</td>';
 	txt2htm += '<td></td>';
@@ -1236,6 +1274,7 @@ function inputSub(parameter) // 處理&分析 dataset
 	else DisplayArea.innerHTML += "<br /><br />至少 2 個數據才能估計。<br />" ;
 
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
+	DisplayArea.innerHTML += "平均頻數：" + freq_mean + "<br />" ;
 	DisplayArea.innerHTML += "均勻分布 偏離度：" ;
 	if(freq_cv>=0||freq_cv<0)
 	{

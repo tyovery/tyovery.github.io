@@ -13,7 +13,7 @@
 <input id="userAddButton" type="button" value="加入" onClick="userAdd();cal();" /><br />
 <p>點輸入格式：(x<sub>1</sub> , y<sub>1</sub>) (x<sub>2</sub> , y<sub>2</sub>) (x<sub>3</sub> , y<sub>3</sub>) ...</p>
 <p>序列輸入格式：y<sub>1</sub> , y<sub>2</sub> , y<sub>3</sub> , ...</p>
-<input type="button" value="消除" onClick="point=[];cal();" /><br />
+<input type="button" value="清除全部資料" onClick="if(confirm('是否要清除現有的所有資料？')){point=[];cal();}" /><br />
 
 <script>
 var point = [] , size , x_bar , y_bar ;
@@ -174,7 +174,7 @@ function cal()
 	order(0);
 	order(1);
 	
-	// 輸出表格
+	// 輸出表格 頭部
 	var txt2htm = '<table border="1px" cellspacing="1px" cellpadding="5px" style="text-align: center;">';
 
 	txt2htm += '<tr>' ;
@@ -182,12 +182,17 @@ function cal()
 	txt2htm += '<td onClick="titleEdit(1);return;">y<br/>'+y_title+'</td>' ;
 	txt2htm += '<td>y&#770;<sub>1</sub><br />一次估計</td>' ;
 	txt2htm += '<td>e<sub>1</sub><br />一次殘差</td>' ;
+	txt2htm += '<td>指數</td>' ;
+	txt2htm += '<td>增長</td>' ;
+	txt2htm += '<td>2期移動平均</td>' ;
+	txt2htm += '<td>3期移動平均</td>' ;
 	txt2htm += '<td>x-order</td>' ;
 	txt2htm += '<td>y-order</td>' ;
 	txt2htm += '<td>d</td>' ;
 	txt2htm += '<td>d&#178;</td>' ;
 	txt2htm += '</tr>' ;
 
+	// 輸出表格 軀幹
 	var est = [] , res = [] , res_sum = [,0] ; // 估計 , 殘差 , 殘差和
 	sum_d_2 = 0 ; // reset Σd²
 	for(var k=0 ; k<size ; k++)
@@ -208,6 +213,23 @@ function cal()
 		}
 		txt2htm += '<td>'+ est[1] +'</td>' ; // y^_1 = ax + b
 		txt2htm += '<td>'+ res[1] +'</td>' ; // e_1 = y - (ax + b)
+		
+		// 指數
+		txt2htm += '<td>'+ (point[k][1]/point[0][1]*100).toFixed(2) +'</td>' ;
+		
+		// 增長
+		var growth = k >= 1 ? point[k][1] / point[k-1][1] - 1 : '-' ;
+		txt2htm += growth > 0 ? '<td style="color: 007F00;">+' :
+				   growth < 0 ? '<td style="color: 7F0000;">' : '<td>' ;
+		txt2htm += k>=1 ? (growth*100).toFixed(2) + ' %' : '-' ;
+		txt2htm += '</td>' ;
+		
+		// 移動平均 2期
+		txt2htm += '<td>'+ ( k>=1 ? ((point[k][1]+point[k-1][1])/2).toFixed(fixLength) : '-')+'</td>' ;
+		
+		// 移動平均 3期
+		txt2htm += '<td>'+ ( k>=1 & k<size-1 ? ((point[k+1][1]+point[k][1]+point[k-1][1])/3).toFixed(fixLength) : '-')+'</td>' ;
+		
 		txt2htm += '<td>'+ orderList[0][k] +'</td>' ;
 		txt2htm += '<td>'+ orderList[1][k] +'</td>' ;
 		d = orderList[1][k]-orderList[0][k] ;
@@ -218,11 +240,16 @@ function cal()
 		txt2htm += '</tr>' ;
 	}
 	
+	// 輸出表格 底部
 	txt2htm += '<tr>' ;
 	txt2htm += '<td><input type="button" value="時間序列" onClick="fixTimeSeries();" /></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td>殘差和 檢驗<br />= '+res_sum[1]+'</td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td></td>' ;
+	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
@@ -354,8 +381,15 @@ function fixTimeSeries(auto)
 function est1()
 {
 	var x = prompt("請輸入x值") ;
-	var y = a1 * x + b1 ;
-	alert("x = " + x + "\ny = " + y ) ;
+	if(x!=null)
+	{
+		if( (x>=0||x<0) && (x+"").length>0 )
+		{
+			var y = a1 * x + b1 ;
+			alert("x = " + x + "\ny = " + y ) ;
+		}
+		else alert("輸入錯誤。");
+	}
 }
 
 </script>

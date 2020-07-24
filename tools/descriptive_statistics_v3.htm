@@ -120,10 +120,16 @@ var chiSq_90_1 = [] , chiSq_90_1_sd = [] ;
 
 function inputClear()
 {
-	pop = [] ; // 清空 dataset
-	sd_est = -1 ; // 清空 替代標準差
+	var confirmMsg = "是否要清空現有的所有數據？" ;
+	confirmMsg += "\n此操作無法還原。" ;
+	confirmMsg += "\n您可以利用下面的「導出數據」按鈕，暫存現有的數據。" ;
+	if(confirm(confirmMsg))
+	{
+		pop = [] ; // 清空 dataset
+		sd_est = -1 ; // 清空 替代標準差
 
-	inputSub() ;
+		inputSub() ;
+	}
 }
 
 function popMinus()

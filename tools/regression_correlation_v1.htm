@@ -48,7 +48,7 @@ var pointBuf = [] ; // 暫存的data
 var d , d_2 , sum_d_2 ; // 次序差
 
 // season
-var season = 4 , average_moving ; // 多少期為一季 , 移動平均
+var season = 2 , average_moving ; // 多少期為一季 , 移動平均
 var season_hotList = [2,3,4,5,6,7,,12,13,28,30,52,,365,10,100] ; // 常用期數
 
 var x_title = "" , y_title = "" ;
@@ -62,7 +62,32 @@ function keyPress()
 function userAdd()
 {
 	var inputString = userInput.value ;
-	inputString = inputString.replace(/\s+|[a-z]/ig,"");
+
+	// 清理
+	inputString = inputString.replace(/\s+|[a-z]/ig,""); // 空隔 , 拉丁字母
+
+	// 符號轉換
+	inputString = inputString.replace(/;|，|、|；/g,","); // 項目分隔號
+	inputString = inputString.replace(/：/g,":"); // 60進位號
+	inputString = inputString.replace(/＂/g,'"'); // 60進位號(小數)
+	inputString = inputString.replace(/＋/g,"+"); // 加
+	inputString = inputString.replace(/－/g,"-"); // 減
+	inputString = inputString.replace(/＊/g,"*"); // 乘
+	inputString = inputString.replace(/／/g,"/"); // 除
+	inputString = inputString.replace(/\^|︿/g,"**"); // 冪
+
+	// 數字轉換
+	inputString = inputString.replace(/０/g,"0");
+	inputString = inputString.replace(/１/g,"1");
+	inputString = inputString.replace(/２/g,"2");
+	inputString = inputString.replace(/３/g,"3");
+	inputString = inputString.replace(/４/g,"4");
+	inputString = inputString.replace(/５/g,"5");
+	inputString = inputString.replace(/６/g,"6");
+	inputString = inputString.replace(/７/g,"7");
+	inputString = inputString.replace(/８/g,"8");
+	inputString = inputString.replace(/９/g,"9");
+	inputString = inputString.replace(/。/g,"."); // 小數點
 
 	// 以()分割 存入 point 陣列
 	var exist_bracket = 0 ; // 找到的開括號數量 , =0時視為Time Series

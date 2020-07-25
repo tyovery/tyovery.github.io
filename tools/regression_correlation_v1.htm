@@ -1,8 +1,29 @@
 <html lang="zh-Hant-HK">
 <head>
 <title>回歸 與 相關</title>
-<style>
-
+<style type="text/css">
+body
+{
+	background-color: #FFFFFF;
+	color: #000000;
+}
+p
+{
+	line-height: 100%;
+}
+a
+{
+	text-decoration: none;
+}
+thead tr th
+{
+	position: sticky;
+	top: 0;
+}
+th
+{
+	background-color: white;
+}
 </style>
 </head>
 <body>
@@ -25,6 +46,10 @@ var orderList = [[],[]] ; // x-order , y-order
 var orderIndex = [] ; // index
 var pointBuf = [] ; // 暫存的data
 var d , d_2 , sum_d_2 ; // 次序差
+
+// season
+var season = 4 , average_moving ; // 多少期為一季 , 移動平均
+var season_hotList = [2,3,4,5,6,7,,12,13,28,30,52,,365,10,100] ; // 常用期數
 
 var x_title = "" , y_title = "" ;
 var fixLength = 6 ; // 準確至幾位少數
@@ -175,22 +200,35 @@ function cal()
 	order(1);
 	
 	// 輸出表格 頭部
-	var txt2htm = '<table border="1px" cellspacing="1px" cellpadding="5px" style="text-align: center;">';
+	var txt2htm = '<table id="dataTable" border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: 20px; background-color: #FFFFFF; text-align: center; color: #000000">';
 
-	txt2htm += '<tr>' ;
-	txt2htm += '<td onClick="titleEdit(0);return;">x<br/>'+x_title+'</td>' ;
-	txt2htm += '<td onClick="titleEdit(1);return;">y<br/>'+y_title+'</td>' ;
-	txt2htm += '<td>y&#770;<sub>1</sub><br />一次估計</td>' ;
-	txt2htm += '<td>e<sub>1</sub><br />一次殘差</td>' ;
-	txt2htm += '<td>指數</td>' ;
-	txt2htm += '<td>增長</td>' ;
-	txt2htm += '<td>2期移動平均</td>' ;
-	txt2htm += '<td>3期移動平均</td>' ;
-	txt2htm += '<td>x-order</td>' ;
-	txt2htm += '<td>y-order</td>' ;
-	txt2htm += '<td>d</td>' ;
-	txt2htm += '<td>d&#178;</td>' ;
-	txt2htm += '</tr>' ;
+	txt2htm += '<thead><tr>' ;
+	txt2htm += '<th onClick="titleEdit(0);return;">x<br/>'+x_title+'</th>' ;
+	txt2htm += '<th onClick="titleEdit(1);return;">y<br/>'+y_title+'</th>' ;
+	txt2htm += '<th>y&#770;<sub>1</sub><br />一次估計</th>' ;
+	txt2htm += '<th>e<sub>1</sub><br />一次殘差</th>' ;
+	txt2htm += '<th>指數</th>' ;
+	txt2htm += '<th>增長</th>' ;
+	
+	// 移動平均
+	txt2htm += '<th>'+season+'期移動平均<br />';
+	for(var k = 0 ; k < season_hotList.length ; k++ )
+	{
+		if(season_hotList[k]!=null)
+		{
+		txt2htm += '<input type="button" value="'+season_hotList[k]+'" onClick="season='+season_hotList[k]+';cal();"/>' ;
+		}
+		else txt2htm += '<br />' ;
+	}
+	txt2htm += '<input type="button" value="..." onClick="season_setting();"/>' ;
+	if(size>7) txt2htm += '<input type="button" value="'+size+'" onClick="season='+size+';cal();"/>' ;
+	txt2htm += '</th>' ;
+
+	txt2htm += '<th>x-order</th>' ;
+	txt2htm += '<th>y-order</th>' ;
+	txt2htm += '<th>d</th>' ;
+	txt2htm += '<th>d&#178;</th>' ;
+	txt2htm += '</tr></thead><tbody>' ;
 
 	// 輸出表格 軀幹
 	var est = [] , res = [] , res_sum = [,0] ; // 估計 , 殘差 , 殘差和
@@ -225,10 +263,26 @@ function cal()
 		txt2htm += '</td>' ;
 		
 		// 移動平均 2期
-		txt2htm += '<td>'+ ( k>=1 ? ((point[k][1]+point[k-1][1])/2).toFixed(fixLength) : '-')+'</td>' ;
+		var skip_head = Math.floor(season/2) ; // 開頭跳過多少項
+		var skip_tail = Math.floor((season-1)/2) ; // 尾部跳過多少項
+		if( k >= skip_head && k < size - skip_tail )
+		{
+			average_moving = 0 ; // reset
+			for(var j = k - skip_head ; j < k - skip_head + season ; j ++) // sum
+			{
+				average_moving += point[j][1] ;
+			}
+			average_moving /= season ;
+			average_moving = average_moving.toFixed(fixLength) ;
+		}
+		else average_moving = "-" ;
+		txt2htm += '<td>'+ average_moving +'</td>' ;
 		
 		// 移動平均 3期
-		txt2htm += '<td>'+ ( k>=1 & k<size-1 ? ((point[k+1][1]+point[k][1]+point[k-1][1])/3).toFixed(fixLength) : '-')+'</td>' ;
+		// txt2htm += '<td>'+ ( k>=1 && k<size-1 ? ((point[k-1][1]+point[k][1]+point[k+1][1])/3).toFixed(fixLength) : '-')+'</td>' ;
+		
+		// 移動平均 4期
+		// txt2htm += '<td>'+ ( k>=2 && k<size-1 ? ((point[k-2][1]+point[k-1][1]+point[k][1]+point[k+1][1])/4).toFixed(fixLength) : '-')+'</td>' ;
 		
 		txt2htm += '<td>'+ orderList[0][k] +'</td>' ;
 		txt2htm += '<td>'+ orderList[1][k] +'</td>' ;
@@ -252,11 +306,10 @@ function cal()
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
-	txt2htm += '<td></td>' ;
 	txt2htm += '<td>&Sigma;d&#178;<br />= '+sum_d_2+'</td>' ;
 	txt2htm += '</tr>' ;
 
-	txt2htm += '</table>' ;
+	txt2htm += '</tbody></table>' ;
 	outputTable.innerHTML = txt2htm ;
 
 	// 公式
@@ -389,6 +442,20 @@ function est1()
 			alert("x = " + x + "\ny = " + y ) ;
 		}
 		else alert("輸入錯誤。");
+	}
+}
+
+function season_setting()
+{
+	var input = prompt("請輸入期數。");
+	if(input!=null)
+	{
+		if(input>=2 && input%1==0)
+		{
+			season = input*1 ;
+			cal() ;
+		}
+		else alert("輸入有誤，請輸入大於或等於 2 的整數。");
 	}
 }
 

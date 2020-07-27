@@ -1,0 +1,244 @@
+<html lang="zh-Hant-HK">
+<head>
+<title>3-6-9 Game</title>
+<style>
+body
+{
+	background-color: #FFF ;
+}
+table
+{
+	text-align: center ;
+}
+</style>
+</head>
+<body>
+<center>
+<br /><br />
+<div id="msg"></div>
+<br />
+<table cellpadding="20"><tr>
+<td>
+<div id="total_1p"></div>
+<span id="add_1p"></span>
+</td>
+<td><span id="map"></span></td>
+<td>
+<div id="total_2p"></div>
+<span id="add_2p"></span>
+</td>
+</tr></table>
+</center>
+<script>
+
+var dev = 1 ; // 開發者模式
+var turn = 0 ; // 行動者 (空 , 1P , 2P)
+var skin = ["　","O","X"] ; // 棋子樣式 (空 , 1P , 2P)
+var score_1p , score_2p ; // 玩家分數
+var step ; // 棋步
+
+function newGame() // 開新遊戲
+{
+	var txt2map = '<table border="1" cellspacing="1" cellpadding="3">' ;
+	var id ;
+	for( var k=0 ; k<9 ; k++ )
+	{
+		txt2map += '<tr>' ;
+		for( var j=0 ; j<9 ; j++ )
+		{
+			id = 'pos_' + j + '_' + k ;
+			txt2map += '<td id="'+id+'" onClick="action(turn,this.id)">' ;
+			txt2map += skin[0] ;
+			txt2map += '</td>' ;
+		}
+		txt2map += '</tr>' ;
+	}
+	txt2map += '</table>' ;
+	map.innerHTML = txt2map ;
+	
+	// reset
+	score_1p = 0 ; // 1P分數
+	score_2p = 0 ; // 2P分數
+	step = 0 ; // 棋步
+	turn = 1 ; // 下棋者
+
+	total_1p.innerHTML = skin[1] + " 的分數：0分" ;
+	total_2p.innerHTML = skin[2] + " 的分數：0分" ;
+	
+	var txt2msg = "新的遊戲開始了。" ;
+	txt2msg += "<br />該 "+skin[turn]+" 下了。" ;
+	msg.innerHTML = txt2msg ;
+	
+}
+
+function action(t,pos) // 下子 ( 誰下 , 位置 )
+{
+	var x = pos.slice(4,5) ; // x座標
+	var y = pos.slice(-1) ; // y座標
+
+	// alert(eval(pos).innerHTML) ;
+	
+	if( eval(pos).innerHTML == skin[0] )
+	{
+		eval(pos).innerHTML = skin[turn] ; // 下子
+		score(x,y) ; // 計分
+		step ++ ; // 棋步+1
+		if(step<81)
+		{
+			turn = 3 - turn ; // 換人下子
+			msg.innerHTML = "該 "+skin[turn]+" 下了。" ;
+		}
+		else
+		{
+			msg.innerHTML = "遊戲已結束。" ;
+			var txt2alert = "這局遊戲已結束。\n" ;
+			txt2alert += "雙方得分 "+score_1p+" : "+score_2p+ "\n" ;
+			if(score_1p > score_2p) txt2alert += "勝出者是：" + skin[1] ;
+			else if(score_1p < score_2p) txt2alert += "勝出者是：" + skin[2] ;
+			else txt2alert += "- 打和 -" ;
+			alert(txt2alert) ;
+		}
+	}
+	else
+	{
+		alert("此位置已有棋子。");
+	}
+
+	// if(dev) alert("( "+x+" , "+y+" )");
+}
+
+function score(x,y) // 計分
+{
+	x = x*1 ;
+	y = y*1 ;
+	var match = skin[turn] ; // 匹配的棋子
+	var count = 0 ; // 分數
+	var chain ; // 多少個連子
+
+	/* - */
+	chain = 1 ; // reset
+	for(var k = 1 ; k <= 8 ; k++ ) // 左
+	{
+		try
+		{
+			if( eval("pos_"+(x-k)+"_"+y).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	for(var k = 1 ; k <= 8 ; k++ ) // 右
+	{
+		try
+		{
+			if( eval("pos_"+(x+k)+"_"+y).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	if(chain%3==0) count += chain ;
+	
+	/* | */
+	chain = 1 ; // reset
+	for(var k = 1 ; k <= 8 ; k++ ) // 上
+	{
+		try
+		{
+			if( eval("pos_"+x+"_"+(y-k)).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	for(var k = 1 ; k <= 8 ; k++ ) // 下
+	{
+		try
+		{
+			if( eval("pos_"+x+"_"+(y+k)).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	if(chain%3==0) count += chain ;
+	
+	/* \ */
+	chain = 1 ; // reset
+	for(var k = 1 ; k <= 8 ; k++ ) // 左上
+	{
+		try
+		{
+			if( eval("pos_"+(x-k)+"_"+(y-k)).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	for(var k = 1 ; k <= 8 ; k++ ) // 右下
+	{
+		try
+		{
+			if( eval("pos_"+(x+k)+"_"+(y+k)).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	if(chain%3==0) count += chain ;
+	
+	
+	/* / */
+	chain = 1 ; // reset
+	for(var k = 1 ; k <= 8 ; k++ ) // 右上
+	{
+		try
+		{
+			if( eval("pos_"+(x+k)+"_"+(y-k)).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	for(var k = 1 ; k <= 8 ; k++ ) // 左下
+	{
+		try
+		{
+			if( eval("pos_"+(x-k)+"_"+(y+k)).innerHTML == match ) chain++ ;
+			else break ;
+		}
+		catch(e)
+		{
+			break ;
+		}
+	}
+	if(chain%3==0) count += chain ;
+
+	eval("score_"+turn+"p += count")  ; // 更新當前總分
+
+	eval("add_"+turn+"p").innerHTML += "+"+count+"分<br />" ;
+	eval("total_"+turn+"p").innerHTML = skin[turn] + " 的分數："+ eval("score_"+turn+"p") + "分" ;
+}
+
+newGame();
+
+
+
+</script>
+
+</body>
+</html>

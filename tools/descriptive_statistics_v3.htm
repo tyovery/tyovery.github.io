@@ -63,8 +63,9 @@ var help_cenTen ; // 集中趨勢
 var help_firstHit ; // 單次機率估計
 var help_disper ; // 分散程度
 var help_samDist ; // 抽樣分布
-var help_exportData ; // 導出數據
 var help_propEst ; // 比例置信區間
+var help_addData ; // 輸入數據
+var help_exportData ; // 導出數據
 
 // 用作估計的 標準差(母體) , 變異數(母體) , 標準誤(母體) , X²(觀察值)
 var sd_est = -1 , vari_est = -1 ,  se_est = -1 , chiSq_est = -1 ;
@@ -226,7 +227,7 @@ function popAdd() // 手動加入data
 		txt = txt.replace(/８/g,"8");
 		txt = txt.replace(/９/g,"9");
 		txt = txt.replace(/。/g,"."); // 小數點
-
+		
 		// 分析分組
 		for(var k=0 ; k<txt.length ; k++)
 		{
@@ -246,11 +247,23 @@ function popAdd() // 手動加入data
 				}
 			}
 		}
-		
+
 		// 加到dataset
-		pop.push(...txt.split(","));
+		if (txt.slice(0,2)=="y=") // 若以 y= 開頭 , 將被視為頻數序列
+		{
+			var txt_split = txt.slice(2).split(",");
+			for(var k = 0; k < txt_split.length ; k++)
+			{
+				for(var j = 0 ; j<txt_split[k] ; j++) pop.push(k);
+			}
+		}
+		else pop.push(...txt.split(","));
 	}
 }
+help_addData = "請在長框輸入數據，以 , 分隔。" ;
+help_addData += "\n\n若要輸入頻數，請以 y= 開頭，然後輸入序列。" ;
+help_addData += "x 將是 0 , 1 , 2 , ..." ;
+help_addData += "\n如果想 x 由 1 開始，請以 y=, 開頭，列如：y=,10,20,30" ;
 
 function inputSub(parameter) // 處理&分析 dataset
 {
@@ -1717,6 +1730,7 @@ help_exportData = "另可框選表格，直接複製到 Excel 或 Word。" ;
 <input type="button" value="pi" onClick="inputValue.value+=',3.141592653589793';" />
 <input id="inputValue" type="text" value="" size="60" onKeyPress="inputKey();" />
 <input type="button" value="加入" onClick="popAdd();inputSub('stay');" />
+<input type="button" value="?" onClick="alert(help_addData);" />
 <br />
 <input type="button" value="加入 幾何分布(...)" onClick="addDist_geo(prompt('請輸入單次成功機率(p)。'),prompt('請輸入欲產生的數據量'));" />
 <input type="button" value="加入 二項分布(...)" onClick="addDist_bin(prompt('請輸入單次成功機率(p)。'),prompt('請輸入試驗次數(n)。'),prompt('請輸入欲產生的數據量'));" />

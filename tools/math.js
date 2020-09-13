@@ -50,6 +50,167 @@ function cxTim(list) // 複數連乘
 	return sum ;
 }
 
+// 矩陣的運算
+function mAdd(m0,m1) // 矩陣加法
+{
+	if(m0.length == m1.length)
+	{
+		var out = [] ;
+		var len = m0.length ;
+		for(var x = 0 ; x < len ; x ++)
+		{
+			out[x] = [] ;
+			for(var y = 0 ; y < Math.max(m0[x].length,m1[x].length) ; y ++)
+			{
+				out[x][y] = m0[x][y]*1 + m1[x][y]*1 ;
+			}
+		}
+		return out ;
+	}
+	else return "error" ;
+}
+
+function mMin(m0,m1) // 矩陣減法
+{
+	if(m0.length == m1.length)
+	{
+		var out = [] ;
+		var len = m0.length ;
+		for(var x = 0 ; x < len ; x ++)
+		{
+			out[x] = [] ;
+			for(var y = 0 ; y < Math.max(m0[x].length,m1[x].length) ; y ++)
+			{
+				out[x][y] = m0[x][y]*1 - m1[x][y]*1 ;
+			}
+		}
+		return out ;
+	}
+	else return "error" ;
+}
+
+function mTim(m0,m1) // 矩陣乘法
+{
+	var out = [] ;
+	for(var x = 0 ; x < m1.length ; x ++)
+	{
+		out[x] = [] ;
+		for(var y = 0 ; y < m0[0].length ; y ++)
+		{
+			out[x][y] = 0 ;
+			for(var i = 0 ; i < Math.max(m0.length,m1[x].length) ; i++)
+			{
+				out[x][y] += m0[i][y] * m1[x][i] ;
+			}
+		}
+	}
+	return out ;
+}
+
+function mT(m0) // 置換矩陣
+{
+	var out = [] ;
+	for(var x = 0 ; x < m0[0].length ; x ++)
+	{
+		out[x] = [] ;
+		for(var y = 0 ; y < m0.length ; y ++)
+		{
+			out[x][y] = m0[y][x] * 1 ;
+		}
+	}
+	return out ;
+}
+
+function mDet(m0) // 行列式
+{
+	if(m0.length>1)
+	{
+		var out = 0 ;
+		var sign = -1 ; // 正負號
+		for(var xx = 0 ; xx < m0.length ; xx++ )
+		{
+			// 子陣
+			var m1 = [] ;
+			for(var x = 0 ; x < m0.length ; x++ )
+			{
+				if(x==xx) continue ;
+				m1.push([]) ;
+				for(var y = 1 ; y < m0[x].length ; y++ )
+				{
+					m1[m1.length-1].push(m0[x][y]) ;
+				}
+			}
+			sign *= -1 ;
+			out += sign * m0[xx][0] * mDet(m1) ; // 遞歸
+		}
+		return out ;
+	}
+	else if(m0.length==1)
+	{
+		if(m0[0].length==1) // 只乘 1×1
+		{
+			return m0[0][0]*1 ;
+		}
+		else
+		{
+			return "error" ;
+		}
+	}
+}
+
+function mAdj(m0) // 伴隨矩陣
+{
+	if(m0.length>1)
+	{
+		var out = [] , m1 = [] ;
+		for(var xx = 0 ; xx < m0.length ; xx++ )
+		{
+			out[xx] = [] ;
+			for(var yy = 0 ; yy < m0[xx].length ; yy++ )
+			{
+				m1 = [] ;
+				for(var x = 0 ; x < m0.length ; x ++ )
+				{
+					if(x==yy) continue ;
+					m1.push([]) ;
+					for(var y = 0 ; y < m0[x].length ; y ++ )
+					{
+						if(y==xx) continue ;
+						m1[m1.length-1].push(m0[x][y]) ;
+					}
+				}
+				out[xx][yy] = (-1)**(xx+yy) * mDet(m1) ;
+			}
+		}
+		return out ;
+	}
+	else if(m0.length==1)
+	{
+		if(m0[0].length==1) // 1×1 格
+		{
+			return [[1]] ;
+		}
+		else
+		{
+			return "error" ;
+		}
+	}
+}
+
+function mInv(m0) // 逆矩陣
+{
+	var out = [] , adj = mAdj(m0) , det = mDet(m0) ;
+	for(var x = 0 ; x < adj.length ; x ++)
+	{
+		out[x] = [] ;
+		for(var y = 0 ; y < adj[x].length ; y ++)
+		{
+			out[x][y] = adj[x][y] / det ;
+		}
+	}
+	return out ;
+}
+
 function fact_near(x) // 階乘 近似式
 {
 	if(x>0) // (x/e)^x √(2πx)
@@ -186,3 +347,16 @@ function floatFix(number) // 處理 多於一個小數點 的狀況
 	if(array.length>2) number = array.shift()+"."+array.join("");
 	return number ;
 }
+
+// 產生指定數列 ( 通項式(n) , 開始項 , 結束項 , 步距 )
+function genSeries(series,start,stop,step)
+{
+	if(!step>0) step = 1 ;
+	var array = [] ;
+	for(var n = start ; n <= stop ; n += step)
+	{
+		array.push(eval(series)) ;
+	}
+	return array ;
+}
+

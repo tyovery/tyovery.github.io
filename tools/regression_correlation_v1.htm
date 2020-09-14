@@ -36,10 +36,13 @@ th
 <p>序列輸入格式：y<sub>1</sub> , y<sub>2</sub> , y<sub>3</sub> , ...</p>
 <input type="button" value="清除全部資料" onClick="if(confirm('是否要清除現有的所有資料？')){point=[];cal();}" /><br />
 
+<script src="math.js"></script>
 <script>
 var point = [] , size , x_bar , y_bar ;
 var sum_xy , sum_xx , sum_yy , Sxy , Sxx , Syy ;
 var a1 , b1 , r , r_2 , r_s ;
+var cofi = [[],[]] ; // 回歸方程的 係數 們
+var cofiM = [] ; // 回歸方程 的 輸入矩陣 (X,Y)
 
 // order
 var orderList = [[],[]] ; // x-order , y-order
@@ -224,6 +227,33 @@ function cal()
 	order(0);
 	order(1);
 	
+	// 回歸 2次
+	if(point.length>0)
+	{
+		cofiM = [ [] , [[]] ] ;
+		
+		// Matrix X
+		for(var Xx = 0 ; Xx < 3 ; Xx ++ )
+		{
+			cofiM[0][Xx] = [] ;
+			for(var Xy = 0 ; Xy < point.length ; Xy ++ )
+			{
+				cofiM[0][Xx][Xy] = point[Xy][0]**(2-Xx) ;
+			}
+		}
+
+		// Matrix Y
+		for(var k = 0 ; k < point.length ; k++ )
+		{
+			cofiM[1][0].push( point[k][1] ) ;
+		}
+		
+		cofi[2] = mTim( mInv(mTim(mT(cofiM[0]),cofiM[0])) , mTim( mT(cofiM[0]) , cofiM[1] ) )[0] ;
+		
+		// alert("X = \n" + cofiM[0].join("\n") ) ;
+		// alert("Y = \n" + cofiM[1].join("\n") ) ;
+	}
+	
 	// 輸出表格 頭部
 	var txt2htm = '<table id="dataTable" border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: 20px; background-color: #FFFFFF; text-align: center; color: #000000">';
 
@@ -342,6 +372,7 @@ function cal()
 
 	// 詳細信息輸出 - 回歸方程
 	var txt2info = "< 回歸方程 ><br />";
+	// 1次
 	var a1_show , b1_show ;
 	a1_show = a1==1 ? "" : a1==-1 ? " - " : a1 ;
 	b1_show = (b1>0 ? ( a1!=0 ? " + " : "" ) + b1 : b1<0 ? " - "+(-b1) : (a1!=0?"":"0")) ;
@@ -356,8 +387,33 @@ function cal()
 	{
 		txt2info += "y&#770;<sub>1</sub> = 無法估計<br />" ;
 	}
+	
+	// 2次
+	txt2info += "y&#770;<sub>2</sub> = " ;
+	if(point.length>0)
+	{
+		for(var k = 0 ; k<3 ; k++ )
+		{
+			if(2-k>1)
+			{
+				txt2info += cofi[2][k] + " x<sup>"+(2-k)+"</sup> + " ;
+			}
+			else if(2-k>0)
+			{
+				txt2info += cofi[2][k] + " x + " ;
+			}
+			else
+			{
+				txt2info += cofi[2][k] ;
+			}
+		}
+	}
+	else txt2info += "無法估計" ;
 	txt2info += "<br />" ;
-
+	
+	
+	txt2info += "<br />" ;
+	
 	// 詳細信息輸出 - 相關性
 	txt2info += "< 相關性 ><br />" ;
 	txt2info += "r&#178; = "+((r_2+"")!="NaN" ? r_2 : "無法計算")+"<br />" ;

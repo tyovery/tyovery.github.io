@@ -29,7 +29,7 @@ th
 <body>
 <center>
 <div id="outputTable"></div><br />
-<div id="outputInfo"></div>
+<div id="outputInfo" style="text-align: left;"></div>
 <input id="userInput" type="text" value="" style="width: 500px" onKeyPress="keyPress();" />
 <input id="userAddButton" type="button" value="加入" onClick="userAdd();cal();" /><br />
 <p>點輸入格式：(x<sub>1</sub> , y<sub>1</sub>) (x<sub>2</sub> , y<sub>2</sub>) (x<sub>3</sub> , y<sub>3</sub>) ...</p>
@@ -43,6 +43,9 @@ var sum_xy , sum_xx , sum_yy , Sxy , Sxx , Syy ;
 var a1 , b1 , r , r_2 , r_s ;
 var cofi = [[],[]] ; // 回歸方程的 係數 們
 var cofiM = [] ; // 回歸方程 的 輸入矩陣 (X,Y)
+var	cofiL = 6 ; // 回歸方程 的 係數 的 小數位長度
+var	regressMax = 7 ; // 回歸方程 的最高次數
+
 
 // order
 var orderList = [[],[]] ; // x-order , y-order
@@ -227,29 +230,31 @@ function cal()
 	order(0);
 	order(1);
 	
-	// 回歸 2次
+	// 回歸 高次
 	if(point.length>0)
 	{
-		cofiM = [ [] , [[]] ] ;
-		
-		// Matrix X
-		for(var Xx = 0 ; Xx < 3 ; Xx ++ )
+		for(var j = 2 ; j < Math.min(point.length,regressMax+1) ; j ++)
 		{
-			cofiM[0][Xx] = [] ;
-			for(var Xy = 0 ; Xy < point.length ; Xy ++ )
+			cofiM = [ [] , [[]] ] ; // reset
+			
+			// Matrix X
+			for(var Xx = 0 ; Xx <= j ; Xx ++ )
 			{
-				cofiM[0][Xx][Xy] = point[Xy][0]**(2-Xx) ;
+				cofiM[0][Xx] = [] ;
+				for(var Xy = 0 ; Xy < point.length ; Xy ++ )
+				{
+					cofiM[0][Xx][Xy] = point[Xy][0]**(j-Xx) ;
+				}
 			}
-		}
 
-		// Matrix Y
-		for(var k = 0 ; k < point.length ; k++ )
-		{
-			cofiM[1][0].push( point[k][1] ) ;
+			// Matrix Y
+			for(var k = 0 ; k < point.length ; k++ )
+			{
+				cofiM[1][0].push( point[k][1] ) ;
+			}
+			
+			cofi[j] = mTim( mInv(mTim(mT(cofiM[0]),cofiM[0])) , mTim( mT(cofiM[0]) , cofiM[1] ) )[0] ;
 		}
-		
-		cofi[2] = mTim( mInv(mTim(mT(cofiM[0]),cofiM[0])) , mTim( mT(cofiM[0]) , cofiM[1] ) )[0] ;
-		
 		// alert("X = \n" + cofiM[0].join("\n") ) ;
 		// alert("Y = \n" + cofiM[1].join("\n") ) ;
 	}
@@ -258,6 +263,7 @@ function cal()
 	var txt2htm = '<table id="dataTable" border="1px" cellspacing="1px" cellpadding="5px" style="margin-top: 20px; background-color: #FFFFFF; text-align: center; color: #000000">';
 
 	txt2htm += '<thead><tr>' ;
+	txt2htm += '<th>控制</th>' ;
 	txt2htm += '<th onClick="titleEdit(0);return;">x<br/>'+x_title+'</th>' ;
 	txt2htm += '<th onClick="titleEdit(1);return;">y<br/>'+y_title+'</th>' ;
 	txt2htm += '<th>y&#770;<sub>1</sub><br />一次估計</th>' ;
@@ -291,8 +297,12 @@ function cal()
 	for(var k=0 ; k<size ; k++)
 	{
 		txt2htm += '<tr>' ;
-		txt2htm += '<td>'+point[k][0]+'</td>' ;
-		txt2htm += '<td>'+point[k][1]+'</td>' ;
+		
+		// 控制
+		txt2htm += '<td><input type="button" value="刪除" onClick="point.splice('+k+',1);cal();" /></td>' ;
+		
+		txt2htm += '<td>'+point[k][0]+'</td>' ; // x
+		txt2htm += '<td>'+point[k][1]+'</td>' ; // y
 		est[1] = a1*point[k][0]+b1 ; // 估計值
 		res[1] = point[k][1] - est[1] ; // 殘差
 		if( (est[1]+"") != "NaN")
@@ -354,6 +364,7 @@ function cal()
 	txt2htm += '<td><input type="button" value="時間序列" onClick="fixTimeSeries();" /></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
+	txt2htm += '<td></td>' ;
 	txt2htm += '<td>殘差和 檢驗<br />= '+res_sum[1]+'</td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
@@ -371,15 +382,15 @@ function cal()
 	r_s = 1 - sum_d_2 * 6 / ( (size-1) * size * (size+1) )  ;
 
 	// 詳細信息輸出 - 回歸方程
-	var txt2info = "< 回歸方程 ><br />";
-	// 1次
+	var txt2info = "<center>< 回歸方程 ></center><br />";
+		// 1次
 	var a1_show , b1_show ;
 	a1_show = a1==1 ? "" : a1==-1 ? " - " : a1 ;
 	b1_show = (b1>0 ? ( a1!=0 ? " + " : "" ) + b1 : b1<0 ? " - "+(-b1) : (a1!=0?"":"0")) ;
 	if( (a1+"") != "NaN" )
 	{
 		txt2info += "y&#770;<sub>1</sub> = "+ ( a1!=0 ? a1_show+" x " : "" )+ b1_show ;
-		txt2info += ' <input type="button" value="估計" onClick="est1();" />' ;
+		txt2info += ' <input type="button" value="估計" onClick="est_btn(1);" />' ; // 估計按鈕
 		if (r_2>=0) txt2info += " " + (r_2*100).toFixed(0) + "% 擬合" ;
 		txt2info += " (" + (a1>0?"正關係":a1<0?"負關係":"無關") + ")<br />" ;
 	}
@@ -387,35 +398,46 @@ function cal()
 	{
 		txt2info += "y&#770;<sub>1</sub> = 無法估計<br />" ;
 	}
-	
-	// 2次
-	txt2info += "y&#770;<sub>2</sub> = " ;
-	if(point.length>0)
+
+		// 高次
+	for(var j = 2 ; j < Math.min(point.length,regressMax+1) ; j ++)
 	{
-		for(var k = 0 ; k<3 ; k++ )
+		txt2info += "y&#770;<sub>"+j+"</sub> = " ;
+		if(point.length>j)
 		{
-			if(2-k>1)
+			for(var k = 0 ; k <= j ; k++ )
 			{
-				txt2info += cofi[2][k] + " x<sup>"+(2-k)+"</sup> + " ;
-			}
-			else if(2-k>0)
-			{
-				txt2info += cofi[2][k] + " x + " ;
-			}
-			else
-			{
-				txt2info += cofi[2][k] ;
+				var c = cofi[j][k].toFixed(cofiL) ; // 當前係數
+				
+				// 插入 正負號 & 係數
+				if(c>=0)
+				{
+					txt2info += " + " + c ;
+				}
+				else
+				{
+					txt2info += " - " + c.slice(1) ;
+				}
+
+				if(j-k>1)
+				{
+					txt2info += " x<sup>"+(j-k)+"</sup>" ; // 高次
+				}
+				else if(j-k>0)
+				{
+					txt2info += " x" ; // 1次
+				}
 			}
 		}
+		else txt2info += "無法估計" ;
+		txt2info += ' <input type="button" value="估計" onClick="est_btn('+j+');" />' ; // 估計按鈕
+		txt2info += "<br />" ;
 	}
-	else txt2info += "無法估計" ;
-	txt2info += "<br />" ;
-	
 	
 	txt2info += "<br />" ;
 	
 	// 詳細信息輸出 - 相關性
-	txt2info += "< 相關性 ><br />" ;
+	txt2info += "<center>< 相關性 ></center><br />" ;
 	txt2info += "r&#178; = "+((r_2+"")!="NaN" ? r_2 : "無法計算")+"<br />" ;
 	txt2info += "r = "+((r+"")!="NaN"?r:"無法計算")+"<br />" ;
 	txt2info += "r<sub>s</sub> = "+((r_s+"")!="NaN"?r_s:"無法計算")+"<br />" ;
@@ -512,14 +534,26 @@ function fixTimeSeries(auto)
 	}
 }
 
-function est1()
+function est_btn(pow)
 {
 	var x = prompt("請輸入x值") ;
 	if(x!=null)
 	{
 		if( (x>=0||x<0) && (x+"").length>0 )
 		{
-			var y = a1 * x + b1 ;
+			if(pow>1)
+			{
+				var y = 0 ;
+				for( var k = 0 ; k <= pow ; k ++ )
+				{
+					y += cofi[pow][k] * x**(pow-k) ;
+				}
+			}
+			else if(pow==1)
+			{
+				var y = a1 * x + b1 ;
+			}
+			
 			alert("x = " + x + "\ny = " + y ) ;
 		}
 		else alert("輸入錯誤。");

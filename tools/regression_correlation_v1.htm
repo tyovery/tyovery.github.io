@@ -303,7 +303,7 @@ function cal()
 		
 		txt2htm += '<td>'+point[k][0]+'</td>' ; // x
 		txt2htm += '<td>'+point[k][1]+'</td>' ; // y
-		est[1] = a1*point[k][0]+b1 ; // 估計值
+		est[1] = (a1*point[k][0]+b1).toFixed(fixLength) ; // 估計值
 		res[1] = point[k][1] - est[1] ; // 殘差
 		if( (est[1]+"") != "NaN")
 		{
@@ -405,32 +405,37 @@ function cal()
 		txt2info += "y&#770;<sub>"+j+"</sub> = " ;
 		if(point.length>j)
 		{
-			for(var k = 0 ; k <= j ; k++ )
+			if(cofi[j][0]>=0 || cofi[j][0]<0)
 			{
-				var c = cofi[j][k].toFixed(cofiL) ; // 當前係數
-				
-				// 插入 正負號 & 係數
-				if(c>=0)
+				for(var k = 0 ; k <= j ; k++ )
 				{
-					txt2info += " + " + c ;
-				}
-				else
-				{
-					txt2info += " - " + c.slice(1) ;
-				}
+					var c = cofi[j][k].toFixed(cofiL) ; // 當前係數
+					
+					// 插入 係數
+					if(c>=0)
+					{
+						txt2info += " + " + c ;
+					}
+					else if(c<0)
+					{
+						txt2info += " - " + c.slice(1) ;
+					}
 
-				if(j-k>1)
-				{
-					txt2info += " x<sup>"+(j-k)+"</sup>" ; // 高次
+					// 插入 x的次方
+					if(j-k>1)
+					{
+						txt2info += " x<sup>"+(j-k)+"</sup>" ; // 高次
+					}
+					else if(j-k>0)
+					{
+						txt2info += " x" ; // 1次
+					}
 				}
-				else if(j-k>0)
-				{
-					txt2info += " x" ; // 1次
-				}
+				txt2info += ' <input type="button" value="估計" onClick="est_btn('+j+');" />' ; // 估計按鈕
 			}
+			else txt2info += "無法估計" ;
 		}
 		else txt2info += "無法估計" ;
-		txt2info += ' <input type="button" value="估計" onClick="est_btn('+j+');" />' ; // 估計按鈕
 		txt2info += "<br />" ;
 	}
 	
@@ -536,7 +541,15 @@ function fixTimeSeries(auto)
 
 function est_btn(pow)
 {
-	var x = prompt("請輸入x值") ;
+	var x = prompt("請輸入x值 ( , 精度 )") ;
+	x = x.split(",") ;
+	
+	// 小數位長度
+	if(x.length>=2 && x[1]>=0) var len = x[1] ;
+	else var len = fixLength ;
+	
+	x = x[0] ;
+	
 	if(x!=null)
 	{
 		if( (x>=0||x<0) && (x+"").length>0 )
@@ -548,13 +561,31 @@ function est_btn(pow)
 				{
 					y += cofi[pow][k] * x**(pow-k) ;
 				}
+				if(y>=0 || y<0)
+				{
+					y = y.toFixed(len) ;
+					
+				}
+				else
+				{
+					y = "無法估計" ;
+				}
 			}
 			else if(pow==1)
 			{
 				var y = a1 * x + b1 ;
+				if(y>=0 || y<0)
+				{
+					y = y.toFixed(len) ;
+					
+				}
+				else
+				{
+					y = "無法估計" ;
+				}
 			}
 			
-			alert("x = " + x + "\ny = " + y ) ;
+			alert("x = " + x + "\ny = " + y +"\n(準確至 "+len+" 位少數)") ;
 		}
 		else alert("輸入錯誤。");
 	}

@@ -314,6 +314,37 @@ function C(n,r) // nCr
 	}
 }
 
+function zP(a,b,t) // 常態分布: z值(a,b) -> 機率 , t=迫近式的項數(越大越準)
+{
+	a *= 1 ;
+	b *= 1 ;
+	if(t>0)
+	{
+		t *= 1 ;
+	}
+	else
+	{
+		var t = 100 ; // 預設精度 = t 項 ( 100項已經很準確，設太大會降低計算效率 )
+	}
+
+	var sign = 1 ; // 正負號
+	var fact = 1 ; // 階乘
+	var bin = 1 ; // 二冪
+	var sum = b - a ; // 首項
+
+	for(var k = 1; k < t ; k++)
+	{
+		sign *= -1 ; // 正負號
+        fact *= k ; // 階乘
+        bin *= 2 ; // 二冪
+
+		// Σ(k=0,t){ (-1)^k [b^(2n+1)-a^(2n+1)] / [ (2n+1) 2^k k! ] } / √(2π) , t->∞
+        sum += ( b**(2*k+1) - a**(2*k+1) ) / (2*k+1) / bin / fact * sign ;
+    }
+
+	return sum / Math.sqrt(2*Math.PI) ;
+}
+
 function separ(number,digit,symbol) // 數位分隔符 (字串 , 間隔位數 , 分隔符)
 {
 	if(!(digit>0)) digit = 3 ; // 預設 3位

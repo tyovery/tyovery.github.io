@@ -1293,6 +1293,9 @@ function inputSub(parameter) // 處理&分析 dataset
 	}
 	else DisplayArea.innerHTML += "<br /><br />至少 2 個數據才能估計。<br />" ;
 
+	DisplayArea.innerHTML += "<br />< 機率計算 ><br />" ;
+	DisplayArea.innerHTML += '<input type="button" value="計算 常態分布 機率" onClick="cal_pobi_normal();" /><br />' ;
+
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
 	DisplayArea.innerHTML += "平均頻數：" + freq_mean + "<br />" ;
 	DisplayArea.innerHTML += "均勻分布 偏離度：" ;
@@ -1691,6 +1694,65 @@ function addDist_norm(mu,sigma,times) // 常態分布
 		inputSub();
 	}
 	else alert("輸入無效。");
+}
+
+function cal_pobi_normal()
+{
+	if(size>0)
+	{
+		var error = "計算出錯。\n請確保輸入無誤。" ;
+		error += "\n\n只有當 標準差(SD) 大於 0 時，才能計算。" ;
+		error += "\n( 標準差(SD) 太接近 0 時，也可能會出錯。 )" ;
+		var info = "假設數據為「常態分布」。" ;
+		info += "\n請輸入 x 的範圍，以計算出機會率。" ;
+		info += "\n用半形逗號 ( , ) 分隔，用 i 代表無限大。"
+		var input = prompt(info);
+		if(input != null)
+		{
+			if(sd>0 && input.length>0)
+			{
+				// 整理參數
+				var para = input.replace(/\s+/g,"").replace(/i/gi,"Infinity").split(",") ; // 分割
+				if(para[0]*1 > para[1]*1) // 排序
+				{
+					para[2] = para[1] ;
+					para[1] = para[0] ;
+					para[0] = para[2] ;
+				}
+
+				// 限制 -6 <= z <= +6
+				var L = (para[0]-mean)/sd ;
+				var R = (para[1]-mean)/sd ;
+				L = Math.max(-6,L) ;
+				L = Math.min(L,6) ;
+				R = Math.max(-6,R) ;
+				R = Math.min(R,6) ;
+
+				var cal = zP( L , R ) ; // 計算機率
+				
+				// 輸出
+				if(cal>=0 || cal<0)
+				{
+					var output = para[0] + " <= x <= " + para[1] + "\n機率 = " ;
+					if(para[0]*1 == para[1]*1)
+					{
+						output += "0" ;
+					}
+					else
+					{
+						output += cal*100 + " %" ;
+					}
+					alert(output) ;
+				}
+				else alert(error) ;
+			}
+			else alert(error) ;
+		}
+	}
+	else
+	{
+		alert("現在沒有數據，請先輸入一些數據，再來計算機率。")
+	}
 }
 
 function exportData() // 導出數據

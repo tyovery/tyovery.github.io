@@ -1295,6 +1295,7 @@ function inputSub(parameter) // 處理&分析 dataset
 
 	DisplayArea.innerHTML += "<br />< 機率計算 ><br />" ;
 	DisplayArea.innerHTML += '<input type="button" value="計算 常態分布 機率" onClick="cal_pobi_normal();" /><br />' ;
+	DisplayArea.innerHTML += '<div id="cal_pobi_normal_outputArea"></div>' ;
 
 	DisplayArea.innerHTML += "<br />< 模型偏離度 ><br />" ;
 	DisplayArea.innerHTML += "平均頻數：" + freq_mean + "<br />" ;
@@ -1696,7 +1697,7 @@ function addDist_norm(mu,sigma,times) // 常態分布
 	else alert("輸入無效。");
 }
 
-function cal_pobi_normal()
+function cal_pobi_normal() // 計算 常態分布 機率
 {
 	if(size>0)
 	{
@@ -1733,16 +1734,28 @@ function cal_pobi_normal()
 				// 輸出
 				if(cal>=0 || cal<0)
 				{
-					var output = para[0] + " <= x <= " + para[1] + "\n機率 = " ;
+					var output = "" ;
 					if(para[0]*1 == para[1]*1)
 					{
-						output += "0" ;
+						output += "x = " + para[0] + " : 機率 = 0" ;
 					}
 					else
 					{
-						output += cal*100 + " %" ;
+						output += para[0] + " < x < " + para[1] + " : 機率 = " ;
+						if( para[0] == "-Infinity" && para[1] == "Infinity" )
+						{
+							output += "100" ;
+						}
+						else
+						{
+							output += cal*100 ;
+						}
 					}
-					alert(output) ;
+					output += " %" ;
+					
+					var outArea = cal_pobi_normal_outputArea ;
+					if(outArea.innerHTML.length>0) outArea.innerHTML += "<br />" ;
+					outArea.innerHTML += output ;
 				}
 				else alert(error) ;
 			}

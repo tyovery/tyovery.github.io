@@ -28,7 +28,7 @@ th
 }
 </style>
 </head>
-<body>
+<body onload="inputValue.focus();"> <!-- 開始時選擇輸入框 -->
 <script src="math.js"></script>
 <script>
 
@@ -54,6 +54,12 @@ var prop_show_dir = 0 ; // 累積比例 顯示方向 (0=正 ; 1=反)
 // 單次機率估計
 var firstHit_mean , firstHit_median , firstHit_mode , firstHit_mean_geo , firstHit_mean_har ;
 // 算術平均比例 , 中位數比例 , 眾數比例 , 幾何平均比例 , 調和平均比例
+
+// 動差
+var moment_origin = [] ; // 原點動差
+var moment_center = [] ; // 中心動差
+var moment_coeffi = [] ; // 動差係數
+var moment_calMax = 6 ; // 計算到幾階動差
 
 // x 數據 顯示格式
 var data_show , data_showMode = 10 ; // 預設10進位制
@@ -646,6 +652,49 @@ function inputSub(parameter) // 處理&分析 dataset
 	// 四分位差
 	if(pop.length>1) qd = iqr/2 ;
 	else qd = " - " ;
+	
+	// 動差
+	if(pop.length>0)
+	{
+		moment_origin = [1,mean] ;
+		moment_center = [1,0] ;
+		moment_coeffi = [1] ;
+		
+		var s = [] ;
+		for(var k=2 ; k <= moment_calMax ; k++)
+		{
+			s[0] = 0 ; // 原點
+			s[1] = 0 ; // 中心
+
+			for(var j=0 ; j < pop.length ; j++)
+			{
+				s[0] += pop[j]**k ;
+				s[1] += (pop[j]-mean)**k ;
+			}
+
+			moment_origin[k] = s[0] / size ; // 原點動差
+			moment_center[k] = s[1] / size ; // 中心動差
+		}
+		
+		// 動差係數
+		for(var k=1 ; k <= moment_calMax ; k++)
+		{
+			if(moment_center[2] != 0)
+			{
+				moment_coeffi[k] = moment_center[k] / moment_center[2]**(k/2) ;
+			}
+			else moment_coeffi[k] = " - " ;
+		}
+	}
+	else
+	{
+		for(var k=0 ; k <= moment_calMax ; k++)
+		{
+			moment_origin.push(" - ") ;
+			moment_center.push(" - ") ;
+			moment_coeffi.push(" - ") ;
+		}
+	}
 
 	// 置信區間
 	if(sd_est>=0)
@@ -1176,6 +1225,85 @@ function inputSub(parameter) // 處理&分析 dataset
 			DisplayArea.innerHTML += "變異係數 ( CV )： -<br />" ;
 		}
 	}
+	
+	// 動差
+	DisplayArea.innerHTML += "<br />< 動差 ><br />" ;
+	var txt2htm = "" ;
+	for(var k=1 ; k <= moment_calMax ; k++)
+	{
+		txt2htm += k + " 階原點動差" ;
+		if(k==1) txt2htm += " ( 期望值 ) " ;
+		txt2htm += "：" + moment_origin[k] + "<br />" ;
+		
+		txt2htm += k + " 階中心動差" ;
+		switch(k)
+		{
+			case 1 :
+			txt2htm += " ( 離差抵消 ) " ;
+			break;
+			
+			case 2 :
+			txt2htm += " ( 變異數 ) " ;
+			break;
+			
+			case 3 :
+			txt2htm += " ( 偏態 ) " ;
+			break;
+			
+			case 4 :
+			txt2htm += " ( 峰度 ) " ;
+		}
+		txt2htm += "：" + moment_center[k] + "<br />" ;
+		
+		txt2htm += k + " 階動差係數" ;
+		switch(k)
+		{
+			case 3 :
+			txt2htm += " ( 偏態係數 ) " ;
+			break ;
+			
+			case 4 :
+			txt2htm += " ( 峰度係數 ) " ;
+		}
+		txt2htm += "：" + moment_coeffi[k] ;
+		if(k==3)
+		{
+			var c = moment_coeffi[3] ;
+			if(c > 0)
+			{
+				txt2htm += " ( 右尾 ) " ;
+			}
+			else if(c < 0)
+			{
+				txt2htm += " ( 左尾 ) " ;
+			}
+			else if(c == 0)
+			{
+				txt2htm += " ( 對稱 ) " ;
+			}
+		}
+		else if(k==4)
+		{
+			var c = moment_coeffi[4] ;
+			if(c>=0) c = c.toFixed(1) ;
+			if(c > 3)
+			{
+				txt2htm += " ( 偏高而窄 ) "
+			}
+			else if(c < 3)
+			{
+				txt2htm += " ( 偏矮而闊 ) "
+			}
+			else if(c == 3)
+			{
+				txt2htm += " ( 接近標準 ) "
+			}
+		}
+		txt2htm += "<br />" ;
+	}
+	DisplayArea.innerHTML += txt2htm ;
+	
+	
 	
 	// 抽樣分布
 	DisplayArea.innerHTML += "<br />< 抽樣分布 >" ;

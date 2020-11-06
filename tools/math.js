@@ -345,6 +345,28 @@ function zP(a,b,t) // 常態分布: z值(a,b) -> 機率 , t=迫近式的項數(�
 	return sum / Math.sqrt(2*Math.PI) ;
 }
 
+function fix46(num,len) // 奇進偶捨(4捨6入5成雙) (數字,小數位)
+{
+	num = num * 1 + "" ;
+	len = len * 1 ;
+	
+	if( len<0 || len%1>0 ) return undefined ; // len只能是非負整數
+	
+	// 成雙
+	if( num[num.indexOf(".")+len+1] == 5 && // 下一位是5
+		num.indexOf(".")+len+2 >= num.length && // 5後沒有數字
+		num[num.indexOf(".")+len-(len>0?0:1)] % 2 == 0 ) // 5的前一位是雙數
+	{
+		num = num.slice(0,-1) + "0" ; // 不須進位
+	}
+
+	var fix = Math.round( num * 10**len ) + "" ; // 4捨5入
+	if(len>0) fix = fix.slice(0,-len) + "." + fix.slice(-len) ; // 補回小數點
+	if(fix[0]==".") fix = "0" + fix ; // 補個位0
+
+	return fix ; // 輸出
+}
+
 function separ(number,digit,symbol) // 數位分隔符 (字串 , 間隔位數 , 分隔符)
 {
 	if(!(digit>0)) digit = 3 ; // 預設 3位

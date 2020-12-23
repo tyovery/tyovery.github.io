@@ -44,8 +44,8 @@ var a1 , b1 , r , r_2 , r_s ;
 var cofi = [[],[]] ; // 回歸方程的 係數 們
 var cofiM = [] ; // 回歸方程 的 輸入矩陣 (X,Y)
 var	cofiL = 6 ; // 回歸方程 的 係數 的 小數位長度
-var	regressMax = 7 ; // 回歸方程 的最高次數
-
+var	regressMax = 7 ; // 回歸方程 的 最高次數
+var res_sd = [] ; // 殘差 的 標準差
 
 // order
 var orderList = [[],[]] ; // x-order , y-order
@@ -365,7 +365,19 @@ function cal()
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
-	txt2htm += '<td>殘差和 檢驗<br />= '+res_sum[1]+'</td>' ;
+	
+	// txt2htm += '<td>殘差和 檢驗<br />= '+res_sum[1]+'</td>' ;
+	// 殘差標準差
+	res_sd[1] = 0 ;
+	for(var k = 0 ; k < point.length ; k ++ )
+	{
+		res_sd[1] += ( point[k][1] - ( a1 * point[k][0] + b1 ) ) ** 2 ; // 殘差平方
+	}
+	res_sd[1] /= point.length - 1 ;
+	res_sd[1] **= 0.5 ;
+	res_sd[1] = res_sd[1].toFixed(fixLength) ;
+	txt2htm += '<td>殘差的標準差<br />= '+res_sd[1]+'</td>' ;
+	
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
 	txt2htm += '<td></td>' ;
@@ -544,6 +556,11 @@ function est_btn(pow)
 	var x = prompt("請輸入x值 ( , 精度 )") ;
 	x = x.split(",") ;
 	
+	// z table
+	var z_table_99 = 2.575829 ;
+	var z_table_95 = 1.959964 ;
+	var z_table_90 = 1.644854 ;
+	
 	// 小數位長度
 	if(x.length>=2 && x[1]>=0) var len = x[1] ;
 	else var len = fixLength ;
@@ -585,7 +602,20 @@ function est_btn(pow)
 				}
 			}
 			
-			alert("x = " + x + "\ny = " + y +"\n(準確至 "+len+" 位少數)") ;
+			var interval = z_table_99 * res_sd[1] ;
+			var z99 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
+			
+			interval = z_table_95 * res_sd[1] ;
+			var z95 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
+			
+			interval = z_table_90 * res_sd[1] ;
+			var z90 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
+
+			var txt2alert = "x = " + x + "\ny = " + y +"\n(準確至 "+len+" 位少數)\n" ;
+			txt2alert += "\nz 99% 區間估計：( " + z99.join(" , ") + " )" ;
+			txt2alert += "\nz 95% 區間估計：( " + z95.join(" , ") + " )" ;
+			txt2alert += "\nz 90% 區間估計：( " + z90.join(" , ") + " )" ;
+			alert(txt2alert) ;
 		}
 		else alert("輸入錯誤。");
 	}

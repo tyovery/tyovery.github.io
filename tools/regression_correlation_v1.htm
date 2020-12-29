@@ -602,19 +602,23 @@ function est_btn(pow)
 				}
 			}
 			
-			var interval = z_table_99 * res_sd[1] ;
-			var z99 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
+			var txt2alert = pow + " 次估計：\n" ;
+			txt2alert += "x = " + x + "\ny = " + y +"\n(準確至 "+len+" 位少數)\n" ;
 			
-			interval = z_table_95 * res_sd[1] ;
-			var z95 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
-			
-			interval = z_table_90 * res_sd[1] ;
-			var z90 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
-
-			var txt2alert = "x = " + x + "\ny = " + y +"\n(準確至 "+len+" 位少數)\n" ;
-			txt2alert += "\nz 99% 區間估計：( " + z99.join(" , ") + " )" ;
-			txt2alert += "\nz 95% 區間估計：( " + z95.join(" , ") + " )" ;
-			txt2alert += "\nz 90% 區間估計：( " + z90.join(" , ") + " )" ;
+			if(pow==1)
+			{
+				var interval = z_table_99 * res_sd[1] ;
+				var z99 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
+				txt2alert += "\nz 99% 區間估計：( " + z99.join(" , ") + " )" ;
+				
+				interval = z_table_95 * res_sd[1] ;
+				var z95 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
+				txt2alert += "\nz 95% 區間估計：( " + z95.join(" , ") + " )" ;
+				
+				interval = z_table_90 * res_sd[1] ;
+				var z90 = [ (y*1-interval).toFixed(len) , (y*1+interval).toFixed(len) ] ;
+				txt2alert += "\nz 90% 區間估計：( " + z90.join(" , ") + " )" ;
+			}
 			alert(txt2alert) ;
 		}
 		else alert("輸入錯誤。");

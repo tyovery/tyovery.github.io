@@ -1,0 +1,66 @@
+<html lang="zh-Hant-HK">
+<head>
+<title>交換禮物</title>
+</head>
+<body>
+<center>
+<div id="msg"></div>
+<br />請輸入總人數，或名稱序列 ( 以 , 分隔 )：<br />
+<input id="userText" type="text" value="" size="50" style="text-align: center;" onkeypress="keyPress(this);" />
+<input type="button" value="交換" onClick="start();" />
+</center>
+<p style="text-align:right;">Coded by ~tyovery~<br />2021-01-03</p>
+
+<script>
+
+function keyPress()
+{
+	if(event.keyCode == 13 || event.which == 13) start() ;
+}
+
+function start()
+{
+	// var income = prompt("請輸入總人數，或名稱序列 ( 以分 , 隔 )：").split(",") ; // 接收使用者輸入
+	var income = userText.value.replace(/\s+/g,"").split(",") ; // 接收使用者輸入
+	var input = [] ;
+
+	function nameList(name) // 處理名稱列表
+	{
+		if(name.length>0) input.push(name) ;
+	}
+	
+	if(income.length>1) // 以 名稱 進行交換
+	{
+		income.forEach(nameList) ; // 處理名稱列表
+		var ppl = input.length ; // 人數
+	}
+	else // 以 編號 進行交換
+	{
+		var ppl = income[0] << 0 ; // 人數
+		for(var k = 1 ; k <= ppl ; k++) input.push(k) ; // 預設順序編號 ( 1 ~ ppl )
+	}
+
+	var output = [] ; // 洗亂後的次序
+
+	while(input.length>0)
+	{
+		var draw = Math.floor( Math.random()*input.length ) ; // 隨機抽取
+		output.push(input[draw]) ; // 加到抽取的順序列表
+		input.splice(draw,1) ; // 移除已抽的編號
+	}
+
+	// 輸出
+	msg.innerHTML = "人數：" + ppl + "<br /><br />抽取的順序：" + output.join(" , ") + "<br /><br />" ;
+
+	// 輸出誰傳給誰
+	output.forEach(listOut) ;
+	function listOut(k,i)
+	{
+		msg.innerHTML += k + " 傳給 " + ( output[i+1] || output[0] ) + "<br />" ;
+	}
+}
+
+</script>
+
+</body>
+</html>

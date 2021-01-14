@@ -41,10 +41,13 @@ td{text-align: center;} // 置中
 <input type="button" value="新的一局" onClick="gameBegin();" />
 
 <br /><br />
-<div id="OutArea" ></div>
+<table><tr>
+<td>已花步數：<div id="show_steps">-</div></td>
+<td><div id="OutArea" ></div></td>
+</tr></table>
 <br />
 <hr />
-Coded by ~tyovery~<br />2018-02
+Coded by ~tyovery~<br />2018-02 ~ 2021-01
 </center>
 
 <script>
@@ -56,6 +59,8 @@ var upsetTimes = (setY.value * setX.value * setUpset.value)**2 * 100 ; // 洗牌
 var number ; // 顯示的[數字]或[空白]
 var SpaceCard = {} ; // [空白卡]位置(x,y)
 var SpaceCardInArray ; // [空白卡]位置(Array)
+var game_steps = 0 ; // 已花步數
+
 function gameBegin()
 {
 	MapSize = {x: parseInt(setX.value) , y: parseInt(setY.value) } ; // x >= 3 , y >= 2
@@ -184,6 +189,16 @@ function gameBegin()
 	text2htm += "</table>" ;
 
 	OutArea.innerHTML = text2htm ; // 輸出
+	
+	game_steps = 0 ; // reset 已花步數
+	
+	renew_info() ; // 更新 game info
+	
+}
+
+function renew_info()
+{
+	show_steps.innerHTML = game_steps ; // 已花步數
 }
 
 function move(y,x) // 移動數字牌
@@ -197,10 +212,13 @@ function move(y,x) // 移動數字牌
 		card_upset.splice( y * MapSize.x + x , 1 , "" ); // 被按的格變為[空白](array)
 		
 		SpaceCard.y=y ; SpaceCard.x=x ; // 標記新的[空白]座標
+		
+		game_steps ++ ; // 更新 已花步數
+		renew_info() ; // 更新 game info
 	}
 	
 	// 檢查是否勝利(所有數字都已歸位)
-	if( card_upset.join(",") == card.join(",") ) alert("你贏了！");
+	if( card_upset.join(",") == card.join(",") ) alert("你贏了！\n花費步數：" + game_steps + " 步");
 }
 
 // 預設板面 3×3

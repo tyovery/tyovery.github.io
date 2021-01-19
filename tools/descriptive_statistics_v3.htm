@@ -1437,7 +1437,7 @@ function inputSub(parameter) // 處理&分析 dataset
 		DisplayArea.innerHTML += " -<br />" ;
 	}
 	
-	DisplayArea.innerHTML += "常態分布 偏離度："+"(未寫)"+"<br />" ;
+	// DisplayArea.innerHTML += "常態分布 偏離度："+"(未寫)"+"<br />" ;
 	// DisplayArea.innerHTML += "帕松分布 偏離度："+"(未寫)"+"<br />" ;
 	// DisplayArea.innerHTML += "二項分布 偏離度："+"(未寫)"+"<br />" ;
 	
@@ -1834,14 +1834,34 @@ function cal_pobi_normal() // 計算 常態分布 機率
 		error += "\n( 標準差(SD) 太接近 0 時，也可能會出錯。 )" ;
 		var info = "假設數據為「常態分布」。" ;
 		info += "\n請輸入 x 的範圍，以計算出機會率。" ;
-		info += "\n用半形逗號 ( , ) 分隔，用 i 代表無限大。"
-		var input = prompt(info);
+		info += "\n用半形逗號 ( , ) 分隔，用 i 代表無限大。" ;
+		info += "\n\n可輸入「>a」來計算 x 大於 a 的機率；" ;
+		info += "\n或輸入「<a」來計算 x 小於 a 的機率。" ;
+		var input = prompt(info) ;
 		if(input != null)
 		{
 			if(sd>0 && input.length>0)
 			{
 				// 整理參數
 				var para = input.replace(/\s+/g,"").replace(/i/gi,"Infinity").split(",") ; // 分割
+				if(para.length==1) // 只輸入了一個數
+				{	
+					if(para[0][0] == ">") // 大於某數
+					{
+						para[1] = "Infinity" ;
+						para[0] = para[0].slice(1) ;
+					}
+					else if(para[0][0] == "<") // 小於某數
+					{
+						para[1] = para[0].slice(1) ;
+						para[0] = "-Infinity" ;
+					}
+					else // 範圍自動轉為前後 1/2
+					{
+						para[1] = para[0]*1 + 0.5 ;
+						para[0] = para[0]*1 - 0.5 ;
+					}
+				}
 				if(para[0]*1 > para[1]*1) // 排序
 				{
 					para[2] = para[1] ;

@@ -5,7 +5,7 @@
 td{text-align: center;} // 置中
 </style>
 </head>
-<body>
+<body bgcolor="#fff" >
 
 <center>
 <br /><h1>數字華容道</h1>
@@ -60,6 +60,9 @@ var number ; // 顯示的[數字]或[空白]
 var SpaceCard = {} ; // [空白卡]位置(x,y)
 var SpaceCardInArray ; // [空白卡]位置(Array)
 var game_steps = 0 ; // 已花步數
+var game_card_left = [] ; // 最左的卡牌
+var leftColor = "#AAA" ; // 最左的卡牌 的 着色
+var rightColor = "#0A0" ; // 正確位置的卡牌 的 着色
 
 function gameBegin()
 {
@@ -67,10 +70,13 @@ function gameBegin()
 
 	function buildCard() // 建立數字牌
 	{
-		card = [] ; // 清空
+		card = [] ; // 清空 數字牌
+		game_card_left = [] ; // 清空 最左的卡牌
+
 		for(var n=1 ; n < MapSize.x * MapSize.y ; n ++ )
 		{
-			card.push(n) ;
+			card.push(n) ; // 加入 數字牌
+			if(n%MapSize.x==1) game_card_left.push(n) ; // 記錄 最左的卡牌
 		}
 		card.push(""); // 插入空白牌
 		// alert(card);
@@ -181,7 +187,11 @@ function gameBegin()
 		{
 			number = card_upset[y * MapSize.x + x] ; // 格中數字 函式
 			if(number == "") SpaceCard = {x:x , y:y} ; // 記錄[空白卡]位置
-			text2htm += "<td id='pos_"+y+"_"+x+"' onClick='move("+y+","+x+");'>"+number+"</td>" ; // 放入板圖
+			
+			// 放入板圖
+			text2htm += "<td id='pos_"+y+"_"+x+"' " ;
+			
+			text2htm += "onClick='move("+y+","+x+");'>"+number+"</td>" ; 
 		}
 		text2htm += "</tr>" ;
 	}
@@ -190,10 +200,41 @@ function gameBegin()
 
 	OutArea.innerHTML = text2htm ; // 輸出
 	
+	renew_color() ; // 顏色處理
+	
 	game_steps = 0 ; // reset 已花步數
 	
 	renew_info() ; // 更新 game info
 	
+}
+
+function renew_color() // 顏色處理
+{
+	for(var y = 0 ; y < MapSize.y ; y ++) // y座標
+	{
+		for(var x = 0 ; x < MapSize.x ; x ++ ) // x座標
+		{
+			if( eval("pos_"+y+"_"+x).innerHTML == MapSize.x * y + x + 1 ) // 正確位置 着色
+			{
+				eval("pos_"+y+"_"+x).setAttribute("style" , "background-color:"+rightColor+";" ) ;
+			}
+			else if ( eval("pos_"+y+"_"+x).innerHTML == "" ) // 空白格 着色
+			{
+				eval("pos_"+y+"_"+x).setAttribute("style" , "background-color:#fff;" ) ;
+			}
+			else // 最左板塊 着色
+			{
+				game_card_left.forEach(f) ;
+				function f(check)
+				{	
+					if( eval("pos_"+y+"_"+x).innerHTML == check)
+					{
+						eval("pos_"+y+"_"+x).setAttribute("style" , "background-color:"+leftColor+";" ) ;
+					}
+				}
+			}
+		}
+	}
 }
 
 function renew_info()
@@ -207,6 +248,18 @@ function move(y,x) // 移動數字牌
 	{
 		eval("pos_"+SpaceCard.y+"_"+SpaceCard.x+".innerHTML = pos_"+y+"_"+x+".innerHTML"); // [空白格]變為按下的數字(table)
 		eval("pos_"+y+"_"+x+".innerHTML = '' "); // 被按的格變為[空白](table)
+		
+		renew_color() // 顏色處理
+		/*// 顏色處理
+		game_card_left.forEach(colorChange) ;
+		function colorChange(leftNumber)
+		{
+			if ( eval("pos_"+SpaceCard.y+"_"+SpaceCard.x+".innerHTML") == leftNumber ) // 最左格
+			{
+				eval("pos_"+SpaceCard.y+"_"+SpaceCard.x).setAttribute("style" , "background-color:"+leftColor+";") ;
+				eval("pos_"+y+"_"+x).setAttribute("style" , "background-color:#fff;") ;
+			}
+		}*/
 		
 		card_upset.splice( SpaceCard.y * MapSize.x + SpaceCard.x , 1 , card_upset[y * MapSize.x + x] ); // [空白格]變為按下的數字(array)
 		card_upset.splice( y * MapSize.x + x , 1 , "" ); // 被按的格變為[空白](array)

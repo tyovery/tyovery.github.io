@@ -39,6 +39,9 @@ td{text-align: center;} // 置中
 	</script>
 </select>
 <input type="button" value="新的一局" onClick="gameBegin();" />
+<br />
+<input type="checkbox" id="dragMode_box" />
+<span onClick="dragMode_box.checked=!dragMode_box.checked;" >拖動模式</span>
 
 <br /><br />
 <table><tr>
@@ -64,6 +67,92 @@ var game_card_left = [] ; // 最左的卡牌
 var leftColor = "#AAA" ; // 最左的卡牌 的 着色
 var rightColor = "#0A0" ; // 正確位置的卡牌 的 着色
 
+function shuffle(times=1) // 隨機移動
+{
+	var way ; // 移動方向
+	var way_log = [] ;
+	for(var n = 0 ; n < times ; n ++)
+	{
+		// 更新 [空白卡] 在地圖的位置
+		SpaceCard.x = SpaceCardInArray % MapSize.x ;
+		SpaceCard.y = Math.floor( SpaceCardInArray / MapSize.x ) ;
+	
+		way = Math.random() * 4 ; // 決定動作(上,下,左,右)
+		// alert("空白卡: " + SpaceCardInArray + "\n 動作: " + way)
+
+		if(way < 1) // 右
+		{
+			if( SpaceCard.x <= 0 ) // 若沒有此動作,則重選動作
+			{
+				// alert("N右");
+				n--;
+				continue ;
+			}
+			else
+			{
+				// alert("右");
+				card_upset.splice(SpaceCardInArray-1,2,"",card_upset[SpaceCardInArray-1]);
+				SpaceCardInArray -- ;
+				way_log.push("右") ;
+			}
+		}
+		else if(way < 2) // 左
+		{
+			if( SpaceCard.x >= MapSize.x-1 ) // 若沒有此動作,則重選動作
+			{
+				// alert("N左");
+				n--;
+				continue ;
+			}
+			else
+			{
+				// alert("左");
+				card_upset.splice(SpaceCardInArray,2,card_upset[SpaceCardInArray+1],"");
+				SpaceCardInArray ++ ;
+				way_log.push("左") ;
+			}
+		}
+		else if(way < 3) // 下
+		{
+			if( SpaceCard.y <= 0 ) // 若沒有此動作,則重選動作
+			{
+				// alert("N下");
+				n--;
+				continue ;
+			}
+			else
+			{
+				// alert("下");
+				card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray - MapSize.x ] );
+				card_upset.splice(SpaceCardInArray - MapSize.x ,1, "" );
+				SpaceCardInArray -= MapSize.x ;
+				way_log.push("下") ;
+			}
+		}
+		else // 上
+		{
+			if( SpaceCard.y >= MapSize.y-1 ) // 若沒有此動作,則重選動作
+			{
+				// alert("N上");
+				n--;
+				continue ;
+			}
+			else
+			{
+				// alert("上");
+				card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray + MapSize.x ] );
+				card_upset.splice(SpaceCardInArray + MapSize.x ,1, "" );
+				SpaceCardInArray += MapSize.x ;
+				way_log.push("上") ;
+			}
+		}
+	}
+	
+	renew_map(); // 更新地圖
+	
+	return way_log ;
+}
+
 function gameBegin()
 {
 	MapSize = {x: parseInt(setX.value) , y: parseInt(setY.value) } ; // x >= 3 , y >= 2
@@ -82,91 +171,11 @@ function gameBegin()
 		// alert(card);
 	}
 	
-	function buildCard_upset() // 洗牌 (現3x3得 雙數唔得?) (y,x): (3,6)唔得
+	function buildCard_upset() // 洗牌
 	{
-		card_upset = [] ; // 清空
-		while(card.length > 0 )
-		{
-			card_upset.push( card.shift() ); // 按順序轉移數列
-			// card_upset.push( card.splice( Math.random() * card.length , 1) ); // 隨機
-		}
-		buildCard(); // 重新建立數字牌, 待以後判斷是否完GAME(正確順序)
-		
-		// card_upset.splice( MapSize.x * MapSize.y * Math.random() ,0,""); // 隨機插入空白牌
-		SpaceCardInArray = card_upset.length-1 ; // 記錄空白牌位置
-		
-		// alert(card_upset);
-		
-		for(var n = 0 ; n < upsetTimes ; n ++) // 隨機移動
-		{
-			var way = Math.random() * 4 ; // 決定動作(上,下,左,右)
-			// alert("空白卡: " + SpaceCardInArray + "\n 動作: " + way)
-			
-			if(way < 1) // 右
-			{
-				if(SpaceCardInArray < 1) // 若沒有此動作,則重選動作
-				{
-					// alert("N右");
-					n--;
-					continue ;
-				}
-				else
-				{
-					// alert("右");
-					card_upset.splice(SpaceCardInArray-1,2,"",card_upset[SpaceCardInArray-1]);
-					SpaceCardInArray -- ;
-				}
-			}
-			else if(way < 2) // 左
-			{
-				if(SpaceCardInArray > card_upset.length - 2) // 若沒有此動作,則重選動作
-				{
-					// alert("N左");
-					n--;
-					continue ;
-				}
-				else
-				{
-					// alert("左");
-					card_upset.splice(SpaceCardInArray,2,card_upset[SpaceCardInArray+1],"");
-					SpaceCardInArray ++ ;
-				}
-			}
-			else if(way < 3) // 下
-			{
-				if(SpaceCardInArray < MapSize.x ) // 若沒有此動作,則重選動作
-				{
-					// alert("N下");
-					n--;
-					continue ;
-				}
-				else
-				{
-					// alert("下");
-					card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray - MapSize.x ] );
-					card_upset.splice(SpaceCardInArray - MapSize.x ,1, "" );
-					SpaceCardInArray -= MapSize.x ;
-				}
-			}
-			else // 上
-			{
-				if(SpaceCardInArray > card_upset.length - 1 - MapSize.x ) // 若沒有此動作,則重選動作
-				{
-					// alert("N上");
-					n--;
-					continue ;
-				}
-				else
-				{
-					// alert("上");
-					card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray + MapSize.x ] );
-					card_upset.splice(SpaceCardInArray + MapSize.x ,1, "" );
-					SpaceCardInArray += MapSize.x ;
-				}
-			}
-		}
-
-		// alert(card_upset);
+		card_upset = [...card] ; // 按順序轉移數列
+		SpaceCardInArray = card_upset.length-1 ; // 記錄空白牌位置(index)
+		shuffle(upsetTimes) ; // 隨機移動
 	}
 
 	buildCard(); // 建立數字牌
@@ -177,6 +186,14 @@ function gameBegin()
 	}
 	while( card_upset.join(",") == card.join(",") ); // 避免一開始就立即勝利
 
+	game_steps = 0 ; // reset 已花步數
+	
+	renew_info() ; // 更新 game info
+	
+}
+
+function renew_map()
+{
 	var text2htm = "" ; // 準備輸出的table
 	text2htm += "<table border='1' cellpadding='10' align='center'>" ;
 
@@ -190,8 +207,8 @@ function gameBegin()
 			
 			// 放入板圖
 			text2htm += "<td id='pos_"+y+"_"+x+"' " ;
-			
-			text2htm += "onClick='move("+y+","+x+");'>"+number+"</td>" ; 
+			text2htm += "onClick='move("+y+","+x+");' ";
+			text2htm += "onMouseOver='overBlock("+y+","+x+");'>"+number+"</td>" ; 
 		}
 		text2htm += "</tr>" ;
 	}
@@ -201,11 +218,6 @@ function gameBegin()
 	OutArea.innerHTML = text2htm ; // 輸出
 	
 	renew_color() ; // 顏色處理
-	
-	game_steps = 0 ; // reset 已花步數
-	
-	renew_info() ; // 更新 game info
-	
 }
 
 function renew_color() // 顏色處理
@@ -274,13 +286,17 @@ function move(y,x) // 移動數字牌
 	if( card_upset.join(",") == card.join(",") ) alert("你贏了！\n花費步數：" + game_steps + " 步");
 }
 
-// 預設板面 3×3
-selectY3.selected=true;
-selectX3.selected=true;
-selectUpset10.selected=true; // 洗亂度 10
-gameBegin(); // 新的一場
+function overBlock(y,x)
+{
+	if(dragMode_box.checked) move(y,x);
+}
 
-// alert(SpaceCard.y +"," +SpaceCard.x);
+// 預設板面 3×3
+selectY3.selected = true ;
+selectX3.selected = true ;
+selectUpset10.selected = true ; // 洗亂度 10
+dragMode_box.checked = false ; // 拖動模式 預設關
+gameBegin(); // 新的一場
 
 </script>
 

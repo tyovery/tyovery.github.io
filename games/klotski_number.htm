@@ -11,7 +11,7 @@ td{text-align: center;} // 置中
 <br /><h1>數字華容道</h1>
 
 直：
-<select id="setY">
+<select id="setY" disabled >
 	<script>
 	for(var n = 2 ; n <= 10 ; n ++)
 	{
@@ -20,7 +20,7 @@ td{text-align: center;} // 置中
 	</script>
 </select>
 　橫：
-<select id="setX">
+<select id="setX" onChange="if(squareMap_box.checked)setY.value=setX.value;">
 	<script>
 	for(var n = 3 ; n <= 10 ; n ++)
 	{
@@ -28,6 +28,10 @@ td{text-align: center;} // 置中
 	}
 	</script>
 </select>
+
+　<input type="checkbox" id="squareMap_box" checked="true" onChange="squareMap_switch('box');" />
+<span onClick="squareMap_switch('text');" >正方形</span>
+
 <br /><br />
 洗亂度：
 <select id="setUpset">
@@ -38,8 +42,8 @@ td{text-align: center;} // 置中
 	}
 	</script>
 </select>
-<input type="button" value="新的一局" onClick="gameBegin();" />
-<br />
+　<input type="button" value="新的一局" onClick="gameBegin();" />
+<br /><br />
 <input type="checkbox" id="dragMode_box" />
 <span onClick="dragMode_box.checked=!dragMode_box.checked;" >拖動模式</span>
 
@@ -55,99 +59,150 @@ Coded by ~tyovery~<br />2018-02 ~ 2021-01
 
 <script>
 
+var dev = false ; // 開發模式
 var MapSize = {} ; // 板圖大小
 var card = [] ; // 數字牌(順序)
 var card_upset = [] ; // 數字牌(亂序/當前)
-var upsetTimes = (setY.value * setX.value * setUpset.value)**2 * 100 ; // 洗牌次數(最少1次)
+var upsetTimes = 1 ; // 洗牌次數(最少1次)
 var number ; // 顯示的[數字]或[空白]
 var SpaceCard = {} ; // [空白卡]位置(x,y)
 var SpaceCardInArray ; // [空白卡]位置(Array)
 var game_steps = 0 ; // 已花步數
 var game_card_left = [] ; // 最左的卡牌
+var way_name = ["R","L","D","U"] ; // 方向名稱
 var leftColor = "#AAA" ; // 最左的卡牌 的 着色
 var rightColor = "#0A0" ; // 正確位置的卡牌 的 着色
 
-function shuffle(times=1) // 隨機移動
+// 預設指定動作
+var moveSet_C_LU = "RDL" ; // C set 左上 (3步)
+var moveSet_C_LD = "RUL" ; // C set 左下 (3步)
+var moveSet_C_RU = "LDR" ; // C set 右上 (3步)
+var moveSet_C_RD = "LUR" ; // C set 右下 (3步)
+var moveSet_C_UL = "DRU" ; // C set 上左 (3步)
+var moveSet_C_UR = "DLU" ; // C set 上右 (3步)
+var moveSet_C_DL = "URD" ; // C set 下左 (3步)
+var moveSet_C_DR = "ULD" ; // C set 下右 (3步)
+
+var moveSet_oppo_RD = moveSet_C_RD + moveSet_C_UR ; // 2×2 對角 右下 (6步)
+var moveSet_oppo_RU = moveSet_C_RU + moveSet_C_DR ; // 2×2 對角 右上 (6步)
+var moveSet_oppo_LU = moveSet_C_LU + moveSet_C_DL ; // 2×2 對角 左上 (6步)
+var moveSet_oppo_LD = moveSet_C_LD + moveSet_C_UL ; // 2×2 對角 左下 (6步)
+
+var moveSet_P_LU = "R" + moveSet_C_LU + moveSet_C_DR ; // P set 左上 (7步)
+var moveSet_P_LD = "R" + moveSet_C_LD + moveSet_C_UR ; // P set 左下 (7步)
+var moveSet_P_RU = "L" + moveSet_C_RU + moveSet_C_DL ; // P set 右上 (7步)
+var moveSet_P_RD = "L" + moveSet_C_RD + moveSet_C_UL ; // P set 右下 (7步)
+var moveSet_P_UL = "D" + moveSet_C_UL + moveSet_C_RD ; // P set 上左 (7步)
+var moveSet_P_UR = "D" + moveSet_C_UR + moveSet_C_LD ; // P set 上右 (7步)
+var moveSet_P_DL = "U" + moveSet_C_DL + moveSet_C_RU ; // P set 下左 (7步)
+var moveSet_P_DR = "U" + moveSet_C_DR + moveSet_C_LU ; // P set 下右 (7步)
+
+var moveSet_round_LU = moveSet_P_LU + moveSet_P_LD + moveSet_P_LU + moveSet_C_LD ; // 3×2 round set 左上 (24步)
+var moveSet_round_LD = moveSet_P_LD + moveSet_P_LU + moveSet_P_LD + moveSet_C_LU ; // 3×2 round set 左下 (24步)
+var moveSet_round_RU = moveSet_P_RU + moveSet_P_RD + moveSet_P_RU + moveSet_C_RD ; // 3×2 round set 右上 (24步)
+var moveSet_round_RD = moveSet_P_RD + moveSet_P_RU + moveSet_P_RD + moveSet_C_RU ; // 3×2 round set 右下 (24步)
+var moveSet_round_UL = moveSet_P_UL + moveSet_P_UR + moveSet_P_UL + moveSet_C_UR ; // 3×2 round set 上左 (24步)
+var moveSet_round_UR = moveSet_P_UR + moveSet_P_UL + moveSet_P_UR + moveSet_C_UL ; // 3×2 round set 上右 (24步)
+var moveSet_round_DL = moveSet_P_DL + moveSet_P_DR + moveSet_P_DL + moveSet_C_DR ; // 3×2 round set 下左 (24步)
+var moveSet_round_DR = moveSet_P_DR + moveSet_P_DL + moveSet_P_DR + moveSet_C_DL ; // 3×2 round set 下右 (24步)
+
+function shuffle(times=1,set) // 隨機移動 , times: 次數 , set: 指定動作(String)
 {
 	var way ; // 移動方向
-	var way_log = [] ;
+	var way_log = [] ; // 記錄動作
+	var setList = [] ; // 指定動作列表(Array)
+
 	for(var n = 0 ; n < times ; n ++)
 	{
 		// 更新 [空白卡] 在地圖的位置
 		SpaceCard.x = SpaceCardInArray % MapSize.x ;
 		SpaceCard.y = Math.floor( SpaceCardInArray / MapSize.x ) ;
-	
-		way = Math.random() * 4 ; // 決定動作(上,下,左,右)
-		// alert("空白卡: " + SpaceCardInArray + "\n 動作: " + way)
+		
+		if( set && n < set.length )
+		{	// 有指定方向
+			setList = set.split("");
+			way = setList[n] ; // 套用指定的方向
+			if(dev) console.log("空白卡: "+SpaceCardInArray+":("+SpaceCard.x+","+SpaceCard.y+")\n 動作: "+way+"(指定)")
+		}
+		else
+		{	// 沒有指定方向 , 則隨機決定方向
+			way = way_name[ ( Math.random() * 4 ) << 0 ] ;
+			if(dev) console.log("空白卡: "+SpaceCardInArray+":("+SpaceCard.x+","+SpaceCard.y+")\n 動作: "+way+"(隨機)")
+		}
 
-		if(way < 1) // 右
+		function noAct() // 非法動作處理
 		{
-			if( SpaceCard.x <= 0 ) // 若沒有此動作,則重選動作
+			if(set) // 指定方向時
 			{
-				// alert("N右");
-				n--;
-				continue ;
+				way_log.push("X") ;
 			}
-			else
+			else // 隨機方向時
 			{
-				// alert("右");
-				card_upset.splice(SpaceCardInArray-1,2,"",card_upset[SpaceCardInArray-1]);
-				SpaceCardInArray -- ;
-				way_log.push("右") ;
+				n-- ;
 			}
 		}
-		else if(way < 2) // 左
+
+		switch(way)
 		{
-			if( SpaceCard.x >= MapSize.x-1 ) // 若沒有此動作,則重選動作
-			{
-				// alert("N左");
-				n--;
-				continue ;
-			}
-			else
-			{
-				// alert("左");
-				card_upset.splice(SpaceCardInArray,2,card_upset[SpaceCardInArray+1],"");
-				SpaceCardInArray ++ ;
-				way_log.push("左") ;
-			}
-		}
-		else if(way < 3) // 下
-		{
-			if( SpaceCard.y <= 0 ) // 若沒有此動作,則重選動作
-			{
-				// alert("N下");
-				n--;
-				continue ;
-			}
-			else
-			{
-				// alert("下");
-				card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray - MapSize.x ] );
-				card_upset.splice(SpaceCardInArray - MapSize.x ,1, "" );
-				SpaceCardInArray -= MapSize.x ;
-				way_log.push("下") ;
-			}
-		}
-		else // 上
-		{
-			if( SpaceCard.y >= MapSize.y-1 ) // 若沒有此動作,則重選動作
-			{
-				// alert("N上");
-				n--;
-				continue ;
-			}
-			else
-			{
-				// alert("上");
-				card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray + MapSize.x ] );
-				card_upset.splice(SpaceCardInArray + MapSize.x ,1, "" );
-				SpaceCardInArray += MapSize.x ;
-				way_log.push("上") ;
-			}
+			case "R" : // 右
+				if( SpaceCard.x <= 0 ) // 若沒有此動作,則重選動作
+				{
+					noAct() ;
+				}
+				else
+				{
+					card_upset.splice(SpaceCardInArray-1,2,"",card_upset[SpaceCardInArray-1]);
+					SpaceCardInArray -- ;
+					way_log.push("右") ;
+				}
+			break ;
+			
+			case "L" : // 左
+				if( SpaceCard.x >= MapSize.x-1 ) // 若沒有此動作,則重選動作
+				{
+					noAct() ;
+				}
+				else
+				{
+					card_upset.splice(SpaceCardInArray,2,card_upset[SpaceCardInArray+1],"");
+					SpaceCardInArray ++ ;
+					way_log.push("左") ;
+				}
+			break ;
+			
+			case "D" : // 下
+				if( SpaceCard.y <= 0 ) // 若沒有此動作,則重選動作
+				{
+					noAct() ;
+				}
+				else
+				{
+					card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray - MapSize.x ] );
+					card_upset.splice(SpaceCardInArray - MapSize.x ,1, "" );
+					SpaceCardInArray -= MapSize.x ;
+					way_log.push("下") ;
+				}
+			break ;
+			
+			case "U" : // 上
+				if( SpaceCard.y >= MapSize.y-1 ) // 若沒有此動作,則重選動作
+				{
+					noAct() ;
+				}
+				else
+				{
+					card_upset.splice(SpaceCardInArray,1,card_upset[ SpaceCardInArray + MapSize.x ] );
+					card_upset.splice(SpaceCardInArray + MapSize.x ,1, "" );
+					SpaceCardInArray += MapSize.x ;
+					way_log.push("上") ;
+				}
+			break ;
+			
+			default :
+			way_log.push("X") ;
 		}
 	}
-	
+
 	renew_map(); // 更新地圖
 	
 	return way_log ;
@@ -175,7 +230,51 @@ function gameBegin()
 	{
 		card_upset = [...card] ; // 按順序轉移數列
 		SpaceCardInArray = card_upset.length-1 ; // 記錄空白牌位置(index)
-		shuffle(upsetTimes) ; // 隨機移動
+
+		upsetTimes = ( setY.value*1 + setX.value*1) * setY.value * setX.value * setUpset.value ; // 洗牌次數
+		shuffle( upsetTimes ) ; // 隨機洗牌
+		
+		/*
+		var round_set_way = ( Math.random() * 8 ) << 0 ; // 隨機 round set 方向
+		for(var k = 0 ; k < upsetTimes ; k++)
+		{	
+			switch(round_set_way) // 隨機移動 1個 round set
+			{
+				case 0 :
+					shuffle(24,moveSet_round_LU) ;
+				break;
+				
+				case 1 :
+					shuffle(24,moveSet_round_LD) ;
+				break;
+				
+				case 2 :
+					shuffle(24,moveSet_round_RU) ;
+				break;
+				
+				case 3 :
+					shuffle(24,moveSet_round_RD) ;
+				break;
+				
+				case 4 :
+					shuffle(24,moveSet_round_UL) ;
+				break;
+				
+				case 5 :
+					shuffle(24,moveSet_round_UR) ;
+				break;
+				
+				case 6 :
+					shuffle(24,moveSet_round_DL) ;
+				break;
+				
+				case 7 :
+					shuffle(24,moveSet_round_DR) ;
+				break;
+			}
+		}
+		*/
+
 	}
 
 	buildCard(); // 建立數字牌
@@ -276,8 +375,11 @@ function move(y,x) // 移動數字牌
 		card_upset.splice( SpaceCard.y * MapSize.x + SpaceCard.x , 1 , card_upset[y * MapSize.x + x] ); // [空白格]變為按下的數字(array)
 		card_upset.splice( y * MapSize.x + x , 1 , "" ); // 被按的格變為[空白](array)
 		
-		SpaceCard.y=y ; SpaceCard.x=x ; // 標記新的[空白]座標
-		
+		// 標記新的[空白]位置
+		SpaceCard.y = y ;
+		SpaceCard.x = x ;
+		SpaceCardInArray = MapSize.x * y + x ;
+
 		game_steps ++ ; // 更新 已花步數
 		renew_info() ; // 更新 game info
 	}
@@ -286,9 +388,21 @@ function move(y,x) // 移動數字牌
 	if( card_upset.join(",") == card.join(",") ) alert("你贏了！\n花費步數：" + game_steps + " 步");
 }
 
-function overBlock(y,x)
+function overBlock(y,x) // 拖動模式
 {
 	if(dragMode_box.checked) move(y,x);
+}
+
+function squareMap_switch(s) // 正方形地圖
+{
+	if(s=="text") squareMap_box.checked = ! squareMap_box.checked ; // 按字勾選
+	
+	if(squareMap_box.checked) // 鎖定
+	{
+		setY.disabled = true ;
+		setY.value = setX.value ;
+	}
+	else setY.disabled = false ; // 不鎖定
 }
 
 // 預設板面 3×3

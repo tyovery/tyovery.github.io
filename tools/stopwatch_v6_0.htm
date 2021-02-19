@@ -1,0 +1,541 @@
+<html lang="zh-Hant-HK">
+<head>
+<meta name="author" content="~tyovery~" />
+<title>秒計 by ~tyovery~</title>
+</head>
+
+<body>
+
+	<!-- Debug -->
+<script type="text/javascript">
+window.onerror=reportError;
+function reportError(msg,url,line)
+{
+	var str_cht=new Array;
+	str_cht[1] = "抱歉 :(";
+	str_cht[2] = "我們找到一個錯誤在第 " + line + " 行：";
+	var str_eng=new Array;
+	str_eng[1] = "Sorry :(";
+	str_eng[2] = "We have found an Error On Line " + line + ":";
+	alert(str_cht[1] + "\n" + str_eng[1] + "\n\n" + str_cht[2] + "\n" + str_eng[2] + "\n\n" + msg);
+	return true;
+}
+</script>
+
+	<!-- Check Browser -->
+<script type="text/javascript">
+var browserChecker,browserVer={},browserUserAgent=navigator.userAgent.toLowerCase();
+
+(browserChecker = browserUserAgent.match(/msie ([\d.]+)/)) ? browserVer.ie = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/chrome\/([\d.]+)/)) ? browserVer.chrome = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/firefox\/([\d.]+)/)) ? browserVer.firefox = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/opera.([\d.]+)/)) ? browserVer.opera = browserChecker[1] :
+(browserChecker = browserUserAgent.match(/version\/([\d.]+).*safari/)) ? browserVer.safari = browserChecker[1] : 0;
+
+if(browserVer.ie)
+{
+	document.write('Internet Explorer ' + browserVer.ie);
+}
+if(browserVer.chrome)
+{
+	document.write('Chrome ' + browserVer.chrome);
+}
+if(browserVer.firefox)
+{
+	document.write('Firefox ' + browserVer.firefox);
+}
+if(browserVer.opera)
+{
+	document.write('Opera ' + browserVer.opera);
+}
+if(browserVer.safari)
+{
+	document.write('Safari ' + browserVer.safari);
+}
+</script>
+
+<center>
+	<p style="font-size:32pt;line-height:62%;">
+		<font color="#BF0000">秒</font><font color="#BFBF00">計</font>
+	</p>
+	<p style="font-size:20pt;line-height:62%;">
+		<font color="#7F7F7F">tested on </font><font color="#EA5347">Ch</font><font color="#BFBF09">ro</font><font color="#4DB849">me</font><font color="#4F8ECB"> 88</font><font color="#7F7F7F"> , </font><font color="#D76417">Firefox 85</font>
+	</p>
+	<br />
+	<p style="font-size:20pt;line-height:62%;">
+		<font color="#7F7F7F">Coded by ~</font><font color="#BF0000">t</font><font color="#BF5F00">y</font><font color="#BFBF00">o</font><font color="#00BF00">v</font><font color="#00BFBF">e</font><font color="#0000BF">r</font><font color="#BF00BF">y</font><font color="#7F7F7F">~</font>
+	</p>
+	<p style="font-size:20pt;line-height:62%;">
+		<font color="#7F7F7F">最後更新：2021-02-07</font>
+	</p>
+<br />
+
+<div onKeyPress="StartButtonHotKey_fc()" >
+	<p style="font-size:14pt;line-height:62%;">空白／Enter : 開始／暫停</p>
+	<p style="font-size:14pt;line-height:62%;">數字盤(0) : 開始／記錄且歸零</p>
+	<p style="font-size:14pt;line-height:62%;">數字盤(+) : 增加記錄</p>
+	<p style="font-size:14pt;line-height:62%;">數字盤(.) : 清除全部記錄</p>
+	
+	<span id="time_disp">0.000s</span>
+	<input id="StartButton" type="button" value="開始" onClick="StartButton_fc();" />
+	<input id="ResetButton" type="button" value="歸零" onClick="ResetButton_fc();" />
+	<input id="TakeRecordButton" type="button" value="增加記錄" onClick="TakeRecordButton_fc();this.focus();" />
+	<br />
+	<input id="StatsButton" type="button" value="統計" onClick="StatsButton_fc();" disabled="true" />
+	<input id="ClearRecordButton" type="button" value="清除全部記錄" onClick="ClearRecordButton_fc();" disabled="true" />
+	<br />
+	<input id="SetAlertInput" type="number" value="30" min="1" max="31536000" step="1" style="text-align:center;" onKeyUp="SetAlertInput_filter_fc();" />秒
+	<input id="SetAlertButton" type="button" value="設置提示" onClick="SetAlertButton_fc();" />
+	<br />
+	<input id="OrderS2LButton" type="button" value="由小至大排列(多需時)" onClick="OrderS2LButton_fc();" disabled="true" />
+	<br />
+	<input id="OrderL2SButton" type="button" value="由大至小排列(多需時)" onClick="OrderL2SButton_fc();" disabled="true" />
+	<br />
+	<span id="record"></span>
+</div>
+
+<br /><br /><br /><br />
+
+<!-- Alert Button 
+<br /><br />
+<input type="button" value="Alert" onClick="alert(recordSlot_text[0]);alert(aa0);" />
+-->
+
+<script type="text/javascript">
+
+var beginTime ; 
+var nowTime = 0 ; // 當前時間(ms)
+var pauseTime ;
+var ready2disp = "0.000";
+var recordSlot_time = new Array(1) ;
+var recordSlot_text = new Array(1) ;
+var AlertSetOn = 0 ; // 鬧鐘是否開啟
+var AlertSetMS = "0.000" ;
+var TextRange_source , TextRange_save , TextRange_load ;
+recordSlot_text[0] = 0 ; // 現在的記錄總行數
+
+function timer_renew()
+{
+	if(StartButton.value == "暫停")
+	{
+		nowTime = new Date().getTime() - beginTime ;
+		ready2disp = nowTime / 1000;
+		if( (ready2disp+"").substr( (ready2disp+"").length-3 , 1 ) == ".")
+		{
+			ready2disp += "0";
+		} else if( (ready2disp+"").substr( (ready2disp+"").length-2 , 1 ) == ".")
+		{
+			ready2disp += "00";
+		} else if( (ready2disp+"").substr( (ready2disp+"").length-4 , 1 ) == ".")
+		{
+		} else
+		{
+			ready2disp += ".000";
+		}
+		time_disp.innerHTML = ready2disp + "s";
+		if( AlertSetOn && nowTime >= AlertSetMS * 1000 )
+		{
+			AlertSetOn = 0 ;
+			alert("計時已達 "+AlertSetMS+" 秒。");
+		}
+		setTimeout("timer_renew();",1);
+	}
+}
+
+function ResetButton_fc() // 歸零
+{
+	StartButton.value = "開始";
+	time_disp.innerHTML = "0.000s" ;
+	nowTime = 0 ;
+	ready2disp = "0.000" ;
+	if(SetAlertButton.value.match(/^取消/g) == "取消")
+	{
+		AlertSetOn = 1;
+	}
+	StartButton.focus();
+}
+
+function StartButton_fc() // 開始／暫停
+{
+	if(StartButton.value == "開始")
+	{
+		StartButton.value = "暫停";
+		beginTime = new Date().getTime();
+		timer_renew();
+	} else if(StartButton.value == "暫停")
+	{
+		StartButton.value = "繼續" ;
+		pauseTime = nowTime ;
+	} else if(StartButton.value == "繼續")
+	{
+		StartButton.value = "暫停" ;
+		beginTime = new Date().getTime() - pauseTime;
+		timer_renew();
+	}
+}
+
+function StartButtonHotKey_fc() // 開始／暫停 快捷鍵
+{
+	if(document.activeElement.id != "SetAlertInput") // 輸入鬧鐘時不觸發HotKey
+	{
+		if(event.keyCode==48) // 按 0 加記錄 並 RESET 
+		{
+			if(time_disp.innerHTML == "0.000s")
+			{
+				StartButton_fc();
+			}
+			else
+			{
+				TakeRecordButton_fc();
+				ResetButton_fc();
+			}
+		}
+		if(event.keyCode==46) // 按 . 清記錄
+		{
+			ClearRecordButton_fc();
+		}
+		if(event.keyCode==43) // 只加記錄 , 不RESET 
+		{
+			TakeRecordButton_fc();
+		}
+	}
+}
+
+
+function MoveUp(MoveUp_thisPosition) // 上移記錄
+{
+	for(var i = MoveUp_thisPosition + 1 ; i <= recordSlot_text.length - 1 ; i++)
+	{
+		if(recordSlot_text[i] != "") // 檢查是否已刪行
+		{
+			// 交換時間
+			recordSlot_time[0] = recordSlot_time[MoveUp_thisPosition];
+			recordSlot_time[MoveUp_thisPosition] = recordSlot_time[i];
+			recordSlot_time[i] = recordSlot_time[0];
+
+			// 重組行 (被按下按鈕的此行)
+			recordSlot_text[MoveUp_thisPosition] = recordSlot_time[MoveUp_thisPosition] + "s";
+			recordSlot_text[MoveUp_thisPosition] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+MoveUp_thisPosition+");' />";
+			recordSlot_text[MoveUp_thisPosition] += " <input id='MoveUpButton"+MoveUp_thisPosition+"' type='button' value='上移' onClick='MoveUp("+MoveUp_thisPosition+");' />";
+			recordSlot_text[MoveUp_thisPosition] += " <input id='MoveDownButton"+MoveUp_thisPosition+"' type='button' value='下移' onClick='MoveDown("+MoveUp_thisPosition+");' />";
+			recordSlot_text[MoveUp_thisPosition] += " <input type='button' value='清除' onClick='recordSlot_text["+MoveUp_thisPosition+"]=\"\";displayRecord();' />";
+			recordSlot_text[MoveUp_thisPosition] += "<br />";
+
+			// 重組行 (交換的行)
+			recordSlot_text[i] = recordSlot_time[i] + "s";
+			recordSlot_text[i] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveUpButton"+i+"' type='button' value='上移' onClick='MoveUp("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveDownButton"+i+"' type='button' value='下移' onClick='MoveDown("+i+");' />";
+			recordSlot_text[i] += " <input type='button' value='清除' onClick='recordSlot_text["+i+"]=\"\";displayRecord();' />";
+			recordSlot_text[i] += "<br />";
+
+			// 刷新顯示板
+			displayRecord();
+			break; // 不用這行可以實現逐行向上滾動
+		}
+	}
+}
+
+function MoveDown(MoveDown_thisPosition) // 下移記錄
+{
+	for(var i = MoveDown_thisPosition - 1 ; i >= 1 ; i--)
+	{
+		if(recordSlot_text[i] != "") // 檢查是否已刪行
+		{
+
+			// 交換時間
+			recordSlot_time[0] = recordSlot_time[MoveDown_thisPosition];
+			recordSlot_time[MoveDown_thisPosition] = recordSlot_time[i];
+			recordSlot_time[i] = recordSlot_time[0];
+
+			// 重組行 (被按下按鈕的此行)
+			recordSlot_text[MoveDown_thisPosition] = recordSlot_time[MoveDown_thisPosition] + "s";
+			recordSlot_text[MoveDown_thisPosition] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+MoveDown_thisPosition+");' />";
+			recordSlot_text[MoveDown_thisPosition] += " <input id='MoveUpButton"+MoveDown_thisPosition+"' type='button' value='上移' onClick='MoveUp("+MoveDown_thisPosition+");' />";
+			recordSlot_text[MoveDown_thisPosition] += " <input id='MoveDownButton"+MoveDown_thisPosition+"' type='button' value='下移' onClick='MoveDown("+MoveDown_thisPosition+");' />";
+			recordSlot_text[MoveDown_thisPosition] += " <input type='button' value='清除' onClick='recordSlot_text["+MoveDown_thisPosition+"]=\"\";displayRecord();' />";
+			recordSlot_text[MoveDown_thisPosition] += "<br />";
+
+			// 重組行 (交換的行)
+			recordSlot_text[i] = recordSlot_time[i] + "s";
+			recordSlot_text[i] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveUpButton"+i+"' type='button' value='上移' onClick='MoveUp("+i+");' />";
+			recordSlot_text[i] += " <input id='MoveDownButton"+i+"' type='button' value='下移' onClick='MoveDown("+i+");' />";
+			recordSlot_text[i] += " <input type='button' value='清除' onClick='recordSlot_text["+i+"]=\"\";displayRecord();' />";
+			recordSlot_text[i] += "<br />";
+
+			// 刷新顯示板
+			displayRecord();
+			break; // 不用這行可以實現逐行向下滾動
+		}
+	}
+}
+
+function displayRecord() // 刷新記錄顯示板
+{
+	record.innerHTML = "";
+	recordSlot_text[0] = 0;
+	for(var i = recordSlot_text.length - 1 ; i >= 1 ; i--)
+	{
+		record.innerHTML += recordSlot_text[i];
+		if(recordSlot_text[i] != "") // 計算記錄的總行數
+		{
+			recordSlot_text[0] ++ ;
+		}
+	}
+	if(recordSlot_text[0] > 1)
+	{
+		ClearRecordButton.disabled=false;
+		StatsButton.disabled=false;
+		OrderS2LButton.disabled=false;
+		OrderL2SButton.disabled=false;
+	} else if(recordSlot_text[0] > 0)
+	{
+		ClearRecordButton.disabled=false;
+		StatsButton.disabled=true;
+		OrderS2LButton.disabled=true;
+		OrderL2SButton.disabled=true;
+	} else
+	{
+		ClearRecordButton_fc();
+	}
+
+	// 屏閉上移按鈕
+	for(var i = recordSlot_text.length - 1 ; i >= 1 ; i--)
+	{
+		if(recordSlot_text[i] != "")
+		{
+			document.getElementById("MoveUpButton"+i).disabled=true;
+			break;
+		}
+	}
+
+	// 屏閉下移按鈕
+	for(var i = 1 ; i <= recordSlot_text.length - 1 ; i++)
+	{
+		if(recordSlot_text[i] != "")
+		{
+			document.getElementById("MoveDownButton"+i).disabled=true;
+			break;
+		}
+	}
+}
+
+function LoadTimeFromRecord(index) // 載入暫存值
+{
+	StartButton.value = "繼續";
+	nowTime = recordSlot_time[index] * 1000 ;
+	pauseTime = nowTime ;
+	time_disp.innerHTML = recordSlot_time[index] + "s" ;
+
+	if(SetAlertButton.value.match(/^取消/g) == "取消" && AlertSetMS*1000 >= nowTime )
+	{
+		AlertSetOn = 1 ; // 開啟鬧鐘
+	}
+	else
+	{
+		AlertSetOn = 0 ; // 關閉鬧鐘
+	}
+	
+	StartButton.focus() ;
+}
+
+function TakeRecordButton_fc() // 記錄
+{
+	recordSlot_time[recordSlot_time.length] = time_disp.innerHTML.slice(0,-1) * 1 ;
+	recordSlot_text[recordSlot_text.length] = recordSlot_time[recordSlot_time.length - 1] + "s";
+	recordSlot_text[recordSlot_text.length - 1] += " <input type='button' value='取值' onClick='LoadTimeFromRecord("+(recordSlot_text.length - 1)+");' />";
+	recordSlot_text[recordSlot_text.length - 1] += " <input id='MoveUpButton"+(recordSlot_text.length - 1)+"' type='button' value='上移' onClick='MoveUp("+(recordSlot_text.length - 1)+");' />";
+	recordSlot_text[recordSlot_text.length - 1] += " <input id='MoveDownButton"+(recordSlot_text.length - 1)+"' type='button' value='下移' onClick='MoveDown("+(recordSlot_text.length - 1)+");' />";
+	recordSlot_text[recordSlot_text.length - 1] += " <input type='button' value='清除' onClick='recordSlot_text["+(recordSlot_text.length - 1)+"]=\"\";displayRecord();' />";
+	recordSlot_text[recordSlot_text.length - 1] += "<br />";
+	displayRecord();
+}
+
+function ClearRecordButton_fc() // 清除全部時間記錄
+{
+	ClearRecordButton.disabled=true;
+	StatsButton.disabled=true;
+	OrderS2LButton.disabled=true;
+	OrderL2SButton.disabled=true;
+	record.innerHTML = "";
+	recordSlot_time = new Array(1);
+	recordSlot_text = new Array(1);
+	recordSlot_text[0] = 0;
+}
+
+function StatsButton_fc() // 統計
+{
+	// 總計秒數
+	var totalRecordTime = 0 ;
+	for(var i = 1 ; i <= recordSlot_text.length - 1 ; i++)
+	{
+		if(recordSlot_text[i] != "")
+		{
+			totalRecordTime += recordSlot_time[i] * 1 ;
+		}
+	}
+	
+	// 平均秒數
+	var averageRecordTime = totalRecordTime / recordSlot_text[0] ;
+	
+	// 最長秒數
+	recordSlot_time[0] = 0 ;
+	var longest = Math.max(...recordSlot_time) ;
+	
+	// 最短秒數
+	recordSlot_time[0] = Infinity ;
+	var shortest = Math.min(...recordSlot_time) ;
+
+	var txt = "總計時間: " + totalRecordTime.toFixed(3) + " s" ;
+	txt += "\n平均時間: " + averageRecordTime.toFixed(3) + " s" ;
+	txt += "\n最長時間: " + longest.toFixed(3) + " s" ;
+	txt += "\n最短時間: " + shortest.toFixed(3) + " s" ;
+	alert( txt ) ;
+}
+
+function OrderS2LButton_fc() // 由小至大排列記錄
+{
+	for(var i = 1 ; i <= recordSlot_text.length - 2 ; i++)
+	{
+		if(recordSlot_text[i] != "") // 確認有目前的行
+		{
+			for(var j = i + 1 ; j <= recordSlot_text.length - 1 ; j++)
+			{
+				if(recordSlot_text[j] != "") // 找上一行
+				{
+					if( recordSlot_time[i] < recordSlot_time[j] )
+					{
+						MoveUp(i);
+						if(i > 1)
+						{
+							i=0;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+function OrderL2SButton_fc() // 由大至小排列記錄
+{
+	for(var i = 1 ; i <= recordSlot_text.length - 2 ; i++)
+	{
+		if(recordSlot_text[i] != "") // 確認有目前的行
+		{
+			for(var j = i + 1 ; j <= recordSlot_text.length - 1 ; j++)
+			{
+				if(recordSlot_text[j] != "") // 找上一行
+				{
+					if( recordSlot_time[i] > recordSlot_time[j] )
+					{
+						MoveUp(i);
+						if(i > 1)
+						{
+							i=0;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+function SetAlertInput_Clean_fc()
+{
+	// 只保留數字與小數點
+	SetAlertInput.value = SetAlertInput.value.replace(/[^0-9.]/g,"");
+
+	// 清除多餘的小數點
+	for(var i = 0 ; i <= SetAlertInput.value.length - 1 ; i ++ )
+	{
+		if(SetAlertInput.value.substr(i,1) == ".")
+		{
+			SetAlertInput.value = SetAlertInput.value.substr(0,i+1) + SetAlertInput.value.substr(i+1,SetAlertInput.value.length-i).replace(/[.]/g,"");
+			break;
+		}
+	}
+
+	// 空 = 0
+	if(SetAlertInput.value == "." || SetAlertInput.value == "")
+	{
+		SetAlertInput.value = 0;
+	}
+
+	// 調整位數為8位
+	if(SetAlertInput.value.length > 8)
+	{
+		SetAlertInput.value = SetAlertInput.value.substr(0,8);
+	}
+
+	// 調整為一般顯示的數值
+	SetAlertInput.value *= 1;
+}
+
+function SetAlertButton_fc()
+{
+	if(SetAlertButton.value == "設置提示")
+	{
+		AlertSetMS = SetAlertInput.value ;
+		SetAlertButton.value = "取消 ( "+AlertSetMS+" 秒 )";
+		if(AlertSetMS * 1000 >= nowTime )
+		{
+			AlertSetOn = 1 ; // 開啟鬧鐘
+		}
+	}
+	else if(SetAlertButton.value.match(/^取消/g) == "取消")
+	{
+		SetAlertButton.value = "設置提示";
+		AlertSetOn = 0;
+	}
+}
+
+function SetAlertInput_filter_fc()
+{
+	// 當按下 Enter
+	if(event.keyCode == 13)
+	{
+		SetAlertButton.value = "設置提示" ;
+		AlertSetOn = 0 ;
+		SetAlertButton_fc() ;
+	}
+
+	// 當按下非數字及小數點
+	if(event.keyCode > 57 || event.keyCode < 48 && event.keyCode != 46)
+	{
+		// 找取當前光標位置
+		if(browserVer.ie)
+		{
+			TextRange_source = document.selection.createRange();
+			TextRange_source.setEndPoint("StartToStart",SetAlertInput.createTextRange());
+			TextRange_save = TextRange_source.text.length;
+		}
+
+		// 只保留數字和小數點
+		setTimeout('SetAlertInput.value = SetAlertInput.value.replace(/[^0-9.]/g,"");TextRangeJump();',0);
+	}
+	// SetAlertInput_SizeTune();
+}
+
+function TextRangeJump() // 還原光標位置
+{
+	if(browserVer.ie)
+	{
+		TextRange_load = document.getElementById("SetAlertInput").createTextRange();
+		TextRange_load.moveStart('character',TextRange_save);
+		TextRange_load.collapse(true);
+		TextRange_load.select();
+	}
+}
+
+StartButton.focus(); // 焦點於開始按鈕
+SetAlertInput.value = 30 ; // 鬧鐘預設秒數
+// SetAlertInput_SizeTune(); // 調整鬧鐘設定框
+
+</script>
+</center>
+</body>
+</html>

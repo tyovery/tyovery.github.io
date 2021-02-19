@@ -1,0 +1,190 @@
+<html lang="zh-Hant-HK">
+<head>
+<title>計分器</title>
+<style type="text/css">
+body
+{
+	background-color: #FFFFFF ;
+	color: #000000 ;
+}
+table
+{
+	text-align: center ;
+	margin-top: -12px ;
+	background-color: #FFFFFF ;
+	color: #000000 ;
+}
+thead tr th
+{
+	position: sticky ;
+	top: 0 ;
+}
+th
+{
+	background-color: white ;
+}
+</style>
+</head>
+<body>
+<center>
+<br /><br />
+<div id="show_table"></div>
+<br /><br />
+<input id="input_players" type="text" />
+<input type="button" value="增加參賽者" onClick="addPlayer();" />
+<br /><br />
+< 分數設定 ><br />
+底分：<input id="set_score_base" type="number" step="1" value="0" /><br />
+加分：<input id="set_score_add" type="number" min="1" max="128" step="1" value="1" /><br />
+扣分：<input id="set_score_minus" type="number" min="1" max="128" step="1" value="1" /><br />
+<br />
+<input type="button" value="移除全部參賽者" onClick="delPlayer(-1);" /><br />
+<br />
+<hr />
+coded by ~tyovery~<br/>
+2021-02
+</center>
+<script>
+var tableHead = ["控制","編號","參賽者","分數","標準分"] ; // 表頭
+var players = [] ; // 參賽者 列表
+var score = [] ; // 參賽者 的 分數
+
+// 統計量
+var sum ; // 加總
+var mean ; // 算術平均值
+var sd ; // 標準差(母體)
+var zScore = [] ; // 標準分
+var fixLen = 6 ; // 準確至幾位小數
+
+function addPlayer()
+{
+	var list = input_players.value.split(",") ;
+	list.forEach( i => i && players.push(i) ) ;
+	renew_table() ; // 更新表格
+}
+
+function delPlayer(who) // 移除參賽者
+{
+	if(~who) // 移除1個參賽者
+	{
+		if( confirm( "是否要移除以下的參賽者？\n" + players[who] ) )
+		{
+			players.splice(who,1) ;
+			score.splice(who,1) ;
+		}
+	}
+	else // 移除全部參賽者
+	{
+		if( confirm("是否要移除全部參賽者？") )
+		{
+			players = [] ;
+			score = [] ;
+		}
+	}
+
+	renew_table() ; // 更新表格
+}
+
+function scoreChange(who,how)
+{
+	if(how**2==1)
+	{
+		score[who] += how * ( ~how ? set_score_add : set_score_minus ).value ;
+	}
+	else
+	{
+		var inputScore = prompt("請輸入指定分數：") ;
+		if(inputScore!=null)
+		{
+			if(inputScore.length>0)
+			{
+				if( isNaN(inputScore) || inputScore**2==Infinity )
+				{
+					alert("輸入錯誤。") ;
+				}
+				else
+				{
+					score[who] = inputScore * 1 ;
+				}
+			}
+			else
+			{
+				alert("甚麼都沒有輸入。") ;
+			}
+		}
+	}
+	renew_table() ;
+}
+
+function renew_table()
+{
+	// 新參賽者 設定底分
+	while(score.length < players.length)
+	{
+		score.push(set_score_base.value*1||0) ;
+	}
+	
+	// 統計 //
+		// 加總
+		sum = 0 ;
+		score.forEach(x=>sum+=x) ;
+		
+		// 平均
+		mean = sum / score.length ;
+		
+		// 標準差
+		sd = 0 ;
+		score.forEach( x => sd += (x-mean)**2 ) ;
+		sd /= score.length ;
+		sd **= 0.5 ;
+		
+		// 標準分
+		score.forEach( (x,i) => zScore[i] = (x-mean)/sd ) ;
+
+	var txt = '<table id="playerTable" border="1px" cellspacing="1px" cellpadding="5px">' ;
+	txt += '<thead><tr>' ;
+	tableHead.forEach( i => txt += '<th>' + i + '</th>' ) ;
+	txt += '</tr></thead>' ;
+
+	txt += '<tbody>' ;
+
+	players.forEach(list);
+	function list(name,id)
+	{
+		txt += '<tr>' ;
+		
+		// 控制
+		txt += '<td>'
+		txt += '<input type="button" value="得分" onClick="scoreChange('+id+',1);" />' ;
+		txt += ' <input type="button" value="扣分" onClick="scoreChange('+id+',-1);" />' ;
+		txt += ' <input type="button" value="指定分數" onClick="scoreChange('+id+',0);" />' ;
+		txt += ' <input type="button" value="移除" onClick="delPlayer('+id+');" />' ;
+		txt += '</td>' ;
+		
+		txt += '<td>'+ (id+1) +'</td>' ;
+		txt += '<td>'+ name +'</td>' ;
+		txt += '<td>'+ score[id] +'</td>' ;
+		txt += '<td>'+ zScore[id].toFixed(fixLen) +'</td>' ;
+		txt += '</tr>' ;
+	}
+
+	txt += '<tr>' ;
+	txt += '<td></td>' ;
+	txt += '<td></td>' ;
+	txt += '<td></td>' ;
+	txt += '<td>&Sigma; = '+sum.toFixed(fixLen)+'</td>' ;
+	txt += '<td>&mu; = '+mean.toFixed(fixLen) ;
+	txt += '<br />&sigma; = '+sd.toFixed(fixLen)+'</td>' ;
+	txt += '</tr>' ;
+
+	txt += '</tbody>' ;
+
+	txt += '</table>' ;
+
+	show_table.innerHTML = txt ;
+}
+
+</script>
+
+</body>
+</html>

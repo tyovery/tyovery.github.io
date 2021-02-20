@@ -1,6 +1,6 @@
 <html lang="zh-Hant-HK">
 <head>
-<title>計分器</title>
+<title>計分器 v1</title>
 <style type="text/css">
 body
 {
@@ -35,8 +35,8 @@ th
 <br /><br />
 < 分數設定 ><br />
 底分：<input id="set_score_base" type="number" step="1" value="0" /><br />
-加分：<input id="set_score_add" type="number" min="1" max="128" step="1" value="1" /><br />
-扣分：<input id="set_score_minus" type="number" min="1" max="128" step="1" value="1" /><br />
+加分：<input id="set_score_add" type="number" min="0" max="128" step="1" value="1" /><br />
+扣分：<input id="set_score_minus" type="number" min="0" max="128" step="1" value="1" /><br />
 <br />
 <input type="button" value="移除全部參賽者" onClick="delPlayer(-1);" /><br />
 <br />
@@ -45,9 +45,27 @@ coded by ~tyovery~<br/>
 2021-02
 </center>
 <script>
-var tableHead = ["控制","編號","參賽者","分數","標準分"] ; // 表頭
-var players = [] ; // 參賽者 列表
+var tableHead = ["操作","編號","參賽者","名次","分數","標準分","勝","敗"] ; // 表頭
+
+// 註解：控制
+tableHead[0] += ' <input type="button" value="?" onClick="alert(help_CTRL);" />' ;
+var help_CTRL = "+ : 得分\n" ;
+help_CTRL += "- : 扣分\n" ;
+help_CTRL += "分 : 指定分數\n" ;
+help_CTRL += "^ : 上移該行\n" ;
+help_CTRL += "v : 下移該行\n" ;
+help_CTRL += "X : 移除該參賽者(須要確認)\n" ;
+
+// 註解：分數
+tableHead[4] += ' <input type="button" value="?" onClick="alert(help_SCORE);" />' ;
+var help_SCORE = "雖然可以使用小數，但建議只用整數。" ;
+
+var players = [] ; // 參賽者 的 名稱
+var playerID = [] ; // 參賽者 的 ID
+var playerID_used = 0 ; // ID 使用到
 var score = [] ; // 參賽者 的 分數
+var rank = [] ; // 參賽者 的 名次
+var get = {win:[],lose:[]} ; // 勝,敗 次數
 
 // 統計量
 var sum ; // 加總
@@ -70,7 +88,10 @@ function delPlayer(who) // 移除參賽者
 		if( confirm( "是否要移除以下的參賽者？\n" + players[who] ) )
 		{
 			players.splice(who,1) ;
+			playerID.splice(who,1) ;
 			score.splice(who,1) ;
+			get.win.splice(who,1) ;
+			get.lose.splice(who,1) ;
 		}
 	}
 	else // 移除全部參賽者
@@ -78,7 +99,11 @@ function delPlayer(who) // 移除參賽者
 		if( confirm("是否要移除全部參賽者？") )
 		{
 			players = [] ;
+			playerID = [] ;
+			playerID_used = 0 ;
 			score = [] ;
+			get.win = [] ;
+			get.lose = [] ;
 		}
 	}
 
@@ -116,12 +141,76 @@ function scoreChange(who,how)
 	renew_table() ;
 }
 
+function moveLine(who,how)
+{
+	// 記錄
+	var index = who+how ; // 他行
+	var name = players[index] ;
+	if( name )
+	{
+		var id = playerID[index] ;
+		var mark = score[index] ;
+		var win = get.win[index] ;
+		var lose = get.lose[index] ;
+
+		// 移動本行
+		players[index] = players[who] ;
+		playerID[index] = playerID[who] ;
+		score[index] = score[who] ;
+		get.win[index] = get.win[who] ;
+		get.lose[index] = get.lose[who] ;
+
+		// 補空行
+		players[who] = name ;
+		playerID[who] = id ;
+		score[who] = mark ;
+		get.win[who] = win ;
+		get.lose[who] = lose ;
+
+		renew_table() ; // 更新表格
+	}
+	else alert("無法移動") ;
+}
+
+function clean_get(which)
+{
+	switch(which)
+	{
+		case "win" :
+			var tag = "勝場次數" ;
+		break ;
+		
+		case "lose" :
+			var tag = "敗場次數" ;
+		break ;
+		
+		default :
+		return false ;
+	}
+
+	if( confirm("是否要把全部 "+tag+" 歸 0 ？") )
+	{
+		get[which].forEach((x,i,a)=>a[i]=0) ;
+		/*
+		for( var x of get[which] )
+		{
+			
+			x = 0 ;
+		}
+		*/
+		renew_table() ; // 更新表格
+	}
+}
+
 function renew_table()
 {
-	// 新參賽者 設定底分
+	// 新參賽者
 	while(score.length < players.length)
 	{
-		score.push(set_score_base.value*1||0) ;
+		playerID.push(++playerID_used) ; // 編號
+		score.push(set_score_base.value*1||0) ; // 底分
+		get.win.push(0) ; // 勝場次數
+		get.lose.push(0) ; // 敗場次數
 	}
 	
 	// 統計 //
@@ -140,6 +229,21 @@ function renew_table()
 		
 		// 標準分
 		score.forEach( (x,i) => zScore[i] = (x-mean)/sd ) ;
+		
+		// 名次
+		var check = [...score] ; // 複製分數
+		var top ; // 目前最高分數
+		var index ; // 指標
+		var rank_order = 1 ; // 名次
+		while( ( top = Math.max(...check) ) > -Infinity )
+		{
+			while( ~( index = check.indexOf(top) ) ) // 尋找同分
+			{
+				rank[index] = rank_order ; // 確定名次
+				check[index] = -Infinity ; // 做死已確定名次的分數
+			}
+			rank_order ++ ;
+		}
 
 	var txt = '<table id="playerTable" border="1px" cellspacing="1px" cellpadding="5px">' ;
 	txt += '<thead><tr>' ;
@@ -148,38 +252,50 @@ function renew_table()
 
 	txt += '<tbody>' ;
 
+	// 中部
 	players.forEach(list);
 	function list(name,id)
 	{
 		txt += '<tr>' ;
-		
+
 		// 控制
 		txt += '<td>'
-		txt += '<input type="button" value="得分" onClick="scoreChange('+id+',1);" />' ;
-		txt += ' <input type="button" value="扣分" onClick="scoreChange('+id+',-1);" />' ;
-		txt += ' <input type="button" value="指定分數" onClick="scoreChange('+id+',0);" />' ;
-		txt += ' <input type="button" value="移除" onClick="delPlayer('+id+');" />' ;
+		txt += '<input type="button" value="+" onClick="get.win['+id+']++;scoreChange('+id+',1);" />' ;
+		txt += ' <input type="button" value="-" onClick="get.lose['+id+']++;scoreChange('+id+',-1);" />' ;
+		txt += ' <input type="button" value="分" onClick="scoreChange('+id+',0);" />' ;
+		txt += ' <input type="button" value="^" onClick="moveLine('+id+',-1);" />' ;
+		txt += ' <input type="button" value="v" onClick="moveLine('+id+',1);" />' ;
+		txt += ' <input type="button" value="X" onClick="delPlayer('+id+');" />' ;
 		txt += '</td>' ;
 		
-		txt += '<td>'+ (id+1) +'</td>' ;
-		txt += '<td>'+ name +'</td>' ;
-		txt += '<td>'+ score[id] +'</td>' ;
-		txt += '<td>'+ zScore[id].toFixed(fixLen) +'</td>' ;
+		txt += '<td>'+ playerID[id] +'</td>' ; // 編號
+		txt += '<td>'+ name +'</td>' ; // 參賽者
+		txt += '<td>'+ rank[id] +'</td>' ; // 名次
+		txt += '<td>'+ score[id] +'</td>' ; // 分數
+		txt += '<td>'+ zScore[id].toFixed(fixLen) +'</td>' ; // 標準分
+		txt += '<td>'+ get.win[id] +'</td>' ; // 分數
+		txt += '<td>'+ get.lose[id] +'</td>' ; // 分數
 		txt += '</tr>' ;
 	}
 
+	// 底部
 	txt += '<tr>' ;
+	txt += '<td></td>' ;
 	txt += '<td></td>' ;
 	txt += '<td></td>' ;
 	txt += '<td></td>' ;
 	txt += '<td>&Sigma; = '+sum.toFixed(fixLen)+'</td>' ;
 	txt += '<td>&mu; = '+mean.toFixed(fixLen) ;
 	txt += '<br />&sigma; = '+sd.toFixed(fixLen)+'</td>' ;
+	txt += '<td><input type="button" value="X" onClick="clean_get(\'win\');" /></td>' ;
+	txt += '<td><input type="button" value="X" onClick="clean_get(\'lose\');" /></td>' ;
 	txt += '</tr>' ;
 
 	txt += '</tbody>' ;
 
 	txt += '</table>' ;
+	
+	txt = txt.replace(/NaN/g,"無法計算");
 
 	show_table.innerHTML = txt ;
 }

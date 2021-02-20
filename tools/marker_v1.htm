@@ -35,8 +35,8 @@ th
 <br /><br />
 < 分數設定 ><br />
 底分：<input id="set_score_base" type="number" step="1" value="0" /><br />
-加分：<input id="set_score_add" type="number" min="0" max="128" step="1" value="1" /><br />
-扣分：<input id="set_score_minus" type="number" min="0" max="128" step="1" value="1" /><br />
+勝利加分：<input id="set_score_add" type="number" min="0" max="128" step="1" value="1" /><br />
+失敗扣分：<input id="set_score_minus" type="number" min="0" max="128" step="1" value="1" /><br />
 <br />
 <input type="button" value="移除全部參賽者" onClick="delPlayer(-1);" /><br />
 <br />
@@ -49,8 +49,8 @@ var tableHead = ["操作","編號","參賽者","名次","分數","標準分","�
 
 // 註解：控制
 tableHead[0] += ' <input type="button" value="?" onClick="alert(help_CTRL);" />' ;
-var help_CTRL = "+ : 得分\n" ;
-help_CTRL += "- : 扣分\n" ;
+var help_CTRL = "+ : 勝利\n" ;
+help_CTRL += "- : 失敗\n" ;
 help_CTRL += "分 : 指定分數\n" ;
 help_CTRL += "^ : 上移該行\n" ;
 help_CTRL += "v : 下移該行\n" ;

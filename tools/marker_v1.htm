@@ -30,6 +30,11 @@ th
 <br /><br />
 <div id="show_table"></div>
 <br /><br />
+<input id="input_teams" type="text" />
+<input type="button" value="增加隊伍" onClick="addTeam();" />
+<input type="button" value="查看現存隊伍" onClick="checkTeams();" />
+<!-- <input type="button" value="移除隊伍" onClick=";" /> -->
+<br /><br />
 <input id="input_players" type="text" />
 <input type="button" value="增加參賽者" onClick="addPlayer();" />
 <br /><br />
@@ -45,24 +50,28 @@ coded by ~tyovery~<br/>
 2021-02
 </center>
 <script>
-var tableHead = ["操作","編號","參賽者","名次","分數","標準分","勝","敗"] ; // 表頭
+var tableHead = ["操作","編號","隊伍","參賽者","名次","分數","標準分","勝","敗"] ; // 表頭
 
 // 註解：控制
 tableHead[0] += ' <input type="button" value="?" onClick="alert(help_CTRL);" />' ;
 var help_CTRL = "+ : 勝利\n" ;
 help_CTRL += "- : 失敗\n" ;
 help_CTRL += "分 : 指定分數\n" ;
+help_CTRL += "隊 : 轉換隊伍\n" ;
 help_CTRL += "^ : 上移該行\n" ;
 help_CTRL += "v : 下移該行\n" ;
+help_CTRL += "原 : 清除戰績\n" ;
 help_CTRL += "X : 移除該參賽者(須要確認)\n" ;
 
 // 註解：分數
 tableHead[4] += ' <input type="button" value="?" onClick="alert(help_SCORE);" />' ;
-var help_SCORE = "雖然可以使用小數，但建議只用整數。" ;
+var help_SCORE = "雖然分數可以使用小數，但建議只用整數。" ;
 
 var players = [] ; // 參賽者 的 名稱
 var playerID = [] ; // 參賽者 的 ID
 var playerID_used = 0 ; // ID 使用到
+var teams = [] ; // 隊伍名稱
+var inTeam = [] ; // 參賽者 的 所屬隊伍
 var score = [] ; // 參賽者 的 分數
 var rank = [] ; // 參賽者 的 名次
 var get = {win:[],lose:[]} ; // 勝,敗 次數
@@ -74,11 +83,27 @@ var sd ; // 標準差(母體)
 var zScore = [] ; // 標準分
 var fixLen = 6 ; // 準確至幾位小數
 
-function addPlayer()
+function addPlayer() // 新增參賽者
 {
-	var list = input_players.value.split(",") ;
+	var list = input_players.value.split(",") ; // 使用者輸入
 	list.forEach( i => i && players.push(i) ) ;
 	renew_table() ; // 更新表格
+}
+
+function addTeam() // 新增隊伍
+{
+	var count = 0 ;
+	var list = input_teams.value.split(",") ; // 使用者輸入
+	list.forEach( i => i && teams.push(i) && count++ ) ;
+	alert("已增加 "+count+" 個隊伍。") ;
+	renew_table() ; // 更新表格
+}
+
+function checkTeams()
+{
+	var txt = "現有隊伍 "+teams.length+" 隊：\n" ;
+	teams.forEach((x,i)=>txt+=i+" : "+x+"\n") ;
+	alert(txt) ;
 }
 
 function delPlayer(who) // 移除參賽者
@@ -110,7 +135,7 @@ function delPlayer(who) // 移除參賽者
 	renew_table() ; // 更新表格
 }
 
-function scoreChange(who,how)
+function scoreChange(who,how) // 改分
 {
 	if(how**2==1)
 	{
@@ -138,7 +163,19 @@ function scoreChange(who,how)
 			}
 		}
 	}
-	renew_table() ;
+	renew_table() ; // 更新表格
+}
+
+function teamChange(who,which) // 轉隊
+{
+	var nowPlayer = players[who] ;
+	var teamList = [] ;
+	teams.forEach((x,i)=>teamList.push(i+" : "+x)) ;
+	var txt = "目前選定的參賽者：\n" + nowPlayer ;
+	txt += "\n\n請選擇要加到的隊伍編號 ( 輸入 -1 離隊 )：\n" + teamList.join("\n") ;
+	var index = prompt(txt) ; // 輸入的隊伍編號
+	~index ? teams[index] && ( inTeam[who] = ~~index ) : inTeam[who] = undefined ;
+	renew_table() ; // 更新表格
 }
 
 function moveLine(who,how)
@@ -149,6 +186,7 @@ function moveLine(who,how)
 	if( name )
 	{
 		var id = playerID[index] ;
+		var team = inTeam[index] ;
 		var mark = score[index] ;
 		var win = get.win[index] ;
 		var lose = get.lose[index] ;
@@ -156,6 +194,7 @@ function moveLine(who,how)
 		// 移動本行
 		players[index] = players[who] ;
 		playerID[index] = playerID[who] ;
+		inTeam[index] = inTeam[who] ;
 		score[index] = score[who] ;
 		get.win[index] = get.win[who] ;
 		get.lose[index] = get.lose[who] ;
@@ -163,6 +202,7 @@ function moveLine(who,how)
 		// 補空行
 		players[who] = name ;
 		playerID[who] = id ;
+		inTeam[who] = team ;
 		score[who] = mark ;
 		get.win[who] = win ;
 		get.lose[who] = lose ;
@@ -199,6 +239,30 @@ function clean_get(which)
 		}
 		*/
 		renew_table() ; // 更新表格
+	}
+}
+
+function resetStatus(who) // 清除戰績
+{
+	if(~who) // 一人
+	{
+		if( confirm("是否要清除以下參賽者的戰績？\n" + players[who] ) )
+		{
+			score[who] = set_score_base.value * 1 || 0 ; // 分數設回底分
+			get.win[who] = 0 ;
+			get.lose[who] = 0 ;
+			renew_table() ; // 更新表格
+		}
+	}
+	else // 全員
+	{
+		if( confirm("是否要清除全部參賽者的戰績？") )
+		{
+			score.forEach( (x,i,a) => a[i] = set_score_base.value * 1 || 0 ) ; // 分數設回底分
+			get.win.forEach((x,i,a)=>a[i]=0) ;
+			get.lose.forEach((x,i,a)=>a[i]=0) ;
+			renew_table() ; // 更新表格
+		}	
 	}
 }
 
@@ -263,12 +327,15 @@ function renew_table()
 		txt += '<input type="button" value="+" onClick="get.win['+id+']++;scoreChange('+id+',1);" />' ;
 		txt += ' <input type="button" value="-" onClick="get.lose['+id+']++;scoreChange('+id+',-1);" />' ;
 		txt += ' <input type="button" value="分" onClick="scoreChange('+id+',0);" />' ;
+		txt += ' <input type="button" value="隊" onClick="teamChange('+id+');" />' ;
 		txt += ' <input type="button" value="^" onClick="moveLine('+id+',-1);" />' ;
 		txt += ' <input type="button" value="v" onClick="moveLine('+id+',1);" />' ;
+		txt += ' <input type="button" value="原" onClick="resetStatus('+id+');" />' ;
 		txt += ' <input type="button" value="X" onClick="delPlayer('+id+');" />' ;
 		txt += '</td>' ;
-		
+
 		txt += '<td>'+ playerID[id] +'</td>' ; // 編號
+		txt += '<td>'+ (teams[inTeam[id]]??'') +'</td>' ; // 所屬隊伍
 		txt += '<td>'+ name +'</td>' ; // 參賽者
 		txt += '<td>'+ rank[id] +'</td>' ; // 名次
 		txt += '<td>'+ score[id] +'</td>' ; // 分數
@@ -280,6 +347,9 @@ function renew_table()
 
 	// 底部
 	txt += '<tr>' ;
+	txt += '<td>' ;
+	txt += '<input type="button" value="原" onClick="resetStatus(-1);" />' ;
+	txt += '</td>' ;
 	txt += '<td></td>' ;
 	txt += '<td></td>' ;
 	txt += '<td></td>' ;

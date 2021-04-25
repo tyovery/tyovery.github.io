@@ -1,0 +1,292 @@
+<html lang="zh-Hant-HK">
+
+<head>
+<meta name="author" content="~tyovery~" />
+<meta charset="big5" / >
+
+<title>動態乘法表 v4.5 by ~tyovery~</title>
+
+<style type="text/css">
+body
+{
+	background-color: #FFFFFF ;
+	color: #000000 ;
+}
+
+font
+{
+	font-size: 14pt ;
+	line-height: 100% ;
+}
+
+td
+{
+	text-align: center ;
+	font-size: 14pt ;
+	color: #000000 ;
+	background-color: #FFFFFF ;
+}
+
+a
+{
+	text-decoration: underline;
+}
+</style>
+
+</head>
+
+<body>
+Coded by ~tyovery~
+<br />Tested on Chrome 90
+<br />2021-04
+
+<center>
+<p style="background-color: #FFFFFF ; color: #007F00 ; font-size: 23pt ; line-height: 0% ;">動態乘法表 v4.5</p>
+版圖大小：<select id="chooseMap" onChange="XnYLimit=+this.options[this.options.selectedIndex].value;MultiplicatorMap_Gen();">
+<option value="9">9 × 9</option>
+<option value="19" selected="true" >19 × 19</option>
+<option value="40">40 × 40</option>
+<option value="49">49 × 49</option>
+<option value="64">64 × 64</option>
+<option value="90">90 × 90</option>
+<option value="130">130 × 130</option>
+<option value="160">160 × 160</option>
+<option value="256">256 × 256</option>
+</select>(<font color="#FF0000">大需時</font>)
+<br />
+
+	<!-- 色塊標籤 Begin -->
+
+<table border=0 cellspacing=0 cellpadding=3 align="center">
+<tr>
+<td><input id="HighLight_Magenta3" type="checkbox" checked="true" onClick="Magenta3n6_Lock();MultiplicatorMap_Gen();" /><font style="background-color: #BF00BF ;" color="#FFFFFF">三角形數</font></td>
+<td><font style="background-color: #BF0000 ;" color="#FFFFFF">三角平方數</font></td>
+<td><input id="HighLight_Yellow" type="checkbox" checked="true" onClick="MultiplicatorMap_Gen();" /><font style="background-color: #BFBF00 ;" color="#000000">平方數</font></td>
+<td><font style="background-color: #00BF00 ;" color="#000000">四進數</font></td>
+<td><input id="HighLight_Cyan" type="checkbox" checked="true" onClick="MultiplicatorMap_Gen();" /><font style="background-color: #00BFBF ;" color="#000000">二進數</font></td>
+<td><input id="HighLight_Blue" type="checkbox" checked="true" onClick="MultiplicatorMap_Gen();" /><font style="background-color: #0000BF ;" color="#FFFFFF">十倍的行列</font></td>
+</tr>
+<tr>
+<td onMouseOver="Magenta3n6_Lock();"><input id="HighLight_Magenta6" type="checkbox" checked="true" disabled="true" onClick="Magenta3n6_Lock();MultiplicatorMap_Gen();" /><font style="background-color: #BF00BF ;" color="#FFFFFF">六角形數</font></td>
+<td><font style="background-color: #BF0000 ;" color="#FFFFFF">六角平方數</font></td>
+<td><a href="javascript:HighLightCheckAll();"><font style="background-color: #FFFFFF ;" color="#000000">全選</font></a></td>
+<td><a href="javascript:HighLightCheckNone();"><font style="background-color: #FFFFFF ;" color="#000000">全消</font></a></td>
+<td><font color="#7F00FF">計算耗時：</font></td>
+<td><div id="GenTimeOutput" style="color: #7F00FF ;">&ltJavaScript&gt;</div></td>
+</tr>
+</table>
+
+	<!-- 色塊標籤 End -->
+
+</center>
+<br />
+
+<div id="MultiplicatorMapOutput"><center>&lt;JavaScript&gt;</center></div>
+<br />
+
+<script type="text/javascript">
+
+var TextToHTML , HighLightCheckAll_change ;
+
+// Settings // Begin
+var XnYLimit = 19 ; // 最大行列數 (多需時)
+// Settings // End
+
+function MultiplicatorMap_Gen() // 產生乘法表 Table
+{
+	/* < Timer Start > */
+	var timerBegin=Date.now() , timerEnd ;
+
+	var xy , quotient2 ; // x 乘 y , 判斷是否 = 2^n
+
+	TextToHTML='<table border="3" cellspacing="0" cellpadding="5" align="center" color="#FF0000">';
+	for(var yy = 0 ; yy <= XnYLimit ; yy++)
+	{
+		if(yy)
+		{	// Y軸刻度
+			TextToHTML+="<tr><td style='background-color: #BFBFBF ;'>"+ yy +"</td>";
+		}
+		else
+		{	// 左上角的乘號
+			TextToHTML+="<tr><td>&#215;</td>";
+		}
+
+		for(var xx = 1 ; xx <= XnYLimit ; xx++ )
+		{
+			if(yy)
+			{
+				xy = yy*xx ; // x 乘 y
+				quotient2 = !( ( Math.log(xy) / Math.LN2 ) % 1 ) ; // 判斷是否 = 2^n
+
+				if( xy==1 ) // 1的混色
+				{
+					if( ( HighLight_Magenta3.checked || HighLight_Magenta6.checked ) && HighLight_Yellow.checked && HighLight_Cyan.checked )
+					{
+						TextToHTML+="<td style='background-color: #000000 ;'><font color='#FFFFFF'>";
+					}
+					else if( ( HighLight_Magenta3.checked || HighLight_Magenta6.checked ) && HighLight_Yellow.checked && HighLight_Cyan.checked==false )
+					{
+						TextToHTML+="<td style='background-color: #BF0000 ;'><font color='#FFFFFF'>";
+					}
+					else if( ( HighLight_Magenta3.checked || HighLight_Magenta6.checked ) && HighLight_Yellow.checked==false && HighLight_Cyan.checked )
+					{
+						TextToHTML+="<td style='background-color: #0000BF ;'><font color='#FFFFFF'>";
+					}
+					else if( ( !HighLight_Magenta3.checked && !HighLight_Magenta6.checked ) && HighLight_Yellow.checked && HighLight_Cyan.checked )
+					{
+						TextToHTML+="<td style='background-color: #00BF00 ;'><font color='#000000'>";
+					}
+					else if( ( HighLight_Magenta3.checked || HighLight_Magenta6.checked ) && !HighLight_Yellow.checked && !HighLight_Cyan.checked )
+					{
+						TextToHTML+="<td style='background-color: #BF00BF ;'><font color='#FFFFFF'>";
+					}
+					else if( ( !HighLight_Magenta3.checked && !HighLight_Magenta6.checked ) && HighLight_Yellow.checked && !HighLight_Cyan.checked )
+					{
+						TextToHTML+="<td style='background-color: #BFBF00 ;'><font color='#000000'>";
+					}
+					else if( ( !HighLight_Magenta3.checked && !HighLight_Magenta6.checked ) && !HighLight_Yellow.checked && HighLight_Cyan.checked )
+					{
+						TextToHTML+="<td style='background-color: #00BFBF ;'><font color='#000000'>";
+					}
+					else
+					{
+						TextToHTML+="<td style='background-color: #FFFFFF ;'><font color='#000000'>";
+					}
+				}
+				else if( HighLight_Magenta6.checked && ( ( Math.sqrt(xy*8+1)-1)/2 % 2 == 1 ) ) // 六角形數染品
+				{
+					if( HighLight_Yellow.checked && !(Math.sqrt(xy)%1) )
+					{
+						TextToHTML+="<td style='background-color: #BF0000 ;'><font color='#FFFFFF'>";
+					}
+					else
+					{
+						TextToHTML+="<td style='background-color: #BF00BF ;'><font color='#FFFFFF'>";
+					}
+				}
+				else if( HighLight_Magenta3.checked && !( ( Math.sqrt(xy*8+1)-1)/2 % 1 ) ) // 三角形數染品
+				{
+					if( HighLight_Yellow.checked && !(Math.sqrt(xy)%1) )
+					{
+						TextToHTML+="<td style='background-color: #BF0000 ;'><font color='#FFFFFF'>";
+					}
+					else
+					{
+						TextToHTML+="<td style='background-color: #BF00BF ;'><font color='#FFFFFF'>";
+					}
+				}
+				else if( HighLight_Yellow.checked && !(Math.sqrt(xy)%1) ) // 平方數染黃
+				{
+					if(HighLight_Cyan.checked && quotient2 )
+					{
+						TextToHTML+="<td style='background-color: #00BF00 ;'><font>";
+					}
+					else
+					{
+						TextToHTML+="<td style='background-color: #BFBF00 ;'><font>";
+					}
+				}
+				else if( HighLight_Cyan.checked && quotient2 ) // 2^n染青
+				{
+					TextToHTML+="<td style='background-color: #00BFBF ;'><font>";
+				}
+				else if( HighLight_Blue.checked && !((yy%10)*(xx%10)) ) // 十倍的行列染藍
+				{
+					TextToHTML+="<td style='background-color: #0000BF ;'><font color='#FFFFFF'>";
+				}
+				else
+				{
+					TextToHTML+="<td><font>";
+				}
+				TextToHTML += yy * xx ; // 相乘
+
+				TextToHTML+="</font></td>";
+			}
+			else
+			{	// X軸刻度
+				TextToHTML+="<td style='background-color: #BFBFBF ;'>"+ xx +"</td>";
+			}
+			
+			xx == XnYLimit && ( TextToHTML += "</tr>" ) ; // 行尾
+		}
+	}
+	TextToHTML+="</table>";
+	
+	// console.log('string length: '+TextToHTML.length) ;
+
+	/* < Timer Stop > */
+	timerEnd = Date.now() ;
+	GenTimeOutput.innerHTML = (timerEnd-timerBegin)+' ms';
+
+	MultiplicatorMapOutput.innerHTML = TextToHTML ;
+}
+
+function chooseMap_toDefault()
+{
+	chooseMap.options[1].selected = true ;
+}
+
+function HighLightCheckAll() // 全選
+{
+	HighLightCheckAll_change = false ;
+	HighLight_Magenta3.checked || ( HighLight_Magenta3.checked=true , HighLightCheckAll_change = true ) ;
+	HighLight_Magenta6.checked || ( HighLight_Magenta6.checked=true , HighLightCheckAll_change = true ) ;
+	HighLight_Yellow.checked || ( HighLight_Yellow.checked=true , HighLightCheckAll_change = true ) ;
+	HighLight_Cyan.checked || ( HighLight_Cyan.checked=true , HighLightCheckAll_change = true ) ;
+	HighLight_Blue.checked || ( HighLight_Blue.checked=true , HighLightCheckAll_change = true ) ;
+
+	HighLight_Magenta6.disabled = true ; // 禁用正六的勾
+
+	if(HighLightCheckAll_change) // 有變更時才重畫
+	{
+		MultiplicatorMap_Gen();
+	}
+	else
+	{
+		GenTimeOutput.innerHTML = '0 ms' ;
+	}
+}
+
+function HighLightCheckNone() // 全消
+{
+	HighLightCheckAll_change = false ;
+	HighLight_Magenta3.checked && ( HighLight_Magenta3.checked=false , HighLightCheckAll_change = true ) ;
+	HighLight_Magenta6.checked && ( HighLight_Magenta6.checked=false , HighLightCheckAll_change = true ) ;
+	HighLight_Yellow.checked && ( HighLight_Yellow.checked=false , HighLightCheckAll_change = true ) ;
+	HighLight_Cyan.checked && ( HighLight_Cyan.checked=false , HighLightCheckAll_change = true ) ;
+	HighLight_Blue.checked && ( HighLight_Blue.checked=false , HighLightCheckAll_change = true ) ;
+
+	HighLight_Magenta6.disabled = false ; // 開通正六的勾
+
+	if(HighLightCheckAll_change) // 有變更時才重畫
+	{
+		MultiplicatorMap_Gen();
+	}
+	else
+	{
+		GenTimeOutput.innerHTML = '0 ms' ;
+	}
+}
+
+function Magenta3n6_Lock() // 三角形數 與 六角形數 的勾 的聯動
+{
+	if(HighLight_Magenta3.checked) // 若 勾選 三角形數
+	{
+		HighLight_Magenta6.checked = true ; // 勾選 六角形數
+		HighLight_Magenta6.disabled = true ; // 禁用 六角形數 的勾
+	}
+	else // 若 取消勾選 三角形數
+	{
+		HighLight_Magenta6.disabled = false ; // 開通 六角形數 的勾
+	}
+}
+
+chooseMap_toDefault();
+MultiplicatorMap_Gen();
+
+</script>
+
+
+</body>
+
+</html>

@@ -13,10 +13,16 @@ body
 	color: #000000 ;
 }
 
-font
+thead tr th
 {
-	font-size: 14pt ;
-	line-height: 100% ;
+	position: sticky ;
+	top: 0 ;
+	left: 0 ;
+}
+
+th
+{
+	background-color: #BFBFBF ;
 }
 
 td
@@ -25,6 +31,12 @@ td
 	font-size: 14pt ;
 	color: #000000 ;
 	background-color: #FFFFFF ;
+}
+
+font
+{
+	font-size: 14pt ;
+	line-height: 100% ;
 }
 
 a
@@ -104,11 +116,11 @@ function MultiplicatorMap_Gen() // 產生乘法表 Table
 	{
 		if(yy)
 		{	// Y軸刻度
-			TextToHTML+="<tr><td style='background-color: #BFBFBF ;'>"+ yy +"</td>";
+			TextToHTML+="<tr><th>"+ yy +"</th>";
 		}
 		else
 		{	// 左上角的乘號
-			TextToHTML+="<tr><td>&#215;</td>";
+			TextToHTML+="<thead><tr><th style='background-color: #FFFFFF ;'>&#215;</th>";
 		}
 
 		for(var xx = 1 ; xx <= XnYLimit ; xx++ )
@@ -204,7 +216,7 @@ function MultiplicatorMap_Gen() // 產生乘法表 Table
 			}
 			else
 			{	// X軸刻度
-				TextToHTML+="<td style='background-color: #BFBFBF ;'>"+ xx +"</td>";
+				TextToHTML += '<th>' + xx + '</th>' ;
 			}
 			
 			xx == XnYLimit && ( TextToHTML += "</tr>" ) ; // 行尾

@@ -46,10 +46,11 @@ var mean_iq ; // 四分平均數
 var min , max , mid_range , range_half=[] , range , range_c , range_b , iqr , qd  ;
 // 最小值,最大值,中程數,半距,全距,全距係數,平均間距,四分位距,四分位差
 
-var freq_show_dir = 0 , freq_mean , freq_sd , freq_cv ;
-// 頻數 顯示方向 (0=正 ; 1=反) , 頻數 平均值 , 頻數 標準差 , 頻數 變異係數
+var freq_show_dir = 1 , freqSum_show_dir = 1 , freq_mean , freq_sd , freq_cv ;
+// 頻數 顯示方向 (1正 0反) , 累積頻數 顯示方向(1正 0反) , 頻數 平均值 , 頻數 標準差 , 頻數 變異係數
 
-var prop_show_dir = 0 ; // 累積比例 顯示方向 (0=正 ; 1=反)
+var prop_show_dir = 1 , propSum_show_dir = 1 ;
+// 比例 顯示方向 (1正 0反) , 累積比例 顯示方向 (1正 0反)
 
 // 單次機率估計
 var firstHit_mean , firstHit_median , firstHit_mode , firstHit_mean_geo , firstHit_mean_har ;
@@ -920,22 +921,50 @@ function inputSub(parameter) // 處理&分析 dataset
 	txt2htm += '<input type="button" value="2" onClick="data_show_change(this.value);" />'; // 2進位制
 	txt2htm += '<input type="button" value="8" onClick="data_show_change(this.value);" />'; // 8進位制
 	txt2htm += '</th>';
-	if(freq_show_dir != 1)
+	if(freq_show_dir) // 正
 	{
 		txt2htm += '<th>y<br />頻數<br />';
 	}
-	else
+	else // 反
 	{
 		txt2htm += '<th>'+(dataSet_sample.checked?'n':'N')+'-y<br />反頻數<br />';
 	}
-	txt2htm += '<input type="button" value="正" onClick="freq_show_dir=0;inputSub(\'stay\');" />' ;
-	txt2htm += '<input type="button" value="反" onClick="freq_show_dir=1;inputSub(\'stay\');" />' ;
+	txt2htm += '<input type="button" value="正" onClick="freq_show_dir=1;inputSub(\'stay\');" />' ;
+	txt2htm += '<input type="button" value="反" onClick="freq_show_dir=0;inputSub(\'stay\');" />' ;
 	txt2htm += '</th>';
-	txt2htm += '<th>&#931;y<br />累積頻數</th>';
-	txt2htm += '<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />比例</th>';
-	txt2htm += '<th>&#931;y/'+(dataSet_sample.checked?'n':'N')+'<br />累積比例<br />';
-	txt2htm += '<input type="button" value="正" onClick="prop_show_dir=0;inputSub(\'stay\');" />' ;
-	txt2htm += '<input type="button" value="反" onClick="prop_show_dir=1;inputSub(\'stay\');" />' ;
+	if(freqSum_show_dir) // 正
+	{
+		txt2htm += '<th>&#931;y<br />累積頻數<br />';
+	}
+	else // 反
+	{
+		txt2htm += '<th>'+(dataSet_sample.checked?'n':'N')+'-&#931;y<br />反累積頻數<br />';
+	}
+	txt2htm += '<input type="button" value="正" onClick="freqSum_show_dir=1;inputSub(\'stay\');" />' ;
+	txt2htm += '<input type="button" value="反" onClick="freqSum_show_dir=0;inputSub(\'stay\');" />' ;
+	txt2htm += '</th>' ;
+	if(prop_show_dir) // 正
+	{
+		txt2htm += '<th>y/'+(dataSet_sample.checked?'n':'N')+'<br />比例<br />';
+	}
+	else // 反
+	{
+		txt2htm += '<th>1-y/'+(dataSet_sample.checked?'n':'N')+'<br />反比例<br />';
+	}
+	
+	txt2htm += '<input type="button" value="正" onClick="prop_show_dir=1;inputSub(\'stay\');" />' ;
+	txt2htm += '<input type="button" value="反" onClick="prop_show_dir=0;inputSub(\'stay\');" />' ;
+	txt2htm += '</th>' ;
+	if(propSum_show_dir) // 正
+	{
+		txt2htm += '<th>&#931;y/'+(dataSet_sample.checked?'n':'N')+'<br />累積比例<br />';
+	}
+	else // 反
+	{
+		txt2htm += '<th>1-&#931;y/'+(dataSet_sample.checked?'n':'N')+'<br />反累積比例<br />';
+	}
+	txt2htm += '<input type="button" value="正" onClick="propSum_show_dir=1;inputSub(\'stay\');" />' ;
+	txt2htm += '<input type="button" value="反" onClick="propSum_show_dir=0;inputSub(\'stay\');" />' ;
 	txt2htm += '</th>' ;
 	txt2htm += '<th>xy<br />加權</th>';
 	txt2htm += '<th>'+(dataSet_sample.checked?'x-x&#772;':'x-&mu;')+'<br />離差</th>';
@@ -1034,17 +1063,25 @@ function inputSub(parameter) // 處理&分析 dataset
 		
 		// 頻數(y)
 		txt2htm += poplist[k][1]==mode[1] ? '<td style="background-color: #FF3F00;">' : '<td>' ;
-		txt2htm += ( freq_show_dir!=1 ? poplist[k][1] : size-poplist[k][1]) + '</td>' ;
+		txt2htm += ( freq_show_dir ? poplist[k][1] : size-poplist[k][1]) + '</td>' ;
 		
 		// 累積頻數
-		txt2htm += '<td>'+poplist[k][2]+'</td>';
+		var freqSum_inv = k ? size - poplist[k-1][2] : size ; // 反累積頻數
+		txt2htm += '<td>'+( freqSum_show_dir ? poplist[k][2] : freqSum_inv )+'</td>';
 		
 		// 比例
-		prop = poplist[k][1]/size ;
+		if(prop_show_dir) // 正向
+		{
+			prop = poplist[k][1]/size ;
+		}
+		else // 反向
+		{
+			prop = 1-poplist[k][1]/size ;
+		}
 		txt2htm += (poplist[k][1]==mode[1]?'<td style="background-color: #FF3F00;">':'<td>')+(prop*100).toFixed(2)+'%</td>';
 
 		// 累積比例
-		if( prop_show_dir != 1 ) // 正向
+		if( propSum_show_dir ) // 正向
 		{
 			propSum = ( poplist[k][2] / size * 100 ).toFixed(2) ;
 		}

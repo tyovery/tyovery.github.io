@@ -36,6 +36,7 @@ var pop = [] , poplist = [] ; // data set , data set 表格
 
 var size , sum , mean , mean_geo , mean_har , dev2sum , vari , sd , md , mode , cv , se;
 // 樣本數,加總,期望值,幾何平均數,調和平均數,差方和,變異數,標準差,平均差,眾數,變異係數,標準誤
+var mean_L , mean_R ; // 平均值前後數據佔比
 var mean_fix , dev2sum_fix , sd_fix , se_fix ; // 約數
 var fix_d = 6 ; // 約數小數位
 
@@ -1187,6 +1188,36 @@ function inputSub(parameter) // 處理&分析 dataset
 	help_cenTen += "然而對於較平均的分布，不是很好的參考。" ;
 	DisplayArea.innerHTML += ' <input type="button" value="?" onClick="alert(help_cenTen);"/><br />' ;
 	DisplayArea.innerHTML += "期望值 / 算術平均數 ( &mu; / x&#772; / EV / Mean )：" + mean + "<br />" ;
+
+	// 計算 算術平均數 的左右數據佔比
+	if(poplist.length>=2)
+	{
+		var chk ;
+		mean_L = undefined ;
+		for(var i in poplist)
+		{
+			chk = + poplist[i][3].toFixed(6) ; // 檢查離差 (準至6位小數)
+			if( chk >= 0 ) // 找到 離差 >= 0
+			{
+				mean_L ?? ( mean_L = ( ~~i ? poplist[i-1][2] / size : 0 ) ) ;
+				if(chk) // 離差 > 0
+				{
+					mean_R = 1 - poplist[i-1][2] / size ;
+					mean_R = ( mean_R && (mean_R*100) ) + ' %' ; // 換為 % 顯示
+					break ;
+				}
+			}
+		}
+		mean_L = ( mean_L && (mean_L*100) ) + ' %' ; // 換為 % 顯示
+	}
+	else
+	{
+		mean_L = ' - ' ;
+		mean_R = ' - ' ;
+	}
+
+	DisplayArea.innerHTML += '小於 算術平均數 的數據佔比：' + mean_L + '<br />' ;
+	DisplayArea.innerHTML += '大於 算術平均數 的數據佔比：' + mean_R + '<br />' ;
 	DisplayArea.innerHTML += "<span style='color: #00AF3F;'>中位數 ( Median )</span>："+median+"<br />" ;
 	DisplayArea.innerHTML += "<span style='color: #FF3F00;'>眾數 ( Mode )</span>：" ;
 	if((mode[1]==1 && mode[0].length>10)) // 太多時不顯示眾數

@@ -1,0 +1,246 @@
+<html lang="zh-Hant-HK">
+<head>
+<title>色碼提取</title>
+<style>
+body
+{
+	background-color: #333 ;
+	color: #fff ;
+}
+</style>
+</head>
+<body>
+<center>
+<br /><br />
+<input id="lockXY" type="checkbox" checked /> 鎖定 色相多少 與 亮度多少
+<br />
+色相多少: <input id="setX" type="number" value="64" min="1" step="1" max="256" onchange="changeSetting(0,this.value);" />
+<br />
+亮度多少: <input id="setY" type="number" value="64" min="1" step="1" max="256" onchange="changeSetting(1,this.value);" />
+<br />
+版圖大小: <input type="number" value="512" min="64" step="4" max="512" onchange="mapSize=this.value;gen(sideW,sideH,mapSize);" />
+
+<h3>點擊複製色碼</h3>
+
+<div id="show_code"></div>
+當前 Color Code: <span id="show_current"></span>
+<br /><br />
+<div id="show_block"></div>
+<hr />
+Coded by ~tyovery~<br />2022-01
+</center>
+
+<script>
+
+let dev = false ; // 開發者模式
+let map = document.getElementById('show_block') ; // 色塊地圖
+let msg = document.getElementById('show_code') ; // 輸出信息
+let curr = document.getElementById('show_current') ; // 當前 Color Code
+let colorCode ; // 色彩碼
+let sideW = 0x40 ; // 邊長 Width (一行有多少格)
+let sideH = 0x40 ; // 邊長 Hight (有多少行)
+let mapSize = 0x200 ; // 版圖大小
+let colorBlockSizeW = 16 ; // 一個色格的邊長 X
+let colorBlockSizeH = 16 ; // 一個色格的邊長 Y
+let factor = [3,5,15,17,51,85,255] ; // 255 的因數(除了1)
+
+
+function gen(sideW=0x40,sideH=0x40,mapSize=0x200) // 產生 color blocks
+{
+	// reset
+	map.innerHTML = '' ;
+	dev && console.clear() ;
+	
+	// 調整 參數
+	mapSize > 0x200 && ( mapSize = 0x200 ) ;
+	let compare = Math.min( 0x100 , mapSize ) ; // side上限為256
+	sideW > compare && ( sideW = compare ) ;
+	sideH > compare && ( sideH = compare ) ;
+	colorBlockSizeW = mapSize / sideW ; // 自動調整色格大小 X
+	colorBlockSizeH = mapSize / sideH ; // 自動調整色格大小 Y
+
+	let r , g , b ; // 紅,綠,藍 分量
+	let rateW = 0x5fa / sideW ; // 轉換率
+	let rateH = 0x1ff / sideH ; // 轉換率
+	for(let y = 0 ; y < sideH ; ++y ) // 0x1ff
+	{
+		let yy = y * rateH ; // 轉換的y
+		for(let x = 0 ; x < sideW ; ++x ) // 0x5fa
+		{
+			let xx = x * rateW ; // 轉換的x
+			if ( xx < 0x100 ) // 紅~黃
+			{
+				r = 0xff ;
+				g = xx ;
+				b = 0 ;
+			}
+			else if( xx < 0x1ff ) // 黃~綠
+			{
+				r = 0x1fe - xx ;
+				g = 0xff ;
+				b = 0 ;
+			}
+			else if( xx < 0x2fe ) // 綠~青
+			{
+				r = 0 ;
+				g = 0xff ;
+				b = xx - 0x1fe ;
+			}
+			else if( xx < 0x3fd ) // 青~藍
+			{
+				r = 0 ;
+				g = 0x3fc - xx ;
+				b = 0xff ;
+			}
+			else if( xx < 0x4fc ) // 藍~品
+			{
+				r = xx - 0x3fc ;
+				g = 0 ;
+				b = 0xff ;
+			}
+			else // 品~紅
+			{
+				r = 0xff ;
+				g = 0 ;
+				b = 0x5fa - xx ;
+			}
+
+			/*
+			if ( x < 0x100 ) // r~g
+			{
+				r = 0xff - x ;
+				g = x ;
+				b = 0 ;
+			}
+			else if ( x < 0x1ff ) // g~b
+			{
+				r = 0 ;
+				g = 0x1fe - x ;
+				b = x - 0xff ;
+			}
+			else // b~r
+			{
+				r = x - 0x1fe ;
+				g = 0 ;
+				b = 0x2fd - x ;
+			}
+			*/
+
+			// 調整亮度(按比例)
+			if( yy <= 0xff ) // 上段
+			{
+				let rateDark = yy / 0xff ; 
+				r *= rateDark ;
+				g *= rateDark ;
+				b *= rateDark ;
+			}
+			else // 下段
+			{
+				r =  r + ( yy - 0xff ) * ( 0xff - r ) / 0xff  ;
+				g =  g + ( yy - 0xff ) * ( 0xff - g ) / 0xff  ;
+				b =  b + ( yy - 0xff ) * ( 0xff - b ) / 0xff  ;
+			}
+			
+			// 整數化
+			r = Math.round(r) ;
+			g = Math.round(g) ;
+			b = Math.round(b) ;
+			
+			/*
+			r += y - 0xff ;
+			g += y - 0xff ;
+			b += y - 0xff ;
+			*/
+
+			/*
+			// 調整下限
+			r < 0 && ( r = 0 ) ;
+			g < 0 && ( g = 0 ) ;
+			b < 0 && ( b = 0 ) ;
+			
+			// 調整上限
+			r > 0xff && ( r = 0xff ) ;
+			g > 0xff && ( g = 0xff ) ;
+			b > 0xff && ( b = 0xff ) ;
+			*/
+			
+			/*
+			// 超出上限時轉移給另外2個元色
+			r > 0xff && ( g = ~~((r-0xff)) , b = ~~((r-0xff)) , r = 0xff ) ;
+			g > 0xff && ( r = ~~((g-0xff)) , b = ~~((g-0xff)) , g = 0xff ) ;
+			b > 0xff && ( r = ~~((b-0xff)) , g = ~~((b-0xff)) , b = 0xff ) ;
+			*/
+			/*
+			if ( x < 0x100 ) // r~g
+			{
+				r > 0xff && ( b = r-0xff , r = 0xff ) ;
+				g > 0xff && ( b = g-0xff , g = 0xff ) ;
+			}
+			else if ( x < 0x1ff ) // g~b
+			{
+				g > 0xff && ( r = g-0xff , g = 0xff ) ;
+				b > 0xff && ( r = b-0xff , b = 0xff ) ;
+			}
+			else // b~r
+			{
+				b > 0xff && ( g = b-0xff , b = 0xff ) ;
+				r > 0xff && ( g = r-0xff , r = 0xff ) ;
+			}
+			*/
+
+			colorCode = ( r << 16 ) + ( g << 8 ) + b ; 
+			colorCode = colorCode.toString(16).padStart(6,'0') ;
+			dev && console.log(r , g , b , colorCode ) ;
+		
+		
+			let colorCodeBig = '#' + colorCode.toUpperCase() ;
+			dev && console.log(`color: ${colorCode.toUpperCase()}`) ;
+
+			let span = document.createElement('span') ;
+			span.style.display = 'inline-block' ;
+			span.style.width = colorBlockSizeW ;
+			span.style.height = colorBlockSizeH ;
+			span.style.background = '#' + colorCode ;
+			span.title = colorCodeBig ;
+			span.setAttribute('onclick',`copyCode('${colorCodeBig}')`) ;
+			span.setAttribute('onmouseover',`curr.innerHTML = '${colorCodeBig}'`) ;
+			map.appendChild(span);
+		}
+		map.appendChild( document.createElement('br') ) ; // 換行
+	}
+}
+
+function copyCode(code='') // 複製 colorCode 到 clipboard
+{
+	navigator.clipboard.writeText(code) ; // 複製
+	msg.innerHTML = `已複製 ${code} 到剪貼簿` ;
+}
+
+function changeSetting(who,how) // 改變 色相多少 or 亮度多少 時
+{
+	how = ~~how ;
+	if(document.getElementById('lockXY').checked) // 鎖定了
+	{
+		if(who)
+		{
+			document.getElementById('setX').value = how ;
+		}
+		else
+		{
+			document.getElementById('setY').value = how ;
+		}
+		sideW = sideH = how ;
+	}
+	else // 沒有鎖定
+	{
+		who ? sideH = how : sideW = how ;
+	}
+	gen(sideW,sideH,mapSize) ;
+}
+
+gen();
+
+</script>
+
+</body>
+</html>

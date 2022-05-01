@@ -2,7 +2,9 @@
 <head>
 <title>數字華容道</title>
 <style>
-td{text-align: center;} // 置中
+td{
+	text-align: center ;
+}
 </style>
 </head>
 <body bgcolor="#fff" >
@@ -10,7 +12,7 @@ td{text-align: center;} // 置中
 <center>
 <br /><h1>數字華容道</h1>
 
-直：
+高度：
 <select id="setY" disabled >
 	<script>
 	for(var n = 2 ; n <= 10 ; n ++)
@@ -19,7 +21,7 @@ td{text-align: center;} // 置中
 	}
 	</script>
 </select>
-　橫：
+　闊度：
 <select id="setX" onChange="if(squareMap_box.checked)setY.value=setX.value;">
 	<script>
 	for(var n = 3 ; n <= 10 ; n ++)

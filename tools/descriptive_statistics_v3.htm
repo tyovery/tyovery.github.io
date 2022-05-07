@@ -617,7 +617,11 @@ function inputSub(parameter) // 處理&分析 dataset
 		}
 		mode[2] /= mode[0].length ;
 	}
-	else mode = [["-"],0,"-"] ;
+	else
+	{
+		mode = [["-"],0,"-"] ;
+		majority = '-' ;
+	}
 	
 	// 最小值
 	if(pop.length>0) min = pop[0];

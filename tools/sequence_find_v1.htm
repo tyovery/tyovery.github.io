@@ -1,0 +1,124 @@
+<html lang="zh-Hant-HK" >
+<head>
+<meta charset="utf-8" />
+<title>種子插值</title>
+</head>
+<body >
+<center>
+<br /><br />
+
+<h2>說明：輸入頭幾個數，以最簡多項式找規律。</h2>
+<br /><br />
+
+頭幾個數(以逗號分隔)：
+<input id="input_list" type="text" value="3,8,15,25" />
+<br /><br />
+
+輸入值的範圍(由0開始)：
+<input id="input_min" type="number" step="1" value="0" />
+至
+<input id="input_max" type="number" step="1" value="10" />
+<br /><br />
+<input type="button" value="計算" onclick="startCal();" />
+<br /><br />
+
+輸出值：
+<output id="show"></output>
+
+
+<br /><br />
+
+<br />
+
+</center>
+
+<script>
+let timerBegin = Date.now() , timerEnd ;
+// timer
+
+// code begin here
+
+function cal( s = [] , x = 0 ) // s: 各階差分首項(seed) x: 輸入值
+{
+	if(!s.length) return ;
+
+	let sum = s[0] ;
+	let p = 1 ; // nCr 的分子
+	let q = 1 ; // nCr 的分母
+
+	for(let i = 1 ; i < s.length ; ++i)
+	{
+		p *= x + 1 - i ; // 改變 nCr 的分子
+		q *= i ; // 改變 nCr 的分母
+		sum += s[i] * p / q ;
+	}
+	
+	return sum ;
+}
+
+function startCal() // 按下計算按鈕
+{
+	// 計時器
+	let timeout = Date.now() ;
+	
+	// 算得 seed
+	let list = document.getElementById('input_list').value.split(',') ; // 輸入的頭幾個數
+	let seed = [list[0]*1] ; // 各階差分首項
+
+	let a = [...list] , b = [] ;
+	for(let i = 1 ; i < list.length ; ++i)
+	{
+		i>1 && ( a = [...b] , b = [] ) ;
+		
+		while(a.length>1)
+		{
+			b.push( a[1] - a[0] ) ;
+			a.shift() ;
+		}
+		seed.push( b[0] ) ;
+	}
+
+	// console.log(seed) ;
+
+	// 計算函數值並輸出
+	let min = ~~document.getElementById('input_min').value ;
+	let max = ~~document.getElementById('input_max').value ;
+	
+	let ans = [] ; // 輸出值
+	
+	for(let x = min ; x <= max ; ++x )
+	{
+		ans.push( cal(seed,x) ) ; // 計算並增加 輸出值
+		
+		console.log( Date.now() - timeout ) ;
+		if( Date.now() - timeout > 1000 )
+		{
+			ans.push('[timeout]') ;
+			break ;
+		}
+	}
+	
+	document.getElementById('show').innerHTML = ans.join(' , ') ;
+}
+
+
+
+
+// code End here
+</script>
+
+<center>
+<br />
+<hr />
+Coded by ~tyovery~<br />2022-07
+</center>
+
+<script>
+// timer
+timerEnd=Date.now();
+document.write('<p style="font-size: 12px;">Load Time: '+(timerEnd-timerBegin)+'ms</p>');
+// timer
+</script>
+
+</body>
+</html>

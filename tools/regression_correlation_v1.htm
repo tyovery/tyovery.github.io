@@ -58,7 +58,7 @@ var season = 2 , average_moving ; // 多少期為一季 , 移動平均
 var season_hotList = [2,3,4,5,6,7,,12,13,28,30,52,,365,10,100] ; // 常用期數
 
 var x_title = "" , y_title = "" ;
-var fixLength = 6 ; // 準確至幾位少數
+var fixLength = 6 ; // 準確至幾位小數
 
 function keyPress()
 {
@@ -603,7 +603,7 @@ function est_btn(pow)
 			}
 			
 			var txt2alert = pow + " 次估計：\n" ;
-			txt2alert += "x = " + x + "\ny = " + y +"\n(準確至 "+len+" 位少數)\n" ;
+			txt2alert += "x = " + x + "\ny = " + y +"\n(準確至 "+len+" 位小數)\n" ;
 			
 			if(pow==1)
 			{

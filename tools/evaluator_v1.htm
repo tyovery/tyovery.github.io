@@ -1,0 +1,544 @@
+<html lang="zh-Hant-HK" >
+<head>
+<meta charset="utf-8" />
+<title>評分系統</title>
+<style>
+table
+{
+	text-align: center ;
+}
+</style>
+</head>
+<body>
+<center>
+<br /><br />
+
+<h3><div id="show_item"></div></h3>
+
+<table border="0" cellspacing="0" cellpadding="10" >
+<tr>
+<!-- 左 -->
+<td>
+類型<br />
+<select id="type_list" size="10" >
+</select>
+
+<br />
+<br /><input type="button" value="新增類型" onclick="addNewType();" />
+<br /><input type="button" value="改名" onclick="renameTpye();" />
+<br /><input type="button" value="刪除類型" onclick="deleteType();" />
+
+</td>
+<td>
+項目<br />
+<select id="item_list" size="10" onchange="startNew(this.value);" onclick="startNew(this.value);">
+</select>
+
+<br />
+<br /><input type="button" value="新增項目" onclick="addNewItem();" />
+<br /><input type="button" value="改名" onclick="renameItem();" />
+<br /><input type="button" value="撤回最新一次評分" onclick="deleteLastData();" />
+<br /><input type="button" value="清除評分數據" onclick="clearData();" />
+<br /><input type="button" value="刪除項目" onclick="deleteItem();" />
+
+</td>
+<!-- 中 -->
+<td>
+<output id="show_score"></output><br />
+&#128078;<input id="input_score" type="range" min="-10" max="10" value="0" step="1" oninput="scoreChange();" />&#128077;
+<br />
+
+<br />
+<output id="show_type"></output><br />
+類型：<input id="input_type" type="range" min="0" max="1" value="0" step="1" oninput="typeChange();" />
+<br />
+
+<br />
+<input type="button" value="評分" onclick="addData();" />
+<br />
+
+<br />
+<output id="show_statis"></output>
+<br />
+
+</td>
+<!-- 右 -->
+<td>
+準確至幾位小數：<br />
+<input type="number" min="0" max="12" step="1" value="3" onchange="fixLen=~~this.value;" />
+
+<br /><br />
+<input type="button" value="匯出" onclick="exportData();" />
+<input type="button" value="匯入" onclick="importData();" />
+<br />
+<textarea id="import_area" style="height: 150px; width: 250px;"></textarea>
+
+</td>
+</tr>
+</table>
+
+
+<br /><br />
+
+<br />
+
+</center>
+
+<script>
+let timerBegin = Date.now() , timerEnd ;
+// timer
+
+// code begin here
+
+let item = [] ; // 項目
+let score = [] ; // 分數
+let type = [] ; // 類型
+let typeName = ['未分類'] ; // 類型名稱
+let itemIndex = -1 ; // 當前的項目索引
+let mean = [] ; // 平均值
+let sd = [] ; // 標準差
+let type_mode = [] ; // 類型的眾數
+let fixLen = 3 ; // 準確至幾位小數
+
+const item_o = document.getElementById('show_item') ;
+const score_o = document.getElementById('show_score') ;
+const score_i = document.getElementById('input_score') ;
+const type_o = document.getElementById('show_type') ;
+const type_i = document.getElementById('input_type') ;
+const itemList_s = document.getElementById('item_list') ; // 項目列表
+const typeList_s = document.getElementById('type_list') ; // 類型列表
+const importZone = document.getElementById('import_area') ; // 匯入/匯出 框
+
+// 預設 類型 與 項目
+// typeName = ['未定','寧靜','憂傷','激動','活潑'] ; // 類型名稱
+// item = 'ABCDEFG'.split('') ; // 項目
+
+// 分配每個 項目 的 分數,類型 的空位
+for(let i = 0 ; i < item.length ; ++i )
+{
+	score[i] = [] ;
+	type[i] = [] ;
+}
+
+// 初始化
+type_i.max = typeName.length - 1 ; // 調整類型輸入條
+score_o.value = 0 ; // 顯示最初的 分數
+type_o.innerHTML = '<b>' + typeName[0] + '</b>' ; // 顯示最初的 類型名稱 ( 「未定」類型 )
+renewTypeList() ; // 更新顯示 類型列表
+renewItemList() ; // 更新顯示 項目列表
+
+function startNew(inputIndex) // 開始對項目 評測
+{
+	// itemIndex = ~~ ( Math.random() * item.length ) ; // 隨機抽出一個項目
+	itemIndex = ~~inputIndex ; // 項目 index
+	
+	item_o.innerHTML = item[itemIndex] ?? '' ; // 顯示項目名稱
+	
+	cal() ; // 計算統計值
+	
+	// 復位(根據已有數據)
+	let currentMean = Math.round( mean[itemIndex] ?? 0 ) ; // 當前分數平均值
+	let currentMode = ~~type_mode[itemIndex] ; // 當前類型眾數 (復原唯一眾數)
+	score_i.value = currentMean ; // 分數歸零 (輸入條)
+	score_o.value = currentMean ; // 分數歸零 (顯示數字)
+	type_i.value = currentMode ; // 類型輸入條
+	typeChange() ; // 顯示類型名稱
+	
+	// 復位(歸零)
+	/*
+	score_i.value = 0 ; // 分數歸零 (輸入條)
+	score_o.value = 0 ; // 分數歸零 (顯示數字)
+	type_i.value = 0 ; // 類型輸入條
+	typeChange() ; // 顯示類型名稱
+	*/
+
+	
+	// 顯示已存在的評分數據
+	let type_text = [] ; // 輸出類型的文字串
+	
+	if( type_mode[itemIndex] ) // 有資料
+	{
+		for( let i of type_mode[itemIndex] )
+		{
+			type_text.push( typeName[i] ?? '<b>[已刪除類型]</b>' ) ;
+		}
+	}
+	else // 沒有資料
+	{
+		type_text = ['-'] ;
+	}
+
+	show_statis.innerHTML = '平均分：' + (mean[itemIndex]?.toFixed(fixLen)??'-') +
+	'<br />標準差：' + (sd[itemIndex]?.toFixed(fixLen)??'-') +
+	'<br />類型：' + type_text.join(' , ') ;
+	
+	// debug
+	/*
+	console.log('分數：');
+	console.table(score) ;
+	console.log('類型：');
+	console.table(type) ;
+	*/
+}
+
+function scoreChange() // 改變分數
+{
+	score_o.value = score_i.value ;
+}
+
+function typeChange() // 改變類型
+{
+	let text = '' ;
+	let isNormalType = ~~type_i.value && typeName[type_i.value] ; // 是否一般類型
+	
+	isNormalType || ( text += '<b>' ) ; // 特殊情況加粗體
+	text += typeName[type_i.value] ?? '[已刪除類型]' ;
+	isNormalType || ( text += '</b>' ) ; // 特殊情況加粗體
+
+	type_o.innerHTML = text ; // 輸出
+	
+	
+}
+
+function addData() // 增加評分數據
+{
+	if(!~itemIndex)
+	{
+		alert('沒有選擇項目！') ;
+		return ; // 未有選擇項目時跳出
+	}
+
+	score[itemIndex].push(score_i.value*1) ; // 增加分數
+	if( ~~type_i.value && typeName[type_i.value] ) // 跳過 未定類型 和 已刪除類型
+	{
+		type[itemIndex].push(~~type_i.value) ; // 增加類型
+	}
+	
+	// 自動跳到下一項
+	itemList_s.value = ( ~~itemList_s.value + 1 ) % item.length ; // 列表顯示
+	startNew( ( itemIndex + 1 ) % item.length ) ; // 開始新評測
+}
+
+function cal() // 計算統計值
+{
+	let m ; // 暫用的 平均值
+	let s ; // 暫用的 加總
+	let t = [] ; // 暫用的 類型數量 ( [0 , 第1類的數量 , 第2類的數量 , ...] )
+	let t_max ; // 暫用的 最多的類型 的數量
+	
+	// reset
+	mean = [] ; // 平均值
+	sd = [] ; // 標準差
+	type_mode = [] ; // 類型的眾數
+
+	for(let i = 0 ; i < item.length ; ++i )
+	{
+		if(score[i].length) // 分數有資料
+		{
+			m = mean[i] = score[i].reduce( (s,x) => s+=x ) / score[i].length ; // 平均值
+			
+			// 標準差
+			s = 0 ;
+			for(let j = 0 ; j < score[i].length ; ++j )
+			{
+				s += ( score[i][j] - m ) ** 2 ;
+			}
+			sd[i] = ( s / score[i].length ) ** 0.5 ;
+		}
+		
+		if(type[i].length) // 類型有資料
+		{
+			// type[i]
+			
+			// reset
+			t = new Array(typeName.length) ;
+			t.fill(0) ;
+			
+			for( let k of type[i] ) // 計量
+			{
+				++ t[k] ;
+			}
+			
+			t_max = Math.max(...t) ; // 最多的類型 的數量
+			
+			// console.log(t) ;
+			
+			// 類型的眾數的index
+			type_mode[i] = [] ;
+			for( let [index,amount] of t.entries() )
+			{
+				amount == t_max && type_mode[i].push(index) ; // 保存眾數(可多於1個)
+			}
+			// type_mode[i] = t.findIndex( amount => amount == t_max ) ;
+			
+			// console.log( type_mode[i] ) ;
+			
+		}
+	}
+}
+
+function addNewItem() // 新增項目
+{
+	const name = prompt('請輸入要新增的項目名稱：') ?? '' ; // 使用者輸入的項目名稱
+	if(!name) return ; // 沒有輸入內容, 則退出
+	
+	if( item.includes(name) ) // 已有同名
+	{
+		alert('已有該項目') ;
+	}
+	else // 沒有同名
+	{
+		item.push(name) ; // 項目
+		score.push([]) ; // 分數
+		type.push([]) ; // 類型
+		renewItemList() ; // 更新顯示 項目列表
+	}
+}
+
+function renewItemList() // 更新顯示 項目列表
+{
+	item_list.innerHTML = '' ; // 清空列表
+	let buff = document.createDocumentFragment() , opt ;
+	for( let [index,name] of item.entries() )
+	{
+		opt = document.createElement('option') ;
+		opt.value = index ;
+		opt.innerText = name ;
+		buff.appendChild(opt) ;
+	}
+	item_list.appendChild(buff) ; // 輸出到頁面
+}
+
+function addNewType() // 新增類型
+{
+	const name = prompt('請輸入要新增的類型名稱：') ?? '' ; // 使用者輸入的類型名稱
+	if(!name) return ; // 沒有輸入內容, 則退出
+	
+	if( typeName.slice(1).includes(name) ) // 已有同名
+	{
+		alert('已存在該類型名稱') ;
+	}
+	else // 沒有同名
+	{
+		typeName.push(name) ; // 新增類型名稱
+		type_i.max = typeName.length - 1 ; // 調整類型輸入條
+		renewTypeList() ; // 更新顯示 類型列表
+	}
+}
+
+function renewTypeList() // 更新顯示 類型列表
+{
+	type_list.innerHTML = '' ; // 清空列表
+	let buff = document.createDocumentFragment() , opt ;
+	for( let [index,name] of typeName.entries() )
+	{
+		if( !( index && name ) ) continue ; // 跳過 未定類型 和 已刪除類型
+		
+		opt = document.createElement('option') ;
+		opt.value = index ;
+		opt.innerText = name ;
+		buff.appendChild(opt) ;
+	}
+	type_list.appendChild(buff) ; // 輸出到頁面
+}
+
+function deleteType() // 刪除類型
+{
+	let index = ~~typeList_s.value ;
+	if(!index) // 沒有選擇則退出
+	{
+		alert('沒有選擇類型') ;
+		return ;
+	}
+	
+	let name = typeName[index] ; // 準備刪除的 類型名稱
+	let ok = confirm( '是否要刪除以下類型？\n' + name ) ;
+	
+	if(!ok) return ; // 不確定則退出
+	
+	// 刪除類型
+	delete(typeName[index]) ; // 刪除類型名稱
+	type_i.max = typeName.length - 1 ; // 調整類型輸入條
+	renewTypeList() ; // 更新顯示 類型列表
+
+}
+
+function deleteItem() // 刪除項目
+{
+	let index = itemList_s.value ;
+	if(!index.length) // 沒有選擇則退出
+	{
+		alert('沒有選擇項目') ;
+		return ;
+	}
+	index = ~~index ; // 整數化
+
+	let name = item[index] ; // 準備刪除的 項目名稱
+	let ok = confirm( '是否要刪除以下項目？\n' + name ) ;
+	
+	if(!ok) return ; // 不確定則退出
+	
+	// 刪除項目
+	item.splice(index,1) ; // 刪除項目
+	score.splice(index,1) ; // 刪除該項目的 分數記錄
+	type.splice(index,1) ; // 刪除項目的 類型記錄
+	startNew(-1) ; // 清除 當前進行的評分項目
+	renewItemList() ; // 更新顯示 項目列表
+}
+
+function exportData() // 匯出資料
+{
+	let obj = { fixLen: fixLen ,		// 準確至幾位小數
+				typeName: typeName ,	// 類型名稱
+				item: item ,			// 項目
+				type: type ,			// 類型
+				score: score } ;		// 分數
+
+	importZone.value = JSON.stringify(obj) ; // 匯出
+	importZone.select();
+}
+
+function importData() // 匯入資料
+{
+	try
+	{
+		let obj = JSON.parse(importZone.value) ;
+		
+		fixLen = obj.fixLen ;		// 準確至幾位小數
+		typeName = obj.typeName ;	// 類型名稱
+		item = obj.item ;			// 項目
+		type = obj.type ;			// 類型
+		score = obj.score ; 		// 分數
+		
+		renewTypeList() ; // 更新顯示 類型列表
+		renewItemList() ; // 更新顯示 項目列表
+		startNew(-1) ; // 清空當前評分項目
+		
+		alert('匯入成功') ;
+	}
+	catch(e)
+	{
+		alert('資料有誤，無法成功匯入。') ;
+	}
+
+}
+
+function clearData() // 清除評分數據
+{
+	let index = itemList_s.value ;
+	if(!index.length) // 沒有選擇則退出
+	{
+		alert('沒有選擇項目') ;
+		return ;
+	}
+	index = ~~index ; // 整數化
+
+	let name = item[index] ; // 準備清除評分的 項目名稱
+	let ok = confirm( '是否要清除以下項目的評分數據？\n' + name ) ;
+	
+	if(!ok) return ; // 不確定則退出
+	
+	// 清除數據
+	score[index] = [] ; // 清除 該項目的 分數記錄
+	type[index] = [] ; // 清除 該項目的 類型記錄
+	startNew(index) ; // 重新進行當前項目的評分
+}
+
+function deleteLastData() // 撤回最新一次評分
+{
+	let index = itemList_s.value ;
+	if(!index.length) // 沒有選擇則退出
+	{
+		alert('沒有選擇項目') ;
+		return ;
+	}
+	index = ~~index ; // 整數化
+
+	let name = item[index] ; // 準備撤回評分的 項目名稱
+	let ok = confirm( '是否要對以下項目，撤回最近一次增加的評分數據？\n' + name ) ;
+	
+	if(!ok) return ; // 不確定則退出
+	
+	// 撤回數據
+	score[index].pop() ; // 撤回 該項目的 最新分數記錄
+	type[index].pop() ; // 撤回 該項目的 最新類型記錄
+	startNew(index) ; // 重新進行當前項目的評分
+}
+
+function renameItem() // 項目改名
+{
+	let index = itemList_s.value ;
+	if(!index.length) // 沒有選擇則退出
+	{
+		alert('沒有選擇項目') ;
+		return ;
+	}
+	index = ~~index ; // 整數化
+
+	let oldName = item[index] ; // 準備改名的 項目名稱
+	let newName = prompt( '正要對以下項目改名：\n' + oldName + '\n\n請輸入新的項目名稱：' ) ;
+	
+	if(!newName) return ; // 若沒有輸入, 則退出
+
+	if( item.includes(newName) ) // 已有同名
+	{
+		alert('你輸入的名稱已在項目列表中') ;
+	}
+	else // 沒有同名
+	{
+		// 改名
+		item[index] = newName ; // 替換名稱
+		renewItemList() ; // 更新顯示 項目列表
+		itemList_s.value = index ; // 重新定位選擇 當前項目
+		startNew(index) ; // 重新進行當前項目的評分
+	}
+}
+
+function renameTpye() // 類型改名
+{
+	let index = typeList_s.value ;
+	if(!index.length) // 沒有選擇則退出
+	{
+		alert('沒有選擇類型') ;
+		return ;
+	}
+	index = ~~index ; // 整數化
+
+	let oldName = typeName[index] ; // 準備改名的 項目名稱
+	let newName = prompt( '正要對以下類型改名：\n' + oldName + '\n\n請輸入新的類型名稱：' ) ;
+
+	if(!newName) return ; // 若沒有輸入, 則退出
+
+	if( typeName.slice(1).includes(newName) ) // 已有同名
+	{
+		alert('你輸入的名稱已在類型列表中') ;
+	}
+	else // 沒有同名
+	{
+		// 改名
+		typeName[index] = newName ; // 替換名稱
+		renewTypeList() ; // 更新顯示 類型列表
+		typeList_s.value = index ; // 重新定位選擇 當前項目
+		startNew(itemList_s.value) ; // 重新進行當前項目的評分
+	}
+}
+
+
+// code End here
+</script>
+
+<center>
+<br />
+<hr />
+Coded by ~tyovery~<br />2022-09
+</center>
+
+<script>
+// timer
+timerEnd=Date.now();
+document.write('<p style="font-size: 12px;">Load Time: '+(timerEnd-timerBegin)+'ms</p>');
+// timer
+</script>
+
+</body>
+</html>

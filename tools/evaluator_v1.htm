@@ -20,7 +20,7 @@ table
 <!-- 左 -->
 <td>
 類型<br />
-<select id="type_list" size="10" >
+<select id="type_list" size="10" onkeyup="event.keyCode-46||deleteType();">
 </select>
 
 <br />
@@ -31,7 +31,7 @@ table
 </td>
 <td>
 項目<br />
-<select id="item_list" size="10" onchange="startNew(this.value);" onclick="startNew(this.value);">
+<select id="item_list" size="10" onchange="startNew(this.value);" onclick="startNew(this.value);" onkeyup="event.keyCode-46||deleteItem();">
 </select>
 
 <br />
@@ -101,10 +101,10 @@ let type_mode = [] ; // 類型的眾數
 let fixLen = 3 ; // 準確至幾位小數
 
 const item_o = document.getElementById('show_item') ;
-const score_o = document.getElementById('show_score') ;
-const score_i = document.getElementById('input_score') ;
-const type_o = document.getElementById('show_type') ;
-const type_i = document.getElementById('input_type') ;
+const score_o = document.getElementById('show_score') ; // 顯示分數 輸出區
+const score_i = document.getElementById('input_score') ; // 分數 輸入條
+const type_o = document.getElementById('show_type') ; // 顯示類型 輸出區
+const type_i = document.getElementById('input_type') ; // 類型 輸入條
 const itemList_s = document.getElementById('item_list') ; // 項目列表
 const typeList_s = document.getElementById('type_list') ; // 類型列表
 const importZone = document.getElementById('import_area') ; // 匯入/匯出 框
@@ -410,10 +410,11 @@ function importData() // 匯入資料
 		type = obj.type ;			// 類型
 		score = obj.score ; 		// 分數
 		
-		renewTypeList() ; // 更新顯示 類型列表
 		renewItemList() ; // 更新顯示 項目列表
+		renewTypeList() ; // 更新顯示 類型列表
+		type_i.max = typeName.length - 1 ; // 調整類型輸入條
 		startNew(-1) ; // 清空當前評分項目
-		
+
 		alert('匯入成功') ;
 	}
 	catch(e)

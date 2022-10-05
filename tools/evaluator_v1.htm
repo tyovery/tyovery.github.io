@@ -127,6 +127,9 @@ type_o.innerHTML = '<b>' + typeName[0] + '</b>' ; // 顯示最初的 類型名�
 renewTypeList() ; // 更新顯示 類型列表
 renewItemList() ; // 更新顯示 項目列表
 
+// 離開提示
+window.onbeforeunload = () => event.returnValue = '是否確認離開？\n您可以利用匯出功能保存數據。' ;
+
 function startNew(inputIndex) // 開始對項目 評測
 {
 	// itemIndex = ~~ ( Math.random() * item.length ) ; // 隨機抽出一個項目

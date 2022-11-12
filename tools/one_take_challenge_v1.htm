@@ -1,0 +1,188 @@
+<html lang="zh-Hant-HK" >
+<head>
+<meta charset="utf-8" />
+<title>一氣呵成</title>
+<style>
+table
+{
+	text-align: center ;
+}
+input
+{
+	text-align: center ;
+}
+</style>
+</head>
+<body>
+<center>
+<br />
+
+<h2>一氣呵成<br />One Take Challenge</h2>
+
+項目數：<input id="setTerms" type="number" min="1" step="1" max="300" value="5" onchange="renewTable(this.value);" />
+
+<br /><br />
+
+<table id="show" border="1" cellspacing="0" cellpadding="3" ></table>
+
+
+<br /><br />
+
+<br />
+
+</center>
+
+<script>
+let timerBegin = Date.now() , timerEnd ;
+// timer
+
+// code begin here
+
+let stepNames = [] ; // 項目名稱
+let tried = [] ; // 嘗試次數
+let pobi = [] ; // 成功率
+let successRate = [] ; // 成功百分比
+
+const in_setTerms = document.getElementById('setTerms') ; // 項目數 輸入框
+
+let buff = document.createDocumentFragment() ;
+let tr_tmp = document.createElement('tr') ;
+let td_tmp = document.createElement('td') ;
+let input_num_tmp = document.createElement('input') ;
+input_num_tmp.type = 'number' ;
+input_num_tmp.min = 0 ;
+input_num_tmp.step = 1 ;
+input_num_tmp.max = 1<<20 ;
+input_num_tmp.value = 0 ;
+input_num_tmp.setAttribute( 'onchange' , 'changeTriedTimes(~~this.index,~~this.value);renewTable();' ) ;
+let tr  , td , in_num ;
+
+// 初始化
+renewTable() ; // 更新表格
+
+function changeTriedTimes(i,v) // 更改嘗試次數
+{
+	tried[i] = v ;
+}
+
+function changeTermsName(index) // 更改項目名稱
+{
+	let name = prompt('請輸入新的項目名稱') ?? '' ; // 打名
+	name.length && ( stepNames[~~index] = name ) ; // 改名
+	renewTable() ; // 更新表格
+}
+
+function renewTable(terms) // 更新表格
+{
+	terms ??= ~~in_setTerms.value ;
+	terms = Math.min( in_setTerms.max , terms ) ; // max
+	terms < 0 && ( terms = 0 ) ; // min
+	
+	let oldLength = tried.length ;
+	if( terms != oldLength ) // 移除項目後 移除數值
+	{
+		tried.length = terms ;
+		tried.fill(0,oldLength) ;// 新項目 補零
+	}
+
+	// 計算 成功率
+	for( let i = 0 ; i < terms ; ++i )
+	{
+		pobi[i] = ( tried[i+1] ?? 1 ) / tried[i] ;
+	}
+
+	successRate = pobi.map( x => isFinite(x) ? (x*100).toFixed(2)+'%' : '-' ) ; // 成功百分比
+
+	// 表格 首行
+	tr = tr_tmp.cloneNode() ;
+	buff.appendChild(tr) ;
+	
+	td = td_tmp.cloneNode() ;
+	tr.appendChild(td) ;
+	td.innerText = '序號' ;
+	
+	td = td_tmp.cloneNode() ;
+	tr.appendChild(td) ;
+	td.innerText = '項目名稱' ;
+	
+	td = td_tmp.cloneNode() ;
+	tr.appendChild(td) ;
+	td.innerText = '嘗試次數' ;
+	
+	td = td_tmp.cloneNode() ;
+	tr.appendChild(td) ;
+	td.innerText = '成功率' ;
+
+	for(let i = 0 ; i < terms ; ++i )
+	{
+		tr = tr_tmp.cloneNode() ;
+		buff.appendChild(tr) ;
+		
+		// 序號
+		td = td_tmp.cloneNode() ;
+		tr.appendChild(td) ;
+		td.innerText = i + 1 ;
+		
+		// 項目名稱
+		td = td_tmp.cloneNode() ;
+		tr.appendChild(td) ;
+		td.innerHTML = stepNames[i] ?? '<b>[點擊改名]</b>' ;
+		td.index = i ;
+		td.setAttribute( 'onclick' , 'changeTermsName(~~this.index);' ) ;
+		
+		// 嘗試次數
+		td = td_tmp.cloneNode() ;
+		tr.appendChild(td) ;
+		in_num = input_num_tmp.cloneNode() ;
+		td.appendChild(in_num) ;
+		in_num.value = tried[i] ?? 0 ;
+		in_num.index = i ;
+		// td.innerText = tried[i] ;
+		
+		// 成功率
+		td = td_tmp.cloneNode() ;
+		tr.appendChild(td) ;
+		td.innerText = successRate[i] ?? '?' ;
+	}
+
+	/*
+	for(let i = -1 ; i < tried.length ; ++i )
+	{
+		td = td_tmp.cloneNode() ;
+		td.innerText = tried[i] ?? '嘗試次數' ;
+		tr.appendChild(td) ;
+	}
+
+	tr = tr_tmp.cloneNode() ;
+	buff.appendChild(tr) ;
+	for(let i = -1 ; i < tried.length ; ++i )
+	{
+		td = td_tmp.cloneNode() ;
+		td.innerText = successRate[i] ?? '成功百分比' ;
+		tr.appendChild(td) ;
+	}
+	*/
+
+	show.innerHTML = '' ;
+	show.appendChild(buff) ;
+
+}
+
+// code End here
+</script>
+
+<center>
+<br />
+<hr />
+Coded by ~tyovery~<br />2022-11
+</center>
+
+<script>
+// timer
+timerEnd=Date.now();
+document.write('<p style="font-size: 12px;">Load Time: '+(timerEnd-timerBegin)+'ms</p>');
+// timer
+</script>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<html lang="zh-Hant-HK" >
+<head>
+<meta charset="utf-8" />
+<title>混合色</title>
+<style>
+</style>
+</head>
+<body>
+<center>
+<br /><br />
+
+<h3>點擊色格以複製色碼</h3>
+
+<input id="incomeColorL" type="text" value="#FF0000" oninput="renewShowColor()" />
+<input id="incomeColorR" type="text" value="#00FF00" oninput="renewShowColor()" />
+
+<br /><br />
+
+<div id="show_copied"></div>
+
+<table border="0" cellspacing="0" cellpadding="10" >
+<tr>
+	<td>
+	來源色1：<br />
+	<span id="show_color_L" onclick="copyColorCode(this);" 
+	style="border: 3px outset; display: inline-block; width: 100px; height: 100px;"></span>
+	</td>
+	
+	<td>
+	來源色2：<br />
+	<span id="show_color_R" onclick="copyColorCode(this);" 
+	style="border: 3px outset; display: inline-block; width: 100px; height: 100px;"></span>
+	</td>
+</tr>
+<tr>
+	<td>
+	光源疊加色：<br />
+	<span id="show_color_light" onclick="copyColorCode(this);" 
+	style="border: 3px outset; display: inline-block; width: 100px; height: 100px;"></span>
+	</td>
+	
+	<td>
+	光源疊加補色：<br />
+	<span id="show_color_lightCom" onclick="copyColorCode(this);" 
+	style="border: 3px outset; display: inline-block; width: 100px; height: 100px;"></span>
+	</td>
+</tr>
+<tr>
+	<td>
+	算術平均色：<br />
+	<span id="show_color_m" onclick="copyColorCode(this);" 
+	style="border: 3px outset; display: inline-block; width: 100px; height: 100px;"></span>
+	</td>
+	
+	<td>
+	幾何平均色：<br />
+	<span id="show_color_g" onclick="copyColorCode(this);" 
+	style="border: 3px outset; display: inline-block; width: 100px; height: 100px;"></span>
+	</td>
+</tr>
+</table>
+
+
+
+<br /><br />
+
+<br />
+
+</center>
+
+<script>
+let timerBegin = Date.now() , timerEnd ;
+// timer
+
+// code begin here
+
+const inColorL = document.getElementById('incomeColorL') ; // 輸入框1
+const inColorR = document.getElementById('incomeColorR') ; // 輸入框2
+const colorBlock_L = document.getElementById('show_color_L') ; // 來源色1
+const colorBlock_R = document.getElementById('show_color_R') ; // 來源色2
+const colorBlock_light = document.getElementById('show_color_light') ; // 光源疊加色
+const colorBlock_lightCom = document.getElementById('show_color_lightCom') ; // 光源疊加補色
+const colorBlock_m = document.getElementById('show_color_m') ; // 算術平均色
+const colorBlock_g = document.getElementById('show_color_g') ; // 幾何平均色
+
+// 初始化
+renewShowColor();
+
+function renewShowColor()
+{
+	// 取值
+	let a = parseInt( inColorL.value.replaceAll('#','') , 16 ) ;
+	let b = parseInt( inColorR.value.replaceAll('#','') , 16 ) ;
+	
+	// 來源色1
+	let R1 = a >> 16 ;
+	let G1 = ( a>>8 ) % 256 ;
+	let B1 = a % 256 ;
+	
+	// 來源色2
+	let R2 = b >> 16 ;
+	let G2 = ( b>>8 ) % 256 ;
+	let B2 = b % 256 ;
+	
+	// 目標色
+	let R , G , B ;
+
+	// 光源疊加色
+	R = Math.min( 255 , R1 + R2 ) ;
+	G = Math.min( 255 , G1 + G2 ) ;
+	B = Math.min( 255 , B1 + B2 ) ;
+	let light = ( R << 16 ) + ( G << 8 ) + B ;
+	light = '#' + light.toString(16).padStart(6,'0').toUpperCase() ;
+	
+	// 光源疊加補色
+	R = 255 - R ;
+	G = 255 - G ;
+	B = 255 - B ;
+	let lightCom = ( R << 16 ) + ( G << 8 ) + B ;
+	lightCom = '#' + lightCom.toString(16).padStart(6,'0').toUpperCase() ;
+	
+	// 算術平均
+	R = Math.round( ( R1 + R2 ) / 2 ) ;
+	G = Math.round( ( G1 + G2 ) / 2 ) ;
+	B = Math.round( ( B1 + B2 ) / 2 ) ;
+
+	let m = ( R << 16 ) + ( G << 8 ) + B ;
+	m = '#' + m.toString(16).padStart(6,'0').toUpperCase() ;
+
+	// 幾何平均
+	R = Math.round( ( R1 * R2 ) ** 0.5 ) ;
+	G = Math.round( ( G1 * G2 ) ** 0.5 ) ;
+	B = Math.round( ( B1 * B2 ) ** 0.5 ) ;
+
+	let g = ( R << 16 ) + ( G << 8 ) + B ;
+	g = '#' + g.toString(16).padStart(6,'0').toUpperCase() ;
+	
+	// 輸出
+	colorBlock_L.style.backgroundColor = `rgb(${a>>16},${(a>>8)%256},${a%256})` ;
+	colorBlock_R.style.backgroundColor = `rgb(${b>>16},${(b>>8)%256},${b%256})` ;
+	colorBlock_light.style.backgroundColor = light ;
+	colorBlock_lightCom.style.backgroundColor = lightCom ;
+	colorBlock_m.style.backgroundColor = m ;
+	colorBlock_g.style.backgroundColor = g ;
+}
+
+function copyColorCode(obj) // 複製色碼
+{
+	let color = obj.style.backgroundColor.slice(4,-1).split(',') ;
+	let code = '#' ;
+	color.forEach( x => code += parseInt(x).toString(16).padStart(2,'0').toUpperCase() )
+	
+	let showArea = document.getElementById('show_copied') ;
+	
+	navigator.clipboard.writeText( code ) ;
+	
+	let txt = `已複製 ${code} 到剪貼簿` ;
+	showArea.innerHTML = txt + ( showArea.innerHTML == txt ? '！' : '' ) ;
+}
+
+
+
+// code End here
+</script>
+
+<center>
+<br />
+<hr />
+Coded by ~tyovery~<br />2022-11
+</center>
+
+<script>
+// timer
+timerEnd=Date.now();
+document.write('<p style="font-size: 12px;">Load Time: '+(timerEnd-timerBegin)+'ms</p>');
+// timer
+</script>
+
+</body>
+</html>

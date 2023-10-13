@@ -1,0 +1,98 @@
+<html lang="zh-Hant-HK" >
+<head>
+<meta charset="utf-8" />
+<title>筆跡闊度計算器</title>
+<style>
+</style>
+</head>
+<body>
+<center>
+<br /><br />
+
+筆芯直徑: <input id="input_diame" type="number" value="0.5" step="0.1" min="0.0" /> mm
+<br />
+<input type="button" value="0.2" onclick="diame_in.value=0.2;" />
+<input type="button" value="0.3" onclick="diame_in.value=0.3;" />
+<input type="button" value="0.5" onclick="diame_in.value=0.5;" />
+<input type="button" value="0.7" onclick="diame_in.value=0.7;" />
+<input type="button" value="0.9" onclick="diame_in.value=0.9;" />
+<input type="button" value="1.3" onclick="diame_in.value=1.3;" />
+<input type="button" value="2.0" onclick="diame_in.value=2.0;" />
+
+<br /><br />
+
+書寫角: <input id="input_theta" type="number" value="45" step="1" min="0" max="90" /> &#176;
+<br />
+<br /><input type="button" value="計算" onclick="run();" /><br />
+
+<br />
+<最大筆跡闊度><br />
+不動: <output id="showArea1"></output><br />
+轉動: <output id="showArea2"></output><br />
+
+<br />
+
+<公式><br />
+不動: 筆跡闊度 = 筆芯直徑 / sin ( 書寫角 )<br />
+轉動: 筆跡闊度 = 筆芯直徑 / sin ( 書寫角 ) / 2 , ( 書寫角 &#8800; 90&deg; )<br />
+書寫角 = 紙面 與 筆軸 的夾角<br />
+
+</center>
+
+<script>
+let timerBegin = Date.now() , timerEnd ;
+// timer
+
+// code begin here
+
+const diame_in = document.getElementById('input_diame') ;
+const theta_in = document.getElementById('input_theta') ;
+const output1 = document.getElementById('showArea1') ;
+const output2 = document.getElementById('showArea2') ;
+
+
+function width( diame = 0.5 , theta = 45 ) // 筆芯直徑(mm) , 書寫角(角度制)
+{
+	diame *= 1 ;
+	theta *= Math.PI / 180 ;
+	return diame / Math.sin(theta) ;
+}
+
+function run()
+{
+	let d = + diame_in.value ; // 筆芯直徑(mm)
+	let t = + theta_in.value ; // 書寫角(角度制)
+	
+	t %= 180 ; // 180° 週期
+	
+	let ans1 = width( d , t ) ; // 不動 的闊度
+	let ans2 = ans1 / 2 ; // 轉動 的闊度
+	
+	ans1_fx = ans1.toFixed(6) ;
+	ans2_fx = ans2.toFixed(6) ;
+	
+	output1.innerHTML = t ? ans1_fx : '不確定' ; // 不動 的闊度
+	output2.innerHTML = t ? ( t**2 == 90**2 ? ans1_fx : ans2_fx ) : '不確定' ; // 轉動 的闊度 (直角時 沒有折半)
+}
+
+
+
+
+// code End here
+</script>
+
+<center>
+<br />
+<hr />
+Coded by ~tyovery~<br />2023-10
+</center>
+
+<script>
+// timer
+timerEnd=Date.now();
+document.write('<p style="font-size: 12px;">Load Time: '+(timerEnd-timerBegin)+'ms</p>');
+// timer
+</script>
+
+</body>
+</html>

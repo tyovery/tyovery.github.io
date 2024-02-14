@@ -39,11 +39,22 @@ td
 		×
 		<input name="setMapSize" type="number" value="6" step="1" min="2" max="16" />
 		<br /><br />
-		兵線：
-		<select id="setStartPos" size="3">
-			<option value="0.5">前</option>
-			<option value="0.25">中</option>
-			<option value="0" selected>後</option>
+		棋子佈置：
+		<select id="setStartPos" size="11">
+			<optgroup label="單行" >
+				<option value="0.5">前排</option>
+				<option value="0.25">中排</option>
+				<option value="0">後排</option>
+			</optgroup>
+			<optgroup label="陣營" >
+				<option value="check_white" selected>白格</option>
+				<option value="half_rect">半場</option>
+			</optgroup>
+			<optgroup label="混雜" >
+				<option value="bapb">梅花間竹</option>
+				<option value="barabara">分散各地</option>
+				<option value="barabara_full">分散滿埸</option>
+			</optgroup>
 		</select>
 		<br /><br />
 		數字範圍：
@@ -110,7 +121,7 @@ function newGame() // 開始新的遊戲
 	mapSize[1] = Math.min( 16 , mapSize[1] ) ;
 	
 	// 兵線
-	startPos = ~~( ( mapSize[0] - 2 ) * document.getElementById('setStartPos').value ) ;
+	startPos = document.getElementById('setStartPos').value ;
 	
 	// 開始數字範圍
 	const getStartRange = document.getElementsByName('setStartRange') ;
@@ -150,9 +161,13 @@ function newGame() // 開始新的遊戲
 			
 			td.dataset.owner = 0 ; // 預設公地
 			td.bgColor = cellBgColor[ ( y + x ) % 2 ] ; // 棋格 背景顏色
-			
-			td.innerText = '　' ; // 內容為 空
+
+			td.innerText = '' ; // 內容為 空
 			td.setAttribute( 'onclick' , 'clickCell(this);' ) ;
+			
+			// 樣式
+			td.style.width = '50px' ;
+			td.style.height = '50px' ;
 		}
 	}
 	
@@ -172,34 +187,188 @@ function newGame() // 開始新的遊戲
 	ownerCurrentPoint.length = ownerName.length ; // 玩家分數 (列表長度)
 	ownerCurrentPoint.fill(0) ; // 玩家分數 清0
 
-	let number ; // 隨機整數
+	let number , whose ; // 隨機整數 , 隨機擁有者
 	let cell ; // 當前操作的棋格
 	
-	// 生成 藍方棋子
-	for(let x = 0 ; x < mapSize[1] ; ++x )
+	if( isFinite(startPos) ) // 若 startPos 是數字
 	{
-		number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
-		cell = document.getElementById(`cell_${startPos}_${x}`) ;
-		cell.dataset.owner = 2 ;
-		cell.style.color = ownerColor[2] ;
-		cell.innerText = number ;
-		
-		ownerCurrentPoint[2] += number ; // 計玩家分
+		y = ~~( ( mapSize[0] - 2 ) * startPos ) ; // 化為行數
+
+		// 生成 藍方棋子
+		for(let x = 0 ; x < mapSize[1] ; ++x )
+		{
+			number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
+			cell = document.getElementById(`cell_${y}_${x}`) ;
+			cell.dataset.owner = 2 ;
+			cell.style.color = ownerColor[2] ;
+			cell.innerText = number ;
+			
+			ownerCurrentPoint[2] += number ; // 計玩家分
+		}
+
+		// 生成 紅方棋子
+		for(let x = 0 ; x < mapSize[1] ; ++x )
+		{
+			number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
+			cell = document.getElementById(`cell_${mapSize[0]-1-y}_${x}`) ;
+			cell.dataset.owner = 1 ;
+			cell.style.color = ownerColor[1] ;
+			cell.innerText = number ;
+			
+			ownerCurrentPoint[1] += number ; // 計玩家分
+		}
 	}
-	
-	// 生成 紅方棋子
-	for(let x = 0 ; x < mapSize[1] ; ++x )
+	else // 若 startPos 不是數字
 	{
-		number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
-		cell = document.getElementById(`cell_${mapSize[0]-1-startPos}_${x}`) ;
-		cell.dataset.owner = 1 ;
-		cell.style.color = ownerColor[1] ;
-		cell.innerText = number ;
+		switch(startPos)
+		{
+			case 'bapb' : // 梅花間竹
+				let skip = 0 ;
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						// 跳過公地(中心格)
+						if( skip == 0 &&
+							( mapSize[0] * mapSize[1] ) % 2 == 1 &&
+							mapSize[1] * y + x == ~~( mapSize[0] * mapSize[1] / 2 )
+						)
+						{
+							++skip ;
+							continue ;
+						}
+
+						whose = ( y + x + skip ) % 2 + 1 ; // 擁有者
+
+						// 隨機整數
+						number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
+
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = number ;
+						
+						ownerCurrentPoint[whose] += number ; // 計玩家分
+					}
+				}
+			break ;
+			
+			case 'barabara' :  // 分散各地
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						whose = ~~( Math.random() * ownerName.length ) ; // 隨機擁有者 (包括 公地)
+						
+						if(!whose) continue ; // 跳過公地
+						
+						// 隨機整數
+						number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
+
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = number ;
+						
+						ownerCurrentPoint[whose] += number ; // 計玩家分
+					}
+				}
+			break ;
 		
-		ownerCurrentPoint[1] += number ; // 計玩家分
+			case 'barabara_full' :  // 分散滿埸
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						whose = ~~( Math.random() * ( ownerName.length - 1 ) ) + 1 ; // 隨機擁有者
+					
+						// 隨機整數
+						number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
+
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = number ;
+						
+						ownerCurrentPoint[whose] += number ; // 計玩家分
+					}
+				}
+			break ;
+			
+			case 'check_white' :  // 白格
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						// 擁有者
+						if( y < ~~(mapSize[0]/2) )
+						{
+							whose = 2 ;
+						}
+						else if( y >= mapSize[0] / 2 )
+						{
+							whose = 1 ;
+						}
+						else
+						{
+							continue ;
+						}
+						
+						if( ( y + x ) % 2 == 1 ) continue ;
+
+					
+						// 隨機整數
+						number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
+
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = number ;
+						
+						ownerCurrentPoint[whose] += number ; // 計玩家分
+					}
+				}
+			break ;
+			
+			case 'half_rect' :  // 各自半場
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						// 擁有者
+						if( y < ~~(mapSize[0]/2) )
+						{
+							whose = 2 ;
+						}
+						else if( y >= mapSize[0] / 2 )
+						{
+							whose = 1 ;
+						}
+						else
+						{
+							continue ;
+						}
+
+					
+						// 隨機整數
+						number = ~~( startRange[0] + Math.random() * ( startRange[1] - startRange[0] + 1 ) ) ;
+
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = number ;
+						
+						ownerCurrentPoint[whose] += number ; // 計玩家分
+					}
+				}
+			break ;
+		}
 	}
-	
+
 	renewPlayerScore(true) ; // 輸出 玩家分數
+	checkEndGame(true) ; // 若 有人0分, 則 結束遊戲
 }
 
 function renewPlayerScore( justOutput = false ) // 更新 玩家分數
@@ -227,6 +396,30 @@ function renewPlayerScore( justOutput = false ) // 更新 玩家分數
 	showPlayerScore.innerHTML = point2htm ; // 輸出 玩家分數
 }
 
+function checkEndGame(quiet=false) // 檢查是否結束遊戲
+{
+	let loser = ownerCurrentPoint.slice(1).indexOf(0) + 1 ; // 尋找 0分人
+	if( loser ) // 有一方 0分
+	{
+		quiet || alert( ownerName[3-loser] + ' 獲勝' ) ; // 顯示誰獲勝
+		turn = -1 ; // 遊戲結束
+		showWhoTurn.innerText = ownerName[0] ; // 清空 輪到誰下 (字)
+		showWhoTurn.style.color = ownerColor[0] ; // 清空 輪到誰下 (色)
+		
+		if( takedCell ) // 如有抓子
+		{
+			// 還原棋格背景色
+			takedCell.bgColor = cellBgColor[ ( ~~takedCell.dataset.y + ~~takedCell.dataset.x ) % 2 ] ;
+			
+			takedCellPos = [-1,-1] ; // 重置抓子 座標
+			takedCell = null ; // 清空 抓子格
+		}
+		
+		return true ;
+	}
+	else return false ;
+}
+
 function clickCell(cell) // 點擊 棋格 時
 {
 	if( takedCell ) // 已有 抓住的棋子
@@ -242,7 +435,7 @@ function clickCell(cell) // 點擊 棋格 時
 						cell.innerText = ~~takedCell.innerText + ~~cell.innerText ; // 把數字加總到目標棋格
 						cell.dataset.owner = turn ; // 改變 目標棋格 擁有者 為 己方
 						cell.style.color = ownerColor[turn] ; // 改變 目標棋子 顏色 為 己方
-						takedCell.innerText = '　' ; // 清空 來源棋格
+						takedCell.innerText = '' ; // 清空 來源棋格
 						takedCell.dataset.owner = 0 ; // 來源棋格 變為公地
 					}
 					else // 攻擊 失敗
@@ -250,7 +443,7 @@ function clickCell(cell) // 點擊 棋格 時
 						takedCell.innerText -= cell.innerText ; // 自損
 						if( ~~takedCell.innerText <= 0 ) // 自己死亡
 						{
-							takedCell.innerText = '　' ; // 清空 來源棋格
+							takedCell.innerText = '' ; // 清空 來源棋格
 							takedCell.dataset.owner = 0 ; // 來源棋格 變為公地
 						}
 					}
@@ -274,27 +467,12 @@ function clickCell(cell) // 點擊 棋格 時
 					let loser = piece.slice(1).indexOf(0) + 1 ;
 					*/
 					
-					let loser = ownerCurrentPoint.slice(1).indexOf(0) + 1 ; // 尋找 0分人
-					if( loser ) // 有一方 0分
-					{
-						alert( ownerName[3-loser] + ' 獲勝' ) ;
-						turn = -1 ; // 遊戲結束
-						showWhoTurn.innerText = ownerName[0] ; // 清空 輪到誰下 (字)
-						showWhoTurn.style.color = ownerColor[0] ; // 清空 輪到誰下 (色)
-						
-						// 還原棋格背景色
-						takedCell.bgColor = cellBgColor[ ( ~~takedCell.dataset.y + ~~takedCell.dataset.x ) % 2 ] ;
-						
-						takedCellPos = [-1,-1] ; // 重置抓子 座標
-						takedCell = null ; // 清空 抓子格
-						
-						return ;
-					}
+					if( checkEndGame() ) return ; // 檢查是否結束遊戲
 				}
 				else // 目標格 為 己方
 				{
 					cell.innerText = ~~takedCell.innerText + ~~cell.innerText ; // 把數字加總到目標棋格
-					takedCell.innerText = '　' ; // 清空 來源棋格
+					takedCell.innerText = '' ; // 清空 來源棋格
 					takedCell.dataset.owner = 0 ; // 來源棋格 變為公地
 					showNotEat.innerText = '0' ; // 無吃子步數 清0
 				}
@@ -305,7 +483,7 @@ function clickCell(cell) // 點擊 棋格 時
 				cell.dataset.owner = turn ; // 改變 目標棋格 擁有者 為 己方
 				cell.style.color = ownerColor[turn] ; // 改變 目標棋子 顏色 為 己方
 				
-				takedCell.innerText = '　' ; // 清空 來源棋格
+				takedCell.innerText = '' ; // 清空 來源棋格
 				takedCell.dataset.owner = 0 ; // 來源棋格 變為公地
 				if( !( ++ showNotEat.innerText - notEatToDraw ) ) // 無吃子步數 +1
 				{	// 達到上限 則判和

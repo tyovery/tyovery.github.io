@@ -13,6 +13,7 @@ table
 </style>
 </head>
 <body>
+<input type="button" value="?" onclick="alert(helpMsg);" />
 <center>
 <br /><br />
 <div id="msg"></div>
@@ -42,6 +43,12 @@ let turn = 0 ; // 行動者 (空 , 1P , 2P)
 let skin = ["　","O","X"] ; // 棋子樣式 (空 , 1P , 2P)
 let score_1p , score_2p ; // 玩家分數
 let step ; // 棋步
+
+// 幫助信息
+let helpMsg = `規則：
+一人下一步。
+有連到 ( 3 或 6 或 9 )子，就加相應的分數，並且可以繼續下多一步。
+最後得分較多的一方勝出。`
 
 function showWhoTrun() // 顯示該誰下
 {

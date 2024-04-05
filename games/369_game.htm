@@ -19,32 +19,52 @@ table
 <br />
 <table cellpadding="20"><tr>
 <td>
-<div id="total_1p"></div>
-<span id="add_1p"></span>
+	<div id="urTurn_1p"></div>
+	<div id="total_1p"></div>
+	<select id="add_1p" size="10"></select>
 </td>
-<td><span id="map"></span></td>
 <td>
-<div id="total_2p"></div>
-<span id="add_2p"></span>
+	<input type="button" value="重新開始" onclick="newGame();" />
+	<br /><br />
+	<span id="map"></span>
+</td>
+<td>
+	<div id="urTurn_2p"></div>
+	<div id="total_2p"></div>
+	<select id="add_2p" size="10"></select>
 </td>
 </tr></table>
 </center>
 <script>
 
-var dev = 1 ; // 開發者模式
-var turn = 0 ; // 行動者 (空 , 1P , 2P)
-var skin = ["　","O","X"] ; // 棋子樣式 (空 , 1P , 2P)
-var score_1p , score_2p ; // 玩家分數
-var step ; // 棋步
+let dev = 1 ; // 開發者模式
+let turn = 0 ; // 行動者 (空 , 1P , 2P)
+let skin = ["　","O","X"] ; // 棋子樣式 (空 , 1P , 2P)
+let score_1p , score_2p ; // 玩家分數
+let step ; // 棋步
+
+function showWhoTrun() // 顯示該誰下
+{
+	if( turn )
+	{
+		document.getElementById(`urTurn_${turn}p`).innerText = 'V' ;
+		document.getElementById(`urTurn_${3-turn}p`).innerHTML = '' ;
+	}
+	else
+	{
+		document.getElementById(`urTurn_1p`).innerText = '' ;
+		document.getElementById(`urTurn_2p`).innerHTML = '' ;
+	}
+}
 
 function newGame() // 開新遊戲
 {
-	var txt2map = '<table border="1" cellspacing="1" cellpadding="3">' ;
-	var id ;
-	for( var k=0 ; k<9 ; k++ )
+	let txt2map = '<table border="1" cellspacing="1" cellpadding="3">' ;
+	let id ;
+	for( let k=0 ; k<9 ; k++ )
 	{
 		txt2map += '<tr>' ;
-		for( var j=0 ; j<9 ; j++ )
+		for( let j=0 ; j<9 ; j++ )
 		{
 			id = 'pos_' + j + '_' + k ;
 			txt2map += '<td id="'+id+'" onClick="action(turn,this.id)">' ;
@@ -65,7 +85,9 @@ function newGame() // 開新遊戲
 	total_1p.innerHTML = skin[1] + " 的分數：0分" ;
 	total_2p.innerHTML = skin[2] + " 的分數：0分" ;
 	
-	var txt2msg = "新的遊戲開始了。" ;
+	showWhoTrun() ; // 顯示該誰下
+	
+	let txt2msg = "新的遊戲開始了。" ;
 	txt2msg += "<br />該 "+skin[turn]+" 下了。" ;
 	msg.innerHTML = txt2msg ;
 	
@@ -73,25 +95,27 @@ function newGame() // 開新遊戲
 
 function action(t,pos) // 下子 ( 誰下 , 位置 )
 {
-	var x = pos.slice(4,5) ; // x座標
-	var y = pos.slice(-1) ; // y座標
+	let x = pos.slice(4,5) ; // x座標
+	let y = pos.slice(-1) ; // y座標
 
 	// alert(eval(pos).innerHTML) ;
 	
 	if( eval(pos).innerHTML == skin[0] )
 	{
 		eval(pos).innerHTML = skin[turn] ; // 下子
-		score(x,y) ; // 計分
+		let skewer = score(x,y) ; // 計分 並且 記錄是否有串燒
 		step ++ ; // 棋步+1
 		if(step<81)
 		{
-			turn = 3 - turn ; // 換人下子
+			skewer || ( turn = 3 - turn , showWhoTrun() ) ; // 換人下子
 			msg.innerHTML = "該 "+skin[turn]+" 下了。" ;
 		}
 		else
 		{
+			turn = 0 ;
+			showWhoTrun() ; // 清除 該誰下
 			msg.innerHTML = "遊戲已結束。" ;
-			var txt2alert = "這局遊戲已結束。\n" ;
+			let txt2alert = "這局遊戲已結束。\n" ;
 			txt2alert += "雙方得分 "+score_1p+" : "+score_2p+ "\n" ;
 			if(score_1p > score_2p) txt2alert += "勝出者是：" + skin[1] ;
 			else if(score_1p < score_2p) txt2alert += "勝出者是：" + skin[2] ;
@@ -111,13 +135,14 @@ function score(x,y) // 計分
 {
 	x = x*1 ;
 	y = y*1 ;
-	var match = skin[turn] ; // 匹配的棋子
-	var count = 0 ; // 分數
-	var chain ; // 多少個連子
+	let match = skin[turn] ; // 匹配的棋子
+	let count = 0 ; // 分數
+	let chain ; // 多少個連子
+	let skewer = false ; // 是否成功連到 3 or 6 or 9
 
 	/* - */
 	chain = 1 ; // reset
-	for(var k = 1 ; k <= 8 ; k++ ) // 左
+	for(let k = 1 ; k <= 8 ; k++ ) // 左
 	{
 		try
 		{
@@ -129,7 +154,7 @@ function score(x,y) // 計分
 			break ;
 		}
 	}
-	for(var k = 1 ; k <= 8 ; k++ ) // 右
+	for(let k = 1 ; k <= 8 ; k++ ) // 右
 	{
 		try
 		{
@@ -145,7 +170,7 @@ function score(x,y) // 計分
 	
 	/* | */
 	chain = 1 ; // reset
-	for(var k = 1 ; k <= 8 ; k++ ) // 上
+	for(let k = 1 ; k <= 8 ; k++ ) // 上
 	{
 		try
 		{
@@ -157,7 +182,7 @@ function score(x,y) // 計分
 			break ;
 		}
 	}
-	for(var k = 1 ; k <= 8 ; k++ ) // 下
+	for(let k = 1 ; k <= 8 ; k++ ) // 下
 	{
 		try
 		{
@@ -173,7 +198,7 @@ function score(x,y) // 計分
 	
 	/* \ */
 	chain = 1 ; // reset
-	for(var k = 1 ; k <= 8 ; k++ ) // 左上
+	for(let k = 1 ; k <= 8 ; k++ ) // 左上
 	{
 		try
 		{
@@ -185,7 +210,7 @@ function score(x,y) // 計分
 			break ;
 		}
 	}
-	for(var k = 1 ; k <= 8 ; k++ ) // 右下
+	for(let k = 1 ; k <= 8 ; k++ ) // 右下
 	{
 		try
 		{
@@ -202,7 +227,7 @@ function score(x,y) // 計分
 	
 	/* / */
 	chain = 1 ; // reset
-	for(var k = 1 ; k <= 8 ; k++ ) // 右上
+	for(let k = 1 ; k <= 8 ; k++ ) // 右上
 	{
 		try
 		{
@@ -214,7 +239,7 @@ function score(x,y) // 計分
 			break ;
 		}
 	}
-	for(var k = 1 ; k <= 8 ; k++ ) // 左下
+	for(let k = 1 ; k <= 8 ; k++ ) // 左下
 	{
 		try
 		{
@@ -227,11 +252,22 @@ function score(x,y) // 計分
 		}
 	}
 	if(chain%3==0) count += chain ;
+	
+	count && ( skewer = true ) ; // 成功串燒
 
-	eval("score_"+turn+"p += count")  ; // 更新當前總分
+	eval("score_"+turn+"p += count") ; // 更新當前總分
+	
+	// 輸出分數
+	// eval("add_"+turn+"p").innerHTML += "+"+count+"分<br />" ; // old
+	let opt = document.createElement('option') ;
+	opt.innerText = `+${count}分` ;
+	document.getElementById(`add_${turn}p`).add(opt) ; // 加到記錄列表
+	opt.selected = true ; // 自動選取最新記錄
+	
+	// 題示當前總分
+	document.getElementById(`total_${turn}p`).innerHTML = `${skin[turn]}的分數：${eval("score_"+turn+"p")}分` ;
 
-	eval("add_"+turn+"p").innerHTML += "+"+count+"分<br />" ;
-	eval("total_"+turn+"p").innerHTML = skin[turn] + " 的分數："+ eval("score_"+turn+"p") + "分" ;
+	return skewer ; // 是否成功連到
 }
 
 newGame();

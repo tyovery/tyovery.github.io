@@ -1,0 +1,690 @@
+<html lang="zh-Hant-HK" >
+<head>
+<meta charset="utf-8" />
+<title>夾擊棋</title>
+<style>
+body
+{
+	color: #000 ;
+}
+td
+{
+	user-select: none ;
+	text-align: center ;
+	font-size: 20px ;
+}
+</style>
+</head>
+<body>
+<input type="button" value="?" onclick="help();" />
+<center>
+<h1>夾擊棋</h1>
+
+<table border="0" cellspacing="10" cellpadding="3">
+	<tr>
+	<td>
+	分數：<output id="playerScore">-</output>
+	<br />
+	輪到：<output id="whoTurn">-</output>
+	<br />
+	第 <output id="rounds">-</output> 回合
+	<br />
+	無吃子判和：<output id="notEat">-</output> / <output id="notEatLimit">-</output>
+	<br /><br />
+	<output id="cellInfo">-</output>
+	</td>
+	<td><table border="1" cellspacing="0" cellpadding="3" id="map"></table></td>
+	<td>
+		<input type="button" value="開始新的遊戲" onclick="newGame();" />
+		<br />
+		地圖大小：
+		<input name="setMapSize" type="number" value="6" step="1" min="3" max="16" />
+		×
+		<input name="setMapSize" type="number" value="6" step="1" min="3" max="16" />
+		<br /><br />
+		棋子佈置：
+		<select id="setStartPos" size="9">
+			<optgroup label="單行" >
+				<option value="0.5">前排</option>
+				<option value="0.25">中排</option>
+				<option value="0" selected>後排</option>
+			</optgroup>
+			<optgroup label="陣營" >
+				<option value="check_white">白格</option>
+				<option value="half_rect">半場</option>
+			</optgroup>
+			<optgroup label="混雜" >
+				<option value="barabara">分散各地</option>
+			</optgroup>
+		</select>
+		<br /><br />
+		無吃子多少步判和：
+		<input id="setNotEatToDraw" type="number" value="60" step="2" min="0" max="256" />
+		<br />
+		( 0 = 不判和 )
+	</td>
+	</tr>
+</table>
+
+<br />
+
+</center>
+
+<script>
+let timerBegin = Date.now() , timerEnd ;
+// timer
+
+// code begin here
+
+let mapSize = [6,6] ; // 地圖大小 (y,x)
+let startPos = 0 ; // 兵線 ( 0: 後 , 0.25: 中 , 0.5: 前 )
+let startRange = [1,5] ; // 開始數字範圍
+let ownerName = [ '-' , '紅子' , '藍子' ] ; // 棋格擁有者 名稱
+let ownerColor = [ '#000' , '#c00' , '#07f' ] ; // 棋格擁有者 顏色
+let ownerCurrentPoint = [] ; // 各玩家當前分數
+let piece = '●' ; // 棋子字樣
+let turn = -1 ; // 輪到誰下 ( -1 = 沒有進行中的遊戲 )
+let notEatToDraw = 60 ; // 多少步無進展判和
+let takedCell = null ; // 當前抓住的棋子 的 格子
+let takedCellPos = [-1,-1] ; // 當前抓住的棋子 的 座標
+let takedCellColor = '#cc0' ; // 當前抓住的棋子 的 標記顏色
+let cellBgColor = [ '#fff' , '#ccc' ] ; // 棋格 背景顏色
+
+const table = document.getElementById('map') ; // table
+const showPlayerScore = document.getElementById('playerScore') ; // 顯示 玩家分數 的輸出框
+const showWhoTurn = document.getElementById('whoTurn') ; // 顯示 輪到誰下 的輸出框
+const showRounds = document.getElementById('rounds') ; // 顯示 回合數 的輸出框
+const showNotEat = document.getElementById('notEat') ; // 顯示 無吃子步數 的輸出框
+const showNotEatLimit = document.getElementById('notEatLimit') ; // 顯示 無吃子步數 的輸出框
+const showCellInfo = document.getElementById('cellInfo') ; // 顯示 棋格資訊 的輸出框
+
+// Mouse 離開棋盤時 清空 棋格資訊
+table.setAttribute( 'onmouseleave' , `showCellInfo.innerText = '';` ) ;
+
+function newGame() // 開始新的遊戲
+{
+	let buf = document.createDocumentFragment() ; // buff
+	let tr , td ;
+	
+	// 地圖大小
+	const newMapSize = document.getElementsByName('setMapSize') ;
+	mapSize[0] = ~~ newMapSize[0].value ;
+	mapSize[1] = ~~ newMapSize[1].value ;
+	
+	// 地圖大小 下限 = 3
+	mapSize[0] = Math.max( 3 , mapSize[0] ) ;
+	mapSize[1] = Math.max( 3 , mapSize[1] ) ;
+	
+	// 地圖大小 上限 = 16
+	mapSize[0] = Math.min( 16 , mapSize[0] ) ;
+	mapSize[1] = Math.min( 16 , mapSize[1] ) ;
+	
+	// 兵線
+	startPos = document.getElementById('setStartPos').value ;
+	
+	// 無進展判和 步數
+	notEatToDraw = ~~document.getElementById('setNotEatToDraw').value ;
+	notEatToDraw = Math.max( 0 , notEatToDraw ) ; // 下限
+
+	// 生成 空白地圖
+	for( let y = 0 ; y < mapSize[0] ; ++y )
+	{
+		tr = document.createElement('tr') ;
+		buf.appendChild(tr) ;
+		for( let x = 0 ; x < mapSize[1] ; ++x )
+		{
+			td = document.createElement('td') ;
+			tr.appendChild(td) ;
+			
+			td.id = `cell_${y}_${x}` ; // id
+			
+			// 棋格 座標
+			td.dataset.y = y ;
+			td.dataset.x = x ;
+			
+			td.dataset.owner = 0 ; // 預設公地
+			td.bgColor = cellBgColor[ ( y + x ) % 2 ] ; // 棋格 背景顏色
+
+			td.innerText = '' ; // 內容為 空
+			td.setAttribute( 'onclick' , 'clickCell(this);cellInfo(this);' ) ; // 點擊棋格時
+			td.setAttribute( 'onmouseenter' , 'cellInfo(this);' ) ; // Mouse進入棋格時 顯示棋格資訊
+			td.setAttribute( 'onmousedown' , 'cellInfo(this);' ) ; // 按下棋格時 顯示棋格資訊
+
+			// 樣式
+			td.style.width = '50px' ;
+			td.style.height = '50px' ;
+		}
+	}
+	
+	// 輸出地圖到頁面
+	table.innerHTML = '' ;
+	table.appendChild(buf) ;
+	
+	// reset
+	takedCell = null ; // 當前抓住的棋子 的 格子
+	takedCellPos = [-1,-1] ; // 當前抓住的棋子 的 座標
+	turn = 1 ; // 紅先下
+	showRounds.innerText = '1' ; // 輸出 回合數
+	showNotEat.innerText = '0' ; // 輸出 無吃子步數
+	showNotEatLimit.innerText = notEatToDraw ; // 輸出 無進展步數上限
+	showWhoTurn.innerText = ownerName[1] ; // 輸出輪到誰下 (字)
+	showWhoTurn.style.color = ownerColor[1] ; // 輸出輪到誰下 (色)
+	showCellInfo.innerText = '' ; // 清空 棋格資訊
+	ownerCurrentPoint.length = ownerName.length ; // 玩家分數 (列表長度)
+	ownerCurrentPoint.fill(0) ; // 玩家分數 清0
+
+	let whose ; // 隨機擁有者
+	let cell ; // 當前操作的棋格
+
+	// 根據使用者的設定, 生成對應的開局佈置
+	if( isFinite(startPos) ) // 若 startPos 是數字
+	{
+		y = ~~( ( mapSize[0] - 2 ) * startPos ) ; // 化為行數
+
+		// 生成 藍方棋子
+		for(let x = 0 ; x < mapSize[1] ; ++x )
+		{
+			cell = document.getElementById(`cell_${y}_${x}`) ;
+			cell.dataset.owner = 2 ;
+			cell.style.color = ownerColor[2] ;
+			cell.innerText = piece ;
+			
+			++ ownerCurrentPoint[2] ; // 計玩家分
+		}
+
+		// 生成 紅方棋子
+		for(let x = 0 ; x < mapSize[1] ; ++x )
+		{
+			cell = document.getElementById(`cell_${mapSize[0]-1-y}_${x}`) ;
+			cell.dataset.owner = 1 ;
+			cell.style.color = ownerColor[1] ;
+			cell.innerText = piece ;
+			
+			++ ownerCurrentPoint[1] ; // 計玩家分
+		}
+	}
+	else // 若 startPos 不是數字
+	{
+		switch(startPos)
+		{
+			case 'barabara' :  // 分散各地
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						whose = ~~( Math.random() * ownerName.length ) ; // 隨機擁有者 (包括 公地)
+						
+						if(!whose) continue ; // 跳過公地
+						
+						// 棋子字樣
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = piece ;
+						
+						++ ownerCurrentPoint[whose] ; // 計玩家分
+					}
+				}
+			break ;
+		
+			case 'check_white' :  // 白格
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						// 擁有者
+						if( y < ~~(mapSize[0]/2) )
+						{
+							whose = 2 ;
+						}
+						else if( y >= mapSize[0] / 2 )
+						{
+							whose = 1 ;
+						}
+						else
+						{
+							continue ;
+						}
+						
+						if( ( y + x ) % 2 == 1 ) continue ;
+
+					
+						// 棋子字樣
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = piece ;
+						
+						++ ownerCurrentPoint[whose] ; // 計玩家分
+					}
+				}
+			break ;
+			
+			case 'half_rect' :  // 各自半場
+				for(let y = 0 ; y < mapSize[0] ; ++y )
+				{
+					for(let x = 0 ; x < mapSize[1] ; ++x )
+					{
+						// 擁有者
+						if( y < ~~(mapSize[0]/2) )
+						{
+							whose = 2 ;
+						}
+						else if( y >= mapSize[0] / 2 )
+						{
+							whose = 1 ;
+						}
+						else
+						{
+							continue ;
+						}
+
+					
+						// 棋子字樣
+						cell = document.getElementById(`cell_${y}_${x}`) ;
+						cell.dataset.owner = whose ;
+						cell.style.color = ownerColor[whose] ;
+						cell.innerText = piece ;
+
+						++ ownerCurrentPoint[whose] ; // 計玩家分
+					}
+				}
+			break ;
+		}
+	}
+
+	renewPlayerScore(true) ; // 輸出 玩家分數
+	checkEndGame(true) ; // 檢查能否進行遊戲
+}
+
+function renewPlayerScore( justOutput = false ) // 更新 玩家分數
+{
+	if(!justOutput)
+	{
+		ownerCurrentPoint.fill(0) ; // 重置 玩家分數
+							
+		// 統計 各玩家 的 分數
+		for(let y of table.childNodes )
+		{
+			for(let x of y.childNodes )
+			{
+				ownerCurrentPoint[x.dataset.owner] += !!x.dataset.owner ;
+			}
+		}
+	}
+
+	let point2htm = '' ; // 玩家分數 字串
+	for(let i = 1 ; i < ownerCurrentPoint.length ; ++i )
+	{
+		i > 1 && ( point2htm += ' vs ' ) ;
+		point2htm += `<font color="${ownerColor[i]}">${ownerCurrentPoint[i]}<\/font>` ;
+	}
+	showPlayerScore.innerHTML = point2htm ; // 輸出 玩家分數
+}
+
+function checkEndGame(quiet=false) // 檢查是否結束遊戲
+{
+	let loser = ownerCurrentPoint.slice(1).indexOf(1) + 1 ; // 尋找 剛好有1隻棋子 的人
+	loser || ( loser = ownerCurrentPoint.slice(1).indexOf(0) + 1 ) ; // 尋找 剛好有0隻棋子 的人
+	loser || checkMoveAmount( turn ) || ( loser = turn ) ; // 檢查己方是否欠行
+
+	if( loser ) // 有敗方
+	{
+		quiet || alert( ownerName[3-loser] + ' 獲勝' ) ; // 顯示誰獲勝
+		turn = -1 ; // 遊戲結束
+		showWhoTurn.innerText = ownerName[0] ; // 清空 輪到誰下 (字)
+		showWhoTurn.style.color = ownerColor[0] ; // 清空 輪到誰下 (色)
+		
+		if( takedCell ) // 如有抓子
+		{
+			// 還原棋格背景色
+			takedCell.bgColor = cellBgColor[ ( ~~takedCell.dataset.y + ~~takedCell.dataset.x ) % 2 ] ;
+			
+			takedCellPos = [-1,-1] ; // 重置抓子 座標
+			takedCell = null ; // 清空 抓子格
+		}
+		
+		return true ;
+	}
+	else return false ;
+}
+
+function canMove( from = [] , to = [] ) // 檢查是否合法棋步 [y,x] -> [y,x]
+{
+	if( !( from.length >= 2 && to.length >= 2 ) ) return ;
+
+	// 數字化
+	from[0] = ~~from[0] ;
+	from[1] = ~~from[1] ;
+	to[0] = ~~to[0] ;
+	to[1] = ~~to[1] ;
+
+	let roadClear = false ; // 道路是否暢通
+
+	let sameY = to[0] - from[0] ; // 0 = 移動時 y 座標不變
+	let sameX = to[1] - from[1] ; // 0 = 移動時 x 座標不變
+	if( !sameY != !sameX ) // 目標格 為 抓子的上下左右方向的範圍
+	{
+		roadClear = true ; // 道路是否暢通
+		let checkCell ; // 當前檢查 的 棋格
+		let y = to[0] ; // 當前檢查棋格的 y座標
+		let x = to[1] ; // 當前檢查棋格的 x座標
+
+		if(sameY) // 上下移動
+		{
+			for(let y = to[0] ; y != from[0] ; y -= Math.sign(sameY) )
+			{
+				checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
+				~~checkCell.dataset.owner && ( roadClear = false ) ; // 有棋子阻擋就不准移動
+			}
+		}
+		else // 左右移動
+		{
+			for(let x = to[1] ; x != from[1] ; x -= Math.sign(sameX) )
+			{
+				checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
+				~~checkCell.dataset.owner && ( roadClear = false ) ; // 有棋子阻擋就不准移動
+			}
+		}
+	}
+	return roadClear ; // 返回 是否合法棋步 (真假值)
+}
+
+function toMove( from = [] , to = [] ) // 移動棋子(不檢查是否合法棋步) [y,x] -> [y,x]
+{
+	if( !( from.length >= 2 && to.length >= 2 ) ) return ;
+
+	let fromCell = document.getElementById(`cell_${from[0]}_${from[1]}`) ; // 來源棋格
+	let toCell = document.getElementById(`cell_${to[0]}_${to[1]}`) ; // 目標棋格
+
+	// 數字化
+	from[0] = ~~from[0] ;
+	from[1] = ~~from[1] ;
+	to[0] = ~~to[0] ;
+	to[1] = ~~to[1] ;
+	
+	// 移動棋子
+	toCell.innerText = piece ; // 把棋子 轉移到 目標棋格
+	toCell.dataset.owner = fromCell.dataset.owner ; // 改變 目標棋格 擁有者 為 己方
+	toCell.style.color = ownerColor[fromCell.dataset.owner] ; // 改變 目標棋子 顏色 為 己方
+
+	fromCell.innerText = '' ; // 清空 來源棋格
+	fromCell.dataset.owner = 0 ; // 來源棋格 變為公地
+}
+
+function checkEat( down = [] , take = false ) // 檢查食棋
+{	// 返回能食多少隻棋 , down = 落子座標[y,x] , take = 是否提子
+	if( down.length < 2 ) return ;
+
+	let downCell = document.getElementById(`cell_${down[0]}_${down[1]}`) ; // 落子棋格
+	let turn = downCell.dataset.owner ; // 落子者
+
+	// 數字化
+	down[0] = ~~down[0] ;
+	down[1] = ~~down[1] ;
+
+	// 食棋規則
+	let eatList = [] ; // 被食棋子的棋格
+	let chkList = [] ; // 暫時記錄的敵方棋子格(可能被食棋的棋格)
+	let y , x ; // 當前檢查棋格的 y,x 座標
+	let checkCell ; // 當前檢查 的 棋格
+
+	// 檢查棋格有冇棋食 (上)
+	y = down[0] - 1 ; // 當前檢查棋格的 y座標
+	x = down[1] ; // 當前檢查棋格的 x座標
+	while( y >= 0 )
+	{
+		checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
+		if( checkCell.dataset.owner == 3 - turn ) // 檢查 的 棋格 為 敵方
+		{
+			if(y)
+			{
+				chkList.push(checkCell) ; // 加到 可能被食棋的棋格 清單
+			}
+			else
+			{
+				chkList = [] ; // 沒有棋食
+			}
+			--y ; // 繼續檢查上面一格
+		}
+		else if( checkCell.dataset.owner == 0 ) // 檢查 的 棋格 為 公地
+		{
+			chkList = [] ; // 沒有棋食
+			y = -1 ; // 短路
+		}
+		else // 檢查 的 棋格 為 己方
+		{
+			y = -1 ; // 短路
+		}
+	}
+	eatList.push(...chkList) ;
+	
+	// 檢查棋格有冇棋食 (下)
+	y = down[0] + 1 ; // 當前檢查棋格的 y座標
+	chkList = [] ; // 清空
+	while( y < mapSize[0] )
+	{
+		checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
+		if( checkCell.dataset.owner == 3 - turn ) // 檢查 的 棋格 為 敵方
+		{
+			if( y < mapSize[0] - 1 )
+			{
+				chkList.push(checkCell) ; // 加到 可能被食棋的棋格 清單
+			}
+			else
+			{
+				chkList = [] ; // 沒有棋食
+			}
+			++y ; // 繼續檢查下面一格
+		}
+		else if( checkCell.dataset.owner == 0 ) // 檢查 的 棋格 為 公地
+		{
+			chkList = [] ; // 沒有棋食
+			y = mapSize[0] ; // 短路
+		}
+		else // 檢查 的 棋格 為 己方
+		{
+			y = mapSize[0] ; // 短路
+		}
+	}
+	eatList.push(...chkList) ;
+	
+	// 檢查棋格有冇棋食 (左)
+	y = down[0] ; // 當前檢查棋格的 y座標
+	x = down[1] - 1  ; // 當前檢查棋格的 x座標
+	chkList = [] ; // 清空
+	while( x >= 0 )
+	{
+		checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
+		if( checkCell.dataset.owner == 3 - turn ) // 檢查 的 棋格 為 敵方
+		{
+			if(x)
+			{
+				chkList.push(checkCell) ; // 加到 可能被食棋的棋格 清單
+			}
+			else
+			{
+				chkList = [] ; // 沒有棋食
+			}
+			--x ; // 繼續檢查左面一格
+		}
+		else if( checkCell.dataset.owner == 0 ) // 檢查 的 棋格 為 公地
+		{
+			chkList = [] ; // 沒有棋食
+			x = -1 ; // 短路
+		}
+		else // 檢查 的 棋格 為 己方
+		{
+			x = -1 ; // 短路
+		}
+	}
+	eatList.push(...chkList) ;
+	
+	// 檢查棋格有冇棋食 (右)
+	x = down[1] + 1 ; // 當前檢查棋格的 x座標
+	chkList = [] ; // 清空
+	while( x < mapSize[1] )
+	{
+		checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
+		if( checkCell.dataset.owner == 3 - turn ) // 檢查 的 棋格 為 敵方
+		{
+			if( x < mapSize[1] - 1 )
+			{
+				chkList.push(checkCell) ; // 加到 可能被食棋的棋格 清單
+			}
+			else
+			{
+				chkList = [] ; // 沒有棋食
+			}
+			++x ; // 繼續檢查右面一格
+		}
+		else if( checkCell.dataset.owner == 0 ) // 檢查 的 棋格 為 公地
+		{
+			chkList = [] ; // 沒有棋食
+			x = mapSize[1] ; // 短路
+		}
+		else // 檢查 的 棋格 為 己方
+		{
+			x = mapSize[1] ; // 短路
+		}
+	}
+	eatList.push(...chkList) ;
+	
+	if( take && eatList.length ) // 提子
+	{
+		for(let i = 0 , dieCell ; i < eatList.length ; ++i)
+		{
+			dieCell = eatList[i] ; // 死子的棋格
+			dieCell.innerText = '' ; // 清空 死子棋格
+			dieCell.dataset.owner = 0 ; // 改變 死子棋格 擁有者 為 公地
+			dieCell.style.color = ownerColor[0] ; // 改變 死子 顏色 為 公地
+		}
+	}
+	return eatList.length ; // 返回能食多少隻棋
+}
+
+function checkMoveAmount( who ) // 檢查一方 當前有多少合法棋步 (0=欠行)
+{
+	if( !who ) return ;
+
+	let moveAmount = 0 ; // 有多少合法棋步
+	let checkedAmount = 0 ; // 已檢查了該方多少隻棋
+	let cell ; // 當前檢查 的 來源棋格
+
+	// 檢查走法 [y,x] -> [Y,X]
+	for(let y = 0 ; y < mapSize[0] ; ++y )
+	{
+		for(let x = 0 ; x < mapSize[1] ; ++x )
+		{
+			if( checkedAmount >= ownerCurrentPoint[who] ) break ;
+			cell = document.getElementById(`cell_${y}_${x}`) ;
+			if( cell.dataset.owner == who ) // 是該方的棋子
+			{
+				for(let Y = 0 ; Y < mapSize[0] ; ++Y )
+				{
+					for(let X = 0 ; X < mapSize[1] ; ++X )
+					{
+						moveAmount += canMove( [y,x] , [Y,X] ) ; // 計 合法棋步
+					}
+				}
+			}
+		}
+	}
+	return moveAmount ; // 返回 有多少合法棋步
+}
+
+function clickCell(cell) // 點擊 棋格 時
+{
+	if( takedCell ) // 已有 抓住的棋子
+	{
+		if( canMove( [ takedCellPos[0] , takedCellPos[1] ] , [ cell.dataset.y , cell.dataset.x ] ) )
+		{	// 合法棋步
+			toMove( [ takedCellPos[0] , takedCellPos[1] ] , [ cell.dataset.y , cell.dataset.x ] ) ; // 走子
+			if ( checkEat( [ cell.dataset.y , cell.dataset.x ] , true ) ) // 有棋食
+			{
+				showNotEat.innerText = '0' ; // 無吃子步數 清0
+				renewPlayerScore() ; // 更新 並 輸出 玩家分數
+			}
+			else // 冇棋食
+			{
+				if( !( ++ showNotEat.innerText - notEatToDraw ) ) // 無吃子步數 +1
+				{	// 達到上限 則判和
+					alert( '無進展判和' ) ;
+					turn = -1 ; // 遊戲結束
+					showWhoTurn.innerText = ownerName[0] ; // 清空 輪到誰下 (字)
+					showWhoTurn.style.color = ownerColor[0] ; // 清空 輪到誰下 (色)
+					
+					// 還原棋格背景色
+					takedCell.bgColor = cellBgColor[ ( ~~takedCell.dataset.y + ~~takedCell.dataset.x ) % 2 ] ;
+					
+					takedCellPos = [-1,-1] ; // 重置抓子 座標
+					takedCell = null ; // 清空 抓子格
+					
+					return ;
+				}
+			}
+			turn = 3 - turn ; // 輪到對方下棋
+			if( checkEndGame() ) return ; // 檢查是否結束遊戲
+			turn - 1 || ++showRounds.innerText ; // 輸出 回合數
+			showWhoTurn.innerText = ownerName[turn] ; // 輸出輪到誰下 (字)
+			showWhoTurn.style.color = ownerColor[turn] ; // 輸出輪到誰下 (色)
+		}
+
+		// 取消抓子
+		takedCell.bgColor = cellBgColor[ ( ~~takedCell.dataset.y + ~~takedCell.dataset.x ) % 2 ] ; // 還原棋格背景色
+		takedCell = null ; // 重置 抓子 的格子
+		takedCellPos[0] = -1 ; // 重置 抓子座標 y
+		takedCellPos[1] = -1 ; // 重置 抓子座標 x
+	}
+	else // 當前 沒有 抓住的棋子
+	{
+		if( cell.dataset.owner != turn ) return ; // 不是輪到他走
+		
+		takedCell = cell ; // 記錄 抓子 的格子
+		takedCellPos[0] = ~~cell.dataset.y ; // 記錄 抓子 的 y座標
+		takedCellPos[1] = ~~cell.dataset.x ; // 記錄 抓子 的 x座標
+		cell.bgColor = takedCellColor ; // 標記 抓子 的 棋格 (上色)
+	}
+}
+
+function cellInfo(cell) // 棋格資訊
+{
+	let targetCellOwner = ~~cell.dataset.owner ; 
+
+	let txt = `已選棋格: ( ${ takedCell ? takedCellPos.join(' , ') : '沒有' } )` ;
+	txt += `\n目標棋格: ( ${cell.dataset.y} , ${cell.dataset.x} )` ;
+	txt += `\n${ !targetCellOwner ? '沒有' : targetCellOwner - turn ? '敵方' : '己方' }棋子` ;
+	canMove( [ takedCellPos[0] , takedCellPos[1] ] , [ cell.dataset.y , cell.dataset.x ] ) && ( txt += `\n可移動` ) ;
+	showCellInfo.innerText = txt ;
+}
+
+function help() // 說明
+{
+	let txt = '遊戲規則如下：' ;
+	txt += '\n1) 當己方移動棋子後，在同一行或同一列，己方棋子從兩旁夾住對方棋子(沒有空格)，則把對方棋子吃掉(可吃多於一子)。' ;
+	txt += '\n2) 己方棋子可以走到被對方夾住的棋格，不會被吃掉。' ;
+	txt += '\n3) 先剩下少於2隻棋子的一方為敗方。' ;
+	txt += '\n4) 欠行作負。' ;
+	txt += '\n5) 長捉作負。' ;
+	alert(txt);
+}
+
+
+// code End here
+</script>
+
+<center>
+<br />
+<hr />
+Coded by ~tyovery~<br />2024-05
+</center>
+
+<script>
+// timer
+timerEnd=Date.now();
+document.write('<p style="font-size: 12px;">Load Time: '+(timerEnd-timerBegin)+'ms</p>');
+// timer
+</script>
+
+</body>
+</html>

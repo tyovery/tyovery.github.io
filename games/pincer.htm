@@ -23,7 +23,7 @@ td
 <table border="0" cellspacing="10" cellpadding="3">
 	<tr>
 	<td>
-	分數：<output id="playerScore">-</output>
+	棋子：<output id="playerScore">-</output>
 	<br />
 	輪到：<output id="whoTurn">-</output>
 	<br />
@@ -62,6 +62,15 @@ td
 		<input id="setNotEatToDraw" type="number" value="60" step="2" min="0" max="256" />
 		<br />
 		( 0 = 不判和 )
+		<br /><br />
+		<input id="setBlueIsAi" type="checkbox" />
+		電腦執藍子
+		<br />
+		<select id="setBlueAiLevel" size="3">
+			<option value="random_move" selected>隨機走子</option>
+			<option value="eat_most" >貪吃</option>
+			<option value="lose_least" >損失最少</option>
+		</select>
 	</td>
 	</tr>
 </table>
@@ -89,6 +98,7 @@ let takedCell = null ; // 當前抓住的棋子 的 格子
 let takedCellPos = [-1,-1] ; // 當前抓住的棋子 的 座標
 let takedCellColor = '#cc0' ; // 當前抓住的棋子 的 標記顏色
 let cellBgColor = [ '#fff' , '#ccc' ] ; // 棋格 背景顏色
+let aiSleepTime = 500 ; // AI走子的延遲(ms)
 
 const table = document.getElementById('map') ; // table
 const showPlayerScore = document.getElementById('playerScore') ; // 顯示 玩家分數 的輸出框
@@ -97,6 +107,8 @@ const showRounds = document.getElementById('rounds') ; // 顯示 回合數 的�
 const showNotEat = document.getElementById('notEat') ; // 顯示 無吃子步數 的輸出框
 const showNotEatLimit = document.getElementById('notEatLimit') ; // 顯示 無吃子步數 的輸出框
 const showCellInfo = document.getElementById('cellInfo') ; // 顯示 棋格資訊 的輸出框
+const setBlueIsAiCheckbox = document.getElementById('setBlueIsAi') ; // AI執藍子 的勾選格
+const setBlueAiLevel_sel = document.getElementById('setBlueAiLevel') ; // AI執藍子 的策略 的 select tag
 
 // Mouse 離開棋盤時 清空 棋格資訊
 table.setAttribute( 'onmouseleave' , `showCellInfo.innerText = '';` ) ;
@@ -295,6 +307,7 @@ function newGame() // 開始新的遊戲
 
 	renewPlayerScore(true) ; // 輸出 玩家分數
 	checkEndGame(true) ; // 檢查能否進行遊戲
+	checkAiTurn() ; // 檢查是否輪到 AI 走棋
 }
 
 function renewPlayerScore( justOutput = false ) // 更新 玩家分數
@@ -326,7 +339,7 @@ function checkEndGame(quiet=false) // 檢查是否結束遊戲
 {
 	let loser = ownerCurrentPoint.slice(1).indexOf(1) + 1 ; // 尋找 剛好有1隻棋子 的人
 	loser || ( loser = ownerCurrentPoint.slice(1).indexOf(0) + 1 ) ; // 尋找 剛好有0隻棋子 的人
-	loser || checkMoveAmount( turn ) || ( loser = turn ) ; // 檢查己方是否欠行
+	loser || checkMove( turn ).length || ( loser = turn ) ; // 檢查己方是否欠行
 
 	if( loser ) // 有敗方
 	{
@@ -563,13 +576,15 @@ function checkEat( down = [] , take = false ) // 檢查食棋
 	return eatList.length ; // 返回能食多少隻棋
 }
 
-function checkMoveAmount( who ) // 檢查一方 當前有多少合法棋步 (0=欠行)
+function checkMove( who ) // 檢查一方 當前的所有合法棋步 (沒有=欠行)
 {
 	if( !who ) return ;
 
-	let moveAmount = 0 ; // 有多少合法棋步
+	// let moveAmount = 0 ; // 有多少合法棋步
+	let okMove = [] ; // 合法棋步
 	let checkedAmount = 0 ; // 已檢查了該方多少隻棋
 	let cell ; // 當前檢查 的 來源棋格
+	
 
 	// 檢查走法 [y,x] -> [Y,X]
 	for(let y = 0 ; y < mapSize[0] ; ++y )
@@ -584,14 +599,77 @@ function checkMoveAmount( who ) // 檢查一方 當前有多少合法棋步 (0=�
 				{
 					for(let X = 0 ; X < mapSize[1] ; ++X )
 					{
-						moveAmount += canMove( [y,x] , [Y,X] ) ; // 計 合法棋步
+						// moveAmount += canMove( [y,x] , [Y,X] ) ; // 計 合法棋步
+						canMove( [y,x] , [Y,X] ) && okMove.push( [ [y,x] , [Y,X] ] ) ;
 					}
 				}
 			}
 		}
 	}
-	return moveAmount ; // 返回 有多少合法棋步
+	return okMove ; // 返回 有多少合法棋步
 }
+
+function checkAiTurn() // 檢查是否輪到 AI
+{
+	if( turn == 2 && setBlueIsAiCheckbox.checked ) // 輛到 藍子 且 藍子被設為AI
+	{
+		let moveList = checkMove(turn) ; // 合法棋步 列表
+		let r ; // 隨機數
+		
+		switch(setBlueAiLevel_sel.value)
+		{
+			case 'random_move' :
+				r = ~~ ( Math.random() * moveList.length ) ;
+
+				// 模擬點擊 來源棋格
+				takedCell = document.getElementById(`cell_${moveList[r][0][0]}_${moveList[r][0][1]}`) ; // 改變 抓子 的格子
+				takedCellPos[0] = moveList[r][0][0] ; // 改變 抓子 的 y座標
+				takedCellPos[1] = moveList[r][0][1] ; // 改變 抓子 的 x座標
+				// cell.bgColor = takedCellColor ; // 標記 抓子 的 棋格 (上色)
+
+				// 模擬點擊 目標棋格
+				clickCell( document.getElementById(`cell_${moveList[r][1][0]}_${moveList[r][1][1]}`) ) ;
+			break ;
+
+			case 'eat_most' :
+				let eatMax = 0 ; // 最大吃子數
+				let option = [] ; // 考慮清單: 那些 吃最多子 的 走法 的 index
+				moveList.forEach(chk) ;
+				function chk(move,i) // 檢查當前走法
+				{
+					toMove( move[0] , move[1] ) ; // 模擬 移動棋子
+					let eatCurrent = checkEat(move[1]) ; // 當前走法能吃多少棋子
+					if( eatCurrent > eatMax ) // 如果當前檢查的走法能吃 更多 的棋子
+					{
+						eatMax = Math.max( eatMax , checkEat(move[1]) ) ; // 更新 最大吃子數
+						option = [i] ; // 改變 考慮清單
+					}
+					else if( eatCurrent == eatMax ) // 如果當前檢查的走法能吃 同樣多 的棋子
+					{
+						option.push(i) ; // 增加當前走法到 考慮清單
+					}
+					toMove( move[1] , move[0] ) ; // 還原 移動棋子
+				}
+				r = ~~ ( Math.random() * option.length ) ; // 在 考慮清單 中, 隨機選一個出來走
+				
+				// 模擬點擊 來源棋格
+				takedCell = document.getElementById(`cell_${moveList[option[r]][0][0]}_${moveList[option[r]][0][1]}`) ; // 改變 抓子 的格子
+				takedCellPos[0] = moveList[option[r]][0][0] ; // 改變 抓子 的 y座標
+				takedCellPos[1] = moveList[option[r]][0][1] ; // 改變 抓子 的 x座標
+				// cell.bgColor = takedCellColor ; // 標記 抓子 的 棋格 (上色)
+
+				// 模擬點擊 目標棋格
+				clickCell( document.getElementById(`cell_${moveList[option[r]][1][0]}_${moveList[option[r]][1][1]}`) ) ;
+			break ;
+
+			case 'lose_least' :
+			break ;
+		}
+	}
+}
+
+// 當改變 AI 設定時 , 檢查是否輪到 AI 走棋
+setBlueIsAiCheckbox.setAttribute( 'onchange' , 'checkAiTurn();' ) ;
 
 function clickCell(cell) // 點擊 棋格 時
 {
@@ -623,6 +701,7 @@ function clickCell(cell) // 點擊 棋格 時
 					return ;
 				}
 			}
+
 			turn = 3 - turn ; // 輪到對方下棋
 			if( checkEndGame() ) return ; // 檢查是否結束遊戲
 			turn - 1 || ++showRounds.innerText ; // 輸出 回合數
@@ -635,6 +714,8 @@ function clickCell(cell) // 點擊 棋格 時
 		takedCell = null ; // 重置 抓子 的格子
 		takedCellPos[0] = -1 ; // 重置 抓子座標 y
 		takedCellPos[1] = -1 ; // 重置 抓子座標 x
+		
+		setTimeout( checkAiTurn , aiSleepTime ) ; // 檢查是否輪到 AI
 	}
 	else // 當前 沒有 抓住的棋子
 	{

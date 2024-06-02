@@ -63,12 +63,13 @@ td
 		<br />
 		( 0 = 不判和 )
 		<br /><br />
-		<input id="setBlueIsAi" type="checkbox" />
+		<input id="setBlueIsAi" type="checkbox" checked />
 		電腦執藍子
 		<br />
-		<select id="setBlueAiLevel" size="2">
-			<option value="random_move" selected>隨機走子</option>
-			<option value="eat_most" >貪吃</option>
+		<select id="setBlueAiDepth" size="3">
+			<option value="0" >隨機走子</option>
+			<option value="1" >思考1層</option>
+			<option value="2" selected >思考2層</option>
 		</select>
 	</td>
 	</tr>
@@ -97,7 +98,7 @@ let takedCell = null ; // 當前抓住的棋子 的 格子
 let takedCellPos = [-1,-1] ; // 當前抓住的棋子 的 座標
 let takedCellColor = '#cc0' ; // 當前抓住的棋子 的 標記顏色
 let cellBgColor = [ '#fff' , '#ccc' ] ; // 棋格 背景顏色
-let aiSleepTime = 500 ; // AI走子的延遲(ms)
+let aiSleepTime = 40 ; // AI走子的延遲(ms)
 
 const table = document.getElementById('map') ; // table
 const showPlayerScore = document.getElementById('playerScore') ; // 顯示 玩家分數 的輸出框
@@ -107,7 +108,7 @@ const showNotEat = document.getElementById('notEat') ; // 顯示 無吃子步數
 const showNotEatLimit = document.getElementById('notEatLimit') ; // 顯示 無吃子步數 的輸出框
 const showCellInfo = document.getElementById('cellInfo') ; // 顯示 棋格資訊 的輸出框
 const setBlueIsAiCheckbox = document.getElementById('setBlueIsAi') ; // AI執藍子 的勾選格
-const setBlueAiLevel_sel = document.getElementById('setBlueAiLevel') ; // AI執藍子 的策略 的 select tag
+const setBlueAiDepth_sel = document.getElementById('setBlueAiDepth') ; // AI執藍子 的策略 的 select tag
 
 // Mouse 離開棋盤時 清空 棋格資訊
 table.setAttribute( 'onmouseleave' , `showCellInfo.innerText = '';` ) ;
@@ -309,7 +310,64 @@ function newGame() // 開始新的遊戲
 	checkAiTurn() ; // 檢查是否輪到 AI 走棋
 }
 
-function renewPlayerScore( justOutput = false ) // 更新 玩家分數
+function changeMapTo( map = [] ) // 改變當前局面 map: 2D Array
+{
+	if( !map.length ) return ;
+	
+	let cell ; // 當前 棋格
+	let owner ; // 當前 棋格 擁有者
+	for(let y = 0 ; y < map.length ; ++y )
+	{
+		for(let x = 0 ; x < map[y].length ; ++x )
+		{
+			cell = document.getElementById(`cell_${y}_${x}`) ; // 當前 棋格
+			owner = map[y][x] ; // 當前 棋格 擁有者
+			
+			cell.dataset.owner = owner ; // 改變 棋格擁有者
+			cell.style.color = ownerColor[owner] ; // 改變 顏色
+			cell.innerText = ~~owner ? piece : '' ; // 改變 棋格字樣
+
+			renewPlayerScore() ; // 更新 玩家分數
+		}
+	}
+}
+
+function getMap() // 暫存當前局面(取得每個棋格的擁有者 組成的 2D Array)
+{
+	let map = [] ;
+	let cell ; // 當前 棋格
+	for(let y = 0 ; y < mapSize[0] ; ++y )
+	{
+		map[y] = [] ;
+		for(let x = 0 ; x < mapSize[1] ; ++x )
+		{
+			cell = document.getElementById(`cell_${y}_${x}`) ; // 當前 棋格
+			map[y][x] = ~~cell.dataset.owner ; // 取得 棋格擁有者
+		}
+	}
+	
+	return map ; // 2D Array
+}
+
+function getChildsMap(turn) // 取得所有子節點的 局面 , turn = 輪到誰下
+{
+	if( arguments.length < 1 ) return ;
+
+	let root = getMap() ; // 當前節點
+	let moves = checkMove(turn) ; // 子節點
+	let maps = [] ; // 子節點 局面
+	
+	for( let i = 0 ; i < moves.length ; ++i )
+	{
+		toMove( ...moves[i] ) ; // 走子
+		checkEat( moves[i][2] , moves[i][3] , turn , true ) ; // 吃子
+		maps.push( getMap() ) ;
+		changeMapTo(root) ; // 還原局面
+	}
+	return maps ;
+}
+
+function renewPlayerScore( justOutput = false , output = true ) // 更新 玩家分數
 {
 	if(!justOutput)
 	{
@@ -325,13 +383,16 @@ function renewPlayerScore( justOutput = false ) // 更新 玩家分數
 		}
 	}
 
-	let point2htm = '' ; // 玩家分數 字串
-	for(let i = 1 ; i < ownerCurrentPoint.length ; ++i )
+	if(output)
 	{
-		i > 1 && ( point2htm += ' vs ' ) ;
-		point2htm += `<font color="${ownerColor[i]}">${ownerCurrentPoint[i]}<\/font>` ;
+		let point2htm = '' ; // 玩家分數 字串
+		for(let i = 1 ; i < ownerCurrentPoint.length ; ++i )
+		{
+			i > 1 && ( point2htm += ' vs ' ) ;
+			point2htm += `<font color="${ownerColor[i]}">${ownerCurrentPoint[i]}<\/font>` ;
+		}
+		showPlayerScore.innerHTML = point2htm ; // 輸出 玩家分數
 	}
-	showPlayerScore.innerHTML = point2htm ; // 輸出 玩家分數
 }
 
 function checkEndGame(quiet=false) // 檢查是否結束遊戲
@@ -346,6 +407,7 @@ function checkEndGame(quiet=false) // 檢查是否結束遊戲
 		turn = -1 ; // 遊戲結束
 		showWhoTurn.innerText = ownerName[0] ; // 清空 輪到誰下 (字)
 		showWhoTurn.style.color = ownerColor[0] ; // 清空 輪到誰下 (色)
+		showNotEat.innerText = '0' ; // 無吃子步數 清0
 		
 		if( takedCell ) // 如有抓子
 		{
@@ -361,30 +423,30 @@ function checkEndGame(quiet=false) // 檢查是否結束遊戲
 	else return false ;
 }
 
-function canMove( from = [] , to = [] ) // 檢查是否合法棋步 [y,x] -> [y,x]
+function canMove( fromY , fromX , toY , toX ) // 檢查是否合法棋步 [ fromY , fromX ] -> [ toY , toX ]
 {
-	if( !( from.length >= 2 && to.length >= 2 ) ) return ;
+	if( arguments.length < 4 ) return ;
 
 	// 數字化
-	from[0] = ~~from[0] ;
-	from[1] = ~~from[1] ;
-	to[0] = ~~to[0] ;
-	to[1] = ~~to[1] ;
+	fromY = ~~fromY ;
+	fromX = ~~fromX ;
+	toY = ~~toY ;
+	toX = ~~toX ;
 
 	let roadClear = false ; // 道路是否暢通
 
-	let sameY = to[0] - from[0] ; // 0 = 移動時 y 座標不變
-	let sameX = to[1] - from[1] ; // 0 = 移動時 x 座標不變
+	let sameY = toY - fromY ; // 0 = 移動時 y 座標不變
+	let sameX = toX - fromX ; // 0 = 移動時 x 座標不變
 	if( !sameY != !sameX ) // 目標格 為 抓子的上下左右方向的範圍
 	{
 		roadClear = true ; // 道路是否暢通
 		let checkCell ; // 當前檢查 的 棋格
-		let y = to[0] ; // 當前檢查棋格的 y座標
-		let x = to[1] ; // 當前檢查棋格的 x座標
+		let y = toY ; // 當前檢查棋格的 y座標
+		let x = toX ; // 當前檢查棋格的 x座標
 
 		if(sameY) // 上下移動
 		{
-			for(let y = to[0] ; y != from[0] ; y -= Math.sign(sameY) )
+			for(let y = toY ; y != fromY ; y -= Math.sign(sameY) )
 			{
 				checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
 				~~checkCell.dataset.owner && ( roadClear = false ) ; // 有棋子阻擋就不准移動
@@ -392,7 +454,7 @@ function canMove( from = [] , to = [] ) // 檢查是否合法棋步 [y,x] -> [y,
 		}
 		else // 左右移動
 		{
-			for(let x = to[1] ; x != from[1] ; x -= Math.sign(sameX) )
+			for(let x = toX ; x != fromX ; x -= Math.sign(sameX) )
 			{
 				checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
 				~~checkCell.dataset.owner && ( roadClear = false ) ; // 有棋子阻擋就不准移動
@@ -402,19 +464,13 @@ function canMove( from = [] , to = [] ) // 檢查是否合法棋步 [y,x] -> [y,
 	return roadClear ; // 返回 是否合法棋步 (真假值)
 }
 
-function toMove( from = [] , to = [] ) // 移動棋子(不檢查是否合法棋步) [y,x] -> [y,x]
+function toMove( fromY , fromX , toY , toX ) // 移動棋子(不檢查是否合法棋步) [ fromY , fromX ] -> [ toY , toX ]
 {
-	if( !( from.length >= 2 && to.length >= 2 ) ) return ;
+	if( arguments.length < 4 ) return ;
 
-	let fromCell = document.getElementById(`cell_${from[0]}_${from[1]}`) ; // 來源棋格
-	let toCell = document.getElementById(`cell_${to[0]}_${to[1]}`) ; // 目標棋格
+	let fromCell = document.getElementById(`cell_${fromY}_${fromX}`) ; // 來源棋格
+	let toCell = document.getElementById(`cell_${toY}_${toX}`) ; // 目標棋格
 
-	// 數字化
-	from[0] = ~~from[0] ;
-	from[1] = ~~from[1] ;
-	to[0] = ~~to[0] ;
-	to[1] = ~~to[1] ;
-	
 	// 移動棋子
 	toCell.innerText = piece ; // 把棋子 轉移到 目標棋格
 	toCell.dataset.owner = fromCell.dataset.owner ; // 改變 目標棋格 擁有者 為 己方
@@ -424,16 +480,16 @@ function toMove( from = [] , to = [] ) // 移動棋子(不檢查是否合法棋�
 	fromCell.dataset.owner = 0 ; // 來源棋格 變為公地
 }
 
-function checkEat( down = [] , take = false ) // 檢查食棋
-{	// 返回能食多少隻棋 , down = 落子座標[y,x] , take = 是否提子
-	if( down.length < 2 ) return ;
+function checkEat( downY , downX , turn , take = false ) // 檢查食棋
+{	// 返回能食多少隻棋 , [downY,downX] = 落子座標[y,x] , turn = 落子者 , take = 是否提子
+	if( arguments.length < 3 ) return ;
 
-	let downCell = document.getElementById(`cell_${down[0]}_${down[1]}`) ; // 落子棋格
-	let turn = downCell.dataset.owner ; // 落子者
+	// let downCell = document.getElementById(`cell_${downY}_${downX}`) ; // 落子棋格
+	// let turn = downCell.dataset.owner ; // 落子者
 
 	// 數字化
-	down[0] = ~~down[0] ;
-	down[1] = ~~down[1] ;
+	downY = ~~downY ;
+	downX = ~~downX ;
 
 	// 食棋規則
 	let eatList = [] ; // 被食棋子的棋格
@@ -442,8 +498,8 @@ function checkEat( down = [] , take = false ) // 檢查食棋
 	let checkCell ; // 當前檢查 的 棋格
 
 	// 檢查棋格有冇棋食 (上)
-	y = down[0] - 1 ; // 當前檢查棋格的 y座標
-	x = down[1] ; // 當前檢查棋格的 x座標
+	y = downY - 1 ; // 當前檢查棋格的 y座標
+	x = downX ; // 當前檢查棋格的 x座標
 	while( y >= 0 )
 	{
 		checkCell = document.getElementById(`cell_${y}_${x}`) ; // 當前檢查 的 棋格
@@ -472,7 +528,7 @@ function checkEat( down = [] , take = false ) // 檢查食棋
 	eatList.push(...chkList) ;
 	
 	// 檢查棋格有冇棋食 (下)
-	y = down[0] + 1 ; // 當前檢查棋格的 y座標
+	y = downY + 1 ; // 當前檢查棋格的 y座標
 	chkList = [] ; // 清空
 	while( y < mapSize[0] )
 	{
@@ -502,8 +558,8 @@ function checkEat( down = [] , take = false ) // 檢查食棋
 	eatList.push(...chkList) ;
 	
 	// 檢查棋格有冇棋食 (左)
-	y = down[0] ; // 當前檢查棋格的 y座標
-	x = down[1] - 1  ; // 當前檢查棋格的 x座標
+	y = downY ; // 當前檢查棋格的 y座標
+	x = downX - 1  ; // 當前檢查棋格的 x座標
 	chkList = [] ; // 清空
 	while( x >= 0 )
 	{
@@ -533,7 +589,7 @@ function checkEat( down = [] , take = false ) // 檢查食棋
 	eatList.push(...chkList) ;
 	
 	// 檢查棋格有冇棋食 (右)
-	x = down[1] + 1 ; // 當前檢查棋格的 x座標
+	x = downX + 1 ; // 當前檢查棋格的 x座標
 	chkList = [] ; // 清空
 	while( x < mapSize[1] )
 	{
@@ -598,8 +654,8 @@ function checkMove( who ) // 檢查一方 當前的所有合法棋步 (沒有=�
 				{
 					for(let X = 0 ; X < mapSize[1] ; ++X )
 					{
-						// moveAmount += canMove( [y,x] , [Y,X] ) ; // 計 合法棋步
-						canMove( [y,x] , [Y,X] ) && okMove.push( [ [y,x] , [Y,X] ] ) ;
+						// moveAmount += canMove( y , x , Y , X ) ; // 計 合法棋步
+						canMove( y , x , Y , X ) && okMove.push( [ y , x , Y , X ] ) ;
 					}
 				}
 			}
@@ -608,62 +664,148 @@ function checkMove( who ) // 檢查一方 當前的所有合法棋步 (沒有=�
 	return okMove ; // 返回 有多少合法棋步
 }
 
-function checkAiTurn() // 檢查是否輪到 AI
+function thinkThisNode() // 思考當前局面 (一個節點)
+{
+	let moveList = checkMove(turn) ; // 當前的 合法棋步 列表
+	let move ; // 當前思考的棋步
+	let eatMax = 0 ; // 最大吃子數
+	let eatCurrent ; // 當前走法能吃多少棋子
+	let option = [] ; // 考慮清單 ( 吃子數最大的那些走法 )
+	
+	for( let i = 0 ; i < moveList.length ; ++i ) // 思考 當前節點的每一步
+	{
+		move = moveList[i] ; // 當前思考的棋步
+		toMove( ...move ) ; // 模擬 移動棋子
+
+		eatCurrent = checkEat( move[2] , move[3] , turn ) ; // 當前走法能吃多少棋子
+		if( eatCurrent > eatMax ) // 如果當前檢查的走法能吃 更多 的棋子
+		{
+			eatMax = eatCurrent ; // 更新 最大吃子數
+			option = [move] ; // 改變 考慮清單
+		}
+		else if( eatCurrent == eatMax ) // 如果當前檢查的走法能吃 同樣多 的棋子
+		{
+			option.push(move) ; // 增加當前走法到 考慮清單
+		}
+
+		toMove( move[2] , move[3] , move[0] , move[1] ) ; // 還原 移動棋子
+	}
+	
+	return [ eatMax , option ] ; // 返回 [ 能食最多棋子多 , 走法 ]
+}
+
+function checkAiTurn() // 檢查是否輪到 AI 走子
 {
 	if( turn == 2 && setBlueIsAiCheckbox.checked ) // 輛到 藍子 且 藍子被設為AI
 	{
-		let moveList = checkMove(turn) ; // 合法棋步 列表
-		let r ; // 隨機數
+		let evaluate_1 = [] ; // 評估分數 第1層
+		let evaluate_2 = [] ; // 評估分數 第2層
 		
-		switch(setBlueAiLevel_sel.value)
+		let option = [] ; // 考慮清單: 那些 評估分數 最高 的 走法
+		// option[分支][層數] = 來源格y , 來源格x , 目標格y , 目標格x
+		
+		let moveList = checkMove(turn) ; // 當前的 合法棋步 列表
+
+		moveList.forEach( opt => option.push( opt ) ) ; // 考慮清單 = 所有合法棋步
+		// console.log(option);
+		
+		let eatMax = 0 ; // 最大吃子數
+		let thisNodeOption = [] ; // 當前分支 的 考慮清單
+		let move ; // 當前思考的棋步
+		let eatCurrent ; // 當前走法能吃多少棋子
+		
+		let setDepth = ~~setBlueAiDepth_sel.value ; // 設定的思考層數
+		let bestMove = [] ; // 思考當前節點一步 , 取得 [ 最大吃子數 , 走法 ]
+
+		let nodeMap = [ getMap() ] ; // 每個節點的局面
+		/*
+		[
+			根節點 , 
+			[
+				第1層節點A , [ 第2層節點A1 , [...] , 第2層節點A2 , [...] ] ,
+				第1層節點B , [ 第2層節點B1 , [...] , 第2層節點B2 , [...] ] ,
+				第1層節點C , [ 第2層節點C1 , [...] , 第2層節點C2 , [...] ]
+			]
+		]
+		*/
+
+		let r ; // 隨機數
+
+		if(setDepth>0)
 		{
-			case 'random_move' :
-				r = ~~ ( Math.random() * moveList.length ) ;
-
-				// 模擬點擊 來源棋格
-				takedCell = document.getElementById(`cell_${moveList[r][0][0]}_${moveList[r][0][1]}`) ; // 改變 抓子 的格子
-				takedCellPos[0] = moveList[r][0][0] ; // 改變 抓子 的 y座標
-				takedCellPos[1] = moveList[r][0][1] ; // 改變 抓子 的 x座標
-				// cell.bgColor = takedCellColor ; // 標記 抓子 的 棋格 (上色)
-
-				// 模擬點擊 目標棋格
-				clickCell( document.getElementById(`cell_${moveList[r][1][0]}_${moveList[r][1][1]}`) ) ;
-			break ;
-
-			case 'eat_most' :
-				let eatMax = 0 ; // 最大吃子數
-				let option = [] ; // 考慮清單: 那些 吃最多子 的 走法 的 index
-				moveList.forEach(chk) ;
-				function chk(move,i) // 檢查當前走法
-				{
-					toMove( move[0] , move[1] ) ; // 模擬 移動棋子
-					let eatCurrent = checkEat(move[1]) ; // 當前走法能吃多少棋子
-					if( eatCurrent > eatMax ) // 如果當前檢查的走法能吃 更多 的棋子
-					{
-						eatMax = Math.max( eatMax , checkEat(move[1]) ) ; // 更新 最大吃子數
-						option = [i] ; // 改變 考慮清單
-					}
-					else if( eatCurrent == eatMax ) // 如果當前檢查的走法能吃 同樣多 的棋子
-					{
-						option.push(i) ; // 增加當前走法到 考慮清單
-					}
-					toMove( move[1] , move[0] ) ; // 還原 移動棋子
-				}
-				r = ~~ ( Math.random() * option.length ) ; // 在 考慮清單 中, 隨機選一個出來走
+			let childsMap = getChildsMap(turn) ; // 所有子節點的 局面
+			
+			// 加入 所有子節點的 局面
+			let list = [] ;
+			for(let i = 0 ; i < childsMap.length ; ++i )
+			{
+				list[i*2] = childsMap[i] ; // 第1層節點
+				changeMapTo(childsMap[i]) ; // 把局面轉成該節點
+				list[i*2+1] = getChildsMap(3-turn) ; // 取得 子節點(第2層)
 				
-				// 模擬點擊 來源棋格
-				takedCell = document.getElementById(`cell_${moveList[option[r]][0][0]}_${moveList[option[r]][0][1]}`) ; // 改變 抓子 的格子
-				takedCellPos[0] = moveList[option[r]][0][0] ; // 改變 抓子 的 y座標
-				takedCellPos[1] = moveList[option[r]][0][1] ; // 改變 抓子 的 x座標
-				// cell.bgColor = takedCellColor ; // 標記 抓子 的 棋格 (上色)
-
-				// 模擬點擊 目標棋格
-				clickCell( document.getElementById(`cell_${moveList[option[r]][1][0]}_${moveList[option[r]][1][1]}`) ) ;
-			break ;
-
-			case 'lose_least' :
-			break ;
+				evaluate_2 = [] ; // 各走法 的 評估分數
+				for(let j = 0 ; j < list[i*2+1].length ; ++j) // 每個 第2層節點
+				{
+					changeMapTo( list[i*2+1][j] ) ; // 把局面轉成 第2層節點
+					evaluate_2[j] = ownerCurrentPoint[turn] - ownerCurrentPoint[3-turn] ; // 己方高出對方多少分
+				}
+				evaluate_1[i] = Math.min(...evaluate_2) ;
+				// option = list[i*2+1].filter( ( map , index ) => i == Math.max(...evaluate_2) ) ; // 考慮清單
+				
+				changeMapTo(nodeMap[0]) ; // 還原局面
+			}
+			nodeMap.push(list) ;
+			
+			// console.log( nodeMap ) ; // 暫時弄了2層
+			
+			option = [] ;
+			evaluate_1.forEach( (score,index) => score == Math.max( ...evaluate_1 ) && option.push( moveList[index] ) ) ; // 最高評分
 		}
+		// 這個for內未整理好 , 其他沒問題 
+		/*
+		for(let depth = 1 ; depth <= setDepth ; ++depth ) // 每層
+		{
+			if( depth < setDepth ) // 未到最深層
+			{
+				thisNode = getMap() ; // 記錄當前節點局面
+				childNode = checkMove(turn) ; // 搜尋子節點
+				for(let i ; i < childNode.length ; ++i) // 對每個子節點
+				{
+					toMove( ...childNode[i] ) ; // 走一步
+					turn = 3 - turn ; //輪到對方下棋
+				}
+			}
+			else // 達到最深層
+			{
+				bestMove = thinkThisNode() ; // 思考當前節點一步 , 取得 [ 最大吃子數 , 走法 ]
+				eatMax = bestMove[0] ; // 最大吃子數
+				option = bestMove[1] ; // 考慮清單
+			}
+			// nodeMap.push( checkMove(turn) ) ; // 每個節點的局面
+			
+			for(let i = 0 ; i < moveList.length ; ++i ) // 思考 每個分支
+			{
+				
+			}
+
+			// thisNodeOption = [] ; // 當前分支 的 考慮清單
+			// r = ~~ ( Math.random() * thisNodeOption.length ) ; // 在 考慮清單 中, 隨機選一個
+			// thisNodeOption[r] ;
+		}
+		*/
+
+		// 走子
+		r = ~~ ( Math.random() * option.length ) ; // 在 考慮清單 中, 隨機選一個出來走
+		// console.log( option[r] ) ; // 輸出選擇的棋步
+		
+		// 模擬點擊 來源棋格
+		takedCell = document.getElementById(`cell_${option[r][0]}_${option[r][1]}`) ; // 改變 抓子 的格子
+		takedCellPos[0] = option[r][0] ; // 改變 抓子 的 y座標
+		takedCellPos[1] = option[r][1] ; // 改變 抓子 的 x座標
+		// cell.bgColor = takedCellColor ; // 標記 抓子 的 棋格 (上色)
+
+		// 模擬點擊 目標棋格
+		clickCell( document.getElementById(`cell_${option[r][2]}_${option[r][3]}`) ) ;
 	}
 }
 
@@ -674,10 +816,10 @@ function clickCell(cell) // 點擊 棋格 時
 {
 	if( takedCell ) // 已有 抓住的棋子
 	{
-		if( canMove( [ takedCellPos[0] , takedCellPos[1] ] , [ cell.dataset.y , cell.dataset.x ] ) )
+		if( canMove( ...takedCellPos , cell.dataset.y , cell.dataset.x ) )
 		{	// 合法棋步
-			toMove( [ takedCellPos[0] , takedCellPos[1] ] , [ cell.dataset.y , cell.dataset.x ] ) ; // 走子
-			if ( checkEat( [ cell.dataset.y , cell.dataset.x ] , true ) ) // 有棋食
+			toMove( ...takedCellPos , cell.dataset.y , cell.dataset.x ) ; // 走子
+			if ( checkEat( cell.dataset.y , cell.dataset.x , turn , true ) ) // 有棋食
 			{
 				showNotEat.innerText = '0' ; // 無吃子步數 清0
 				renewPlayerScore() ; // 更新 並 輸出 玩家分數
@@ -734,7 +876,7 @@ function cellInfo(cell) // 棋格資訊
 	let txt = `已選棋格: ( ${ takedCell ? takedCellPos.join(' , ') : '沒有' } )` ;
 	txt += `\n目標棋格: ( ${cell.dataset.y} , ${cell.dataset.x} )` ;
 	txt += `\n${ !targetCellOwner ? '沒有' : targetCellOwner - turn ? '敵方' : '己方' }棋子` ;
-	canMove( [ takedCellPos[0] , takedCellPos[1] ] , [ cell.dataset.y , cell.dataset.x ] ) && ( txt += `\n可移動` ) ;
+	canMove( ...takedCellPos , cell.dataset.y , cell.dataset.x ) && ( txt += `\n可移動` ) ;
 	showCellInfo.innerText = txt ;
 }
 

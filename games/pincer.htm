@@ -29,7 +29,7 @@ td
 	<br />
 	第 <output id="rounds">-</output> 回合
 	<br />
-	無吃子判和：<output id="notEat">-</output> / <output id="notEatLimit">-</output>
+	無吃子步數：<output id="notEat">-</output> / <output id="notEatLimit">-</output>
 	<br /><br />
 	<output id="cellInfo">-</output>
 	</td>
@@ -58,10 +58,10 @@ td
 			</optgroup>
 		</select>
 		<br /><br />
-		無吃子多少步判和：
+		無吃子限步：
 		<input id="setNotEatToDraw" type="number" value="60" step="2" min="0" max="256" />
 		<br />
-		( 0 = 不判和 )
+		( 0 = 不限步 )
 		<br /><br />
 		<input id="setBlueIsAi" type="checkbox" checked />
 		電腦執藍子
@@ -828,7 +828,15 @@ function clickCell(cell) // 點擊 棋格 時
 			{
 				if( !( ++ showNotEat.innerText - notEatToDraw ) ) // 無吃子步數 +1
 				{	// 達到上限 則判和
-					alert( '無進展判和' ) ;
+					if( ownerCurrentPoint[1] == ownerCurrentPoint[2] )
+					{
+						alert( '無進展判和。' ) ;
+					}
+					else
+					{
+						alert( `到達步數限制，${ ownerCurrentPoint[1] > ownerCurrentPoint[2] ? ownerName[1] : ownerName[2] } 獲勝。` ) ;
+					}
+
 					turn = -1 ; // 遊戲結束
 					showWhoTurn.innerText = ownerName[0] ; // 清空 輪到誰下 (字)
 					showWhoTurn.style.color = ownerColor[0] ; // 清空 輪到誰下 (色)
@@ -887,8 +895,9 @@ function help() // 說明
 	txt += '\n2) 當己方移動棋子後，在同一行或同一列，己方棋子從兩旁夾住對方棋子(沒有空格)，則把對方棋子吃掉(可吃多於一子)。' ;
 	txt += '\n3) 己方棋子可以走到被對方夾住的棋格，不會被吃掉。' ;
 	txt += '\n4) 先剩下少於2隻棋子的一方為敗方。' ;
-	txt += '\n5) 欠行作負。' ;
-	txt += '\n6) 長捉作負。' ;
+	txt += '\n5) 當到達無吃子限步，剩餘棋子較多的一方勝出。' ;
+	txt += '\n6) 欠行作負。' ;
+	txt += '\n7) 長捉作負。' ;
 	alert(txt);
 }
 

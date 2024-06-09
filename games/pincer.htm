@@ -100,6 +100,10 @@ let takedCellColor = '#cc0' ; // 當前抓住的棋子 的 標記顏色
 let cellBgColor = [ '#fff' , '#ccc' ] ; // 棋格 背景顏色
 let aiSleepTime = 40 ; // AI走子的延遲(ms)
 
+// AI
+let positionScore = [ 0.14 , 0.03 ] ; // 位置分 [ 角 , 邊 ]
+let flexibilityScore = 0.05 ; // 靈活度分數 ( 每個合法棋步的分數 )
+
 const table = document.getElementById('map') ; // table
 const showPlayerScore = document.getElementById('playerScore') ; // 顯示 玩家分數 的輸出框
 const showWhoTurn = document.getElementById('whoTurn') ; // 顯示 輪到誰下 的輸出框
@@ -694,13 +698,67 @@ function thinkThisNode() // 思考當前局面 (一個節點)
 	return [ eatMax , option ] ; // 返回 [ 能食最多棋子多 , 走法 ]
 }
 
+function checkScoreHigher() // 己方高出對方多少分
+{
+	let score = 0 ; // 總分
+	
+	// 棋子分數
+	score += ownerCurrentPoint[turn] < 2 ? -Infinity :
+			ownerCurrentPoint[3-turn] < 2 ? Infinity :
+			ownerCurrentPoint[turn] - ownerCurrentPoint[3-turn] ;
+				
+	// 判斷位置 : 四個角的持有者
+	let cornerOwner = [ document.getElementById(`cell_0_0`).dataset.owner , // 左上角
+						document.getElementById(`cell_0_${mapSize[1]-1}`).dataset.owner , // 右上角
+						document.getElementById(`cell_${mapSize[0]-1}_0`).dataset.owner , // 左下角
+						document.getElementById(`cell_${mapSize[0]-1}_${mapSize[1]-1}`).dataset.owner ] ; // 右下角
+
+	// console.log( '角: ' + cornerOwner ) ;
+	for(let i = 0 ; i < 4 ; ++i) // 角分
+	{
+		cornerOwner[i] == turn && ( score += positionScore[0] ) ;
+		cornerOwner[i] == 3-turn && ( score -= positionScore[0] ) ;
+		// score -= positionScore[0] * ( ( cornerOwner[i] - turn )**2 * 2 - 1 ) ; 
+		// console.log( '->' + score ) ;
+		/*
+		turn 1
+		3-turn -1
+		(r - t)**2 * 2 - 1 == -1   自己
+		(r - t)**2 * 2 - 1 == 1	  對方
+		r = cornerOwner[i] , t = turn
+		*/
+	}
+	
+	// 判斷位置 : 邊位的持有者
+	let wallOwner = [] ;
+	for( let x = 1 ; x < mapSize[1] - 1 ; ++x )
+	{
+		wallOwner.push( document.getElementById(`cell_0_${x}`).dataset.owner ) ; // 上牆
+		wallOwner.push( document.getElementById(`cell_${mapSize[0]-1}_${x}`).dataset.owner ) ; // 下牆
+	}
+	for( let y = 1 ; y < mapSize[0] - 1 ; ++y )
+	{
+		wallOwner.push( document.getElementById(`cell_${y}_0`).dataset.owner ) ; // 左牆
+		wallOwner.push( document.getElementById(`cell_${y}_${mapSize[1]-1}`).dataset.owner ) ; // 右牆
+	}
+	for( let i = 0 ; i < wallOwner.length ; ++i ) // 牆分
+	{
+		wallOwner[i] == turn && ( score += positionScore[1] ) ;
+		wallOwner[i] == 3-turn && ( score -= positionScore[1] ) ;
+	}
+
+	score += flexibilityScore * checkMove(turn).length ; // 靈活分
+	
+	return score ; // 輸出 總分
+}
+
 function checkAiTurn() // 檢查是否輪到 AI 走子
 {
 	if( turn == 2 && setBlueIsAiCheckbox.checked ) // 輛到 藍子 且 藍子被設為AI
 	{
-		let evaluate_1 = [] ; // 評估分數 第1層
-		let evaluate_2 = [] ; // 評估分數 第2層
-		
+		let evaluate = [ checkScoreHigher() ] ; // 第 index 層 的 評估分數
+		let lastScore ; // 最終決定棋步的分數
+
 		let option = [] ; // 考慮清單: 那些 評估分數 最高 的 走法
 		// option[分支][層數] = 來源格y , 來源格x , 目標格y , 目標格x
 		
@@ -737,29 +795,50 @@ function checkAiTurn() // 檢查是否輪到 AI 走子
 			
 			// 加入 所有子節點的 局面
 			let list = [] ;
+			let thinkBeginTime = Date.now() ;
+			
+			evaluate[1] = [] ; // 各走法 的 評估分數
 			for(let i = 0 ; i < childsMap.length ; ++i )
 			{
 				list[i*2] = childsMap[i] ; // 第1層節點
 				changeMapTo(childsMap[i]) ; // 把局面轉成該節點
-				list[i*2+1] = getChildsMap(3-turn) ; // 取得 子節點(第2層)
 				
-				evaluate_2 = [] ; // 各走法 的 評估分數
-				for(let j = 0 ; j < list[i*2+1].length ; ++j) // 每個 第2層節點
+				if( setDepth > 1 ) // 多於 1 層時
 				{
-					changeMapTo( list[i*2+1][j] ) ; // 把局面轉成 第2層節點
-					evaluate_2[j] = ownerCurrentPoint[turn] - ownerCurrentPoint[3-turn] ; // 己方高出對方多少分
+					list[i*2+1] = getChildsMap(3-turn) ; // 取得 子節點(第2層)
+
+					evaluate[2] = [] ; // 各走法 的 評估分數
+					for(let j = 0 ; j < list[i*2+1].length ; ++j) // 每個 第2層節點
+					{
+						changeMapTo( list[i*2+1][j] ) ; // 把局面轉成 第2層節點
+						evaluate[2][j] = checkScoreHigher() ; // 己方高出對方多少分
+						if( evaluate[2][j] == -Infinity ) break ; // 短路 找到勝着就停止思考
+					}
+					evaluate[1][i] = Math.min(...evaluate[2]) ; // 評分
 				}
-				evaluate_1[i] = Math.min(...evaluate_2) ;
-				// option = list[i*2+1].filter( ( map , index ) => i == Math.max(...evaluate_2) ) ; // 考慮清單
+				else // 只有 1 層時
+				{
+					evaluate[1][i] = checkScoreHigher() ; // 己方高出對方多少分
+				}
+
+				console.log( childsMap[i] ) ; // 輸出 當前思考的局面
+				console.log( `${i+1}/${childsMap.length}\t分數: ${evaluate[1][i].toFixed(3)}\t\t用時: ${(Date.now()-thinkBeginTime)/1000} 秒` ) ; // 思考進度
+				
+				// option = list[i*2+1].filter( ( map , index ) => i == Math.max(...evaluate[2]) ) ; // 考慮清單
 				
 				changeMapTo(nodeMap[0]) ; // 還原局面
+				
+				if ( evaluate[1][i] == Infinity ) break ; // 短路 找到勝着就停止思考
 			}
 			nodeMap.push(list) ;
 			
 			// console.log( nodeMap ) ; // 暫時弄了2層
 			
 			option = [] ;
-			evaluate_1.forEach( (score,index) => score == Math.max( ...evaluate_1 ) && option.push( moveList[index] ) ) ; // 最高評分
+
+			lastScore = Math.max( ...evaluate[1] ) ; // 最終決定棋步的分數
+			evaluate[1].forEach( (score,index) => ( score - lastScore )**2 < 1e-6 && option.push( moveList[index] ) ) ; // 最高評分 ( 忽略太小的分數差異 )
+			option.length || ( option = [...moveList] ) ; // 如果沒有選項(步步都被吃死) 就添加所有棋步作為選項
 		}
 		// 這個for內未整理好 , 其他沒問題 
 		/*
@@ -796,7 +875,7 @@ function checkAiTurn() // 檢查是否輪到 AI 走子
 
 		// 走子
 		r = ~~ ( Math.random() * option.length ) ; // 在 考慮清單 中, 隨機選一個出來走
-		// console.log( option[r] ) ; // 輸出選擇的棋步
+		console.log( `決定棋步: ${option[r].slice(0,2)} -> ${option[r].slice(2)}\t\t分數: ${ lastScore ? lastScore.toFixed(3) : '-' }` ) ; // 輸出 選擇的棋步 與 分數
 		
 		// 模擬點擊 來源棋格
 		takedCell = document.getElementById(`cell_${option[r][0]}_${option[r][1]}`) ; // 改變 抓子 的格子

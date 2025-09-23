@@ -77,11 +77,11 @@
             padding: 20px;
             background: #f8f9fa;
             border-radius: 15px;
-            height: 450px;
+            height: 480px;
         }
         
         .chart-container.small {
-            height: 350px;
+            height: 380px;
         }
         
         .chart-wrapper {
@@ -647,6 +647,7 @@ console.log();
             
             // 準備數據
             const bins = {
+				'147-149': 0,
                 '149-151': 0,
                 '151-153': 0,
                 '153-155': 0,
@@ -663,7 +664,8 @@ console.log();
             
             // 計算每個區間的人數
             heights.forEach(h => {
-                if (h >= 149 && h < 151) bins['149-151']++;
+                if (h >= 147 && h < 149) bins['147-149']++;
+				else if (h >= 149 && h < 151) bins['149-151']++;
                 else if (h >= 151 && h < 153) bins['151-153']++;
                 else if (h >= 153 && h < 155) bins['153-155']++;
                 else if (h >= 155 && h < 157) bins['155-157']++;
@@ -1002,7 +1004,8 @@ console.log();
             if (!ctx) return;
             
             const ranges = {
-                '149-155 cm': 0,
+				'145-150 cm': 0,
+                '150-155 cm': 0,
                 '155-160 cm': 0,
                 '160-165 cm': 0,
                 '165-170 cm': 0,
@@ -1010,7 +1013,8 @@ console.log();
             };
             
             heights.forEach(h => {
-                if (h < 155) ranges['149-155 cm']++;
+                if (h < 150) ranges['145-150 cm']++;
+				else if (h < 155) ranges['150-155 cm']++;
                 else if (h < 160) ranges['155-160 cm']++;
                 else if (h < 165) ranges['160-165 cm']++;
                 else if (h < 170) ranges['165-170 cm']++;
@@ -1029,6 +1033,7 @@ console.log();
                     datasets: [{
                         data: Object.values(ranges),
                         backgroundColor: [
+							'rgba(127, 99, 132, 0.7)',
                             'rgba(255, 99, 132, 0.7)',
                             'rgba(54, 162, 235, 0.7)',
                             'rgba(255, 206, 86, 0.7)',

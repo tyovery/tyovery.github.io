@@ -30,6 +30,9 @@
             display: flex;
             gap: 20px;
             align-items: flex-start;
+            padding: 10px;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         
         #leftPanel {
@@ -38,6 +41,7 @@
             border-radius: 10px;
             color: white;
             width: 200px;
+            flex-shrink: 0;
         }
         
         #rightPanel {
@@ -46,6 +50,7 @@
             border-radius: 10px;
             color: white;
             width: 200px;
+            flex-shrink: 0;
         }
         
         #gameContainer {
@@ -55,6 +60,7 @@
             border-radius: 10px;
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             position: relative;
+            flex-shrink: 1;
         }
         
         canvas {
@@ -63,6 +69,8 @@
             background: linear-gradient(to bottom, #1a1a2e, #16213e);
             /* 防止觸控時的預設行為 */
             touch-action: none;
+            max-width: 100%;
+            height: auto;
         }
         
         #gameInfo {
@@ -73,6 +81,8 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .health-bar {
@@ -344,33 +354,33 @@
             background: linear-gradient(to left, rgba(255,255,255,0.2), transparent);
         }
         
-        /* 手機版操作說明 */
-        .mobile-controls {
-            display: none;
-            color: white;
-            font-size: 14px;
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
+        /* 手機版樣式調整 */
+        @media (max-width: 768px) {
+            #mainContainer {
+                transform: scale(0.85);
+                transform-origin: center center;
+            }
+            
+            #gameInfo {
+                font-size: 18px;
+            }
+            
+            .controls {
+                font-size: 14px;
+            }
+            
+            .legend {
+                font-size: 12px;
+            }
+            
+            .leaderboard-entry {
+                font-size: 12px;
+            }
         }
         
-        @media (max-width: 768px) {
-            #leftPanel, #rightPanel {
-                display: none;
-            }
-            
-            .mobile-controls {
-                display: block;
-            }
-            
-            #gameContainer {
-                padding: 10px;
-            }
-            
-            canvas {
-                max-width: 100%;
-                height: auto;
+        @media (max-width: 480px) {
+            #mainContainer {
+                transform: scale(0.7);
             }
         }
     </style>
@@ -424,10 +434,6 @@
             <div class="touch-indicator" id="rightTouchIndicator"></div>
             <div id="pauseOverlay">暫停</div>
             <div id="gameOver">遊戲結束！最終層數：<span id="finalScore">0.00</span></div>
-            <div class="mobile-controls">
-                📱 觸控操作：按住畫面左側向左移動，右側向右移動<br>
-                💡 長按畫面下半部分加速下降
-            </div>
         </div>
         
         <div id="rightPanel">
@@ -484,9 +490,11 @@
         // 觸控相關變數
         let touchLeft = false;
         let touchRight = false;
-        let touchDown = false;
-        let touchStartTime = 0;
         let touchIdentifiers = new Map(); // 追蹤多點觸控
+        
+        // 雙擊檢測相關
+        let lastTapTime = 0;
+        const doubleTapDelay = 300; // 雙擊間隔時間（毫秒）
 
         // 平台類型
         const PLATFORM_TYPES = {
@@ -1040,8 +1048,8 @@
         function update() {
             if (!gameRunning || gamePaused) return;
 
-            // 檢查是否按住下鍵或S鍵（包含觸控）
-            if (keys['ArrowDown'] || keys['s'] || keys['S'] || touchDown) {
+            // 檢查是否按住下鍵或S鍵（只有鍵盤可以加速）
+            if (keys['ArrowDown'] || keys['s'] || keys['S']) {
                 currentScrollSpeed = baseScrollSpeed * 3;
                 speedIndicator.style.display = 'block';
             } else {
@@ -1431,17 +1439,19 @@
         });
 
         // 觸控事件處理
-        function getCanvasCoordinates(e) {
-            const rect = canvas.getBoundingClientRect();
-            return {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            };
-        }
-
-        // 處理觸控開始
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            
+            // 檢測雙擊
+            const currentTime = Date.now();
+            if (currentTime - lastTapTime < doubleTapDelay && gameRunning && !modalOpen) {
+                // 雙擊暫停
+                gamePaused = !gamePaused;
+                lastTapTime = 0; // 重置以避免三擊變成暫停
+                return;
+            }
+            lastTapTime = currentTime;
+            
             if (!gameRunning && !modalOpen) {
                 resetGame();
                 return;
@@ -1455,23 +1465,16 @@
                 const x = touch.clientX - rect.left;
                 const y = touch.clientY - rect.top;
                 const canvasWidth = canvas.width;
-                const canvasHeight = canvas.height;
                 
-                // 儲存觸控點資訊
+                // 儲存觸控點資訊（不包含加速功能）
                 touchIdentifiers.set(touch.identifier, {
                     x: x,
                     y: y,
-                    side: x < canvasWidth / 2 ? 'left' : 'right',
-                    isDown: y > canvasHeight * 0.9 // 下半部90%的區域視為加速區
+                    side: x < canvasWidth / 2 ? 'left' : 'right'
                 });
                 
                 // 更新控制狀態
                 updateTouchControls();
-            }
-            
-            // 觸控開始時間
-            if (e.touches.length === 1) {
-                touchStartTime = Date.now();
             }
         });
 
@@ -1487,14 +1490,12 @@
                     const x = touch.clientX - rect.left;
                     const y = touch.clientY - rect.top;
                     const canvasWidth = canvas.width;
-                    const canvasHeight = canvas.height;
                     
                     // 更新觸控點資訊
                     touchIdentifiers.set(touch.identifier, {
                         x: x,
                         y: y,
-                        side: x < canvasWidth / 2 ? 'left' : 'right',
-                        isDown: y > canvasHeight * 0.9
+                        side: x < canvasWidth / 2 ? 'left' : 'right'
                     });
                     
                     // 更新控制狀態
@@ -1513,14 +1514,6 @@
             
             // 更新控制狀態
             updateTouchControls();
-            
-            // 檢查是否是短暫點擊（用於暫停）
-            if (e.touches.length === 0 && gameRunning && !modalOpen) {
-                const touchDuration = Date.now() - touchStartTime;
-                if (touchDuration < 200) { // 200ms內的點擊視為暫停
-                    gamePaused = !gamePaused;
-                }
-            }
         });
 
         // 處理觸控取消
@@ -1530,21 +1523,16 @@
             updateTouchControls();
         });
 
-        // 更新觸控控制狀態
+        // 更新觸控控制狀態（不包含加速）
         function updateTouchControls() {
             touchLeft = false;
             touchRight = false;
-            touchDown = false;
             
             for (let [id, info] of touchIdentifiers) {
                 if (info.side === 'left') {
                     touchLeft = true;
                 } else if (info.side === 'right') {
                     touchRight = true;
-                }
-                
-                if (info.isDown) {
-                    touchDown = true;
                 }
             }
             
@@ -1581,14 +1569,12 @@
             mouseY = e.clientY - rect.top;
             
             const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
             
             // 模擬觸控
             touchIdentifiers.set('mouse', {
                 x: mouseX,
                 y: mouseY,
-                side: mouseX < canvasWidth / 2 ? 'left' : 'right',
-                isDown: mouseY > canvasHeight * 0.9
+                side: mouseX < canvasWidth / 2 ? 'left' : 'right'
             });
             
             updateTouchControls();
@@ -1602,14 +1588,12 @@
             mouseY = e.clientY - rect.top;
             
             const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
             
             // 更新滑鼠觸控
             touchIdentifiers.set('mouse', {
                 x: mouseX,
                 y: mouseY,
-                side: mouseX < canvasWidth / 2 ? 'left' : 'right',
-                isDown: mouseY > canvasHeight * 0.9
+                side: mouseX < canvasWidth / 2 ? 'left' : 'right'
             });
             
             updateTouchControls();

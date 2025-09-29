@@ -491,10 +491,6 @@
         let touchLeft = false;
         let touchRight = false;
         let touchIdentifiers = new Map(); // 追蹤多點觸控
-        
-        // 雙擊檢測相關
-        let lastTapTime = 0;
-        const doubleTapDelay = 300; // 雙擊間隔時間（毫秒）
 
         // 平台類型
         const PLATFORM_TYPES = {
@@ -1453,16 +1449,6 @@
         // 觸控事件處理
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            
-            // 檢測雙擊
-            const currentTime = Date.now();
-            if (currentTime - lastTapTime < doubleTapDelay && gameRunning && !modalOpen) {
-                // 雙擊暫停
-                gamePaused = !gamePaused;
-                lastTapTime = 0; // 重置以避免三擊變成暫停
-                return;
-            }
-            lastTapTime = currentTime;
             
             if (!gameRunning && !modalOpen) {
                 resetGame();

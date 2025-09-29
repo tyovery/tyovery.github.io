@@ -1438,6 +1438,18 @@
             keys[e.key] = false;
         });
 
+        // 將畫面座標轉換為 Canvas 內部座標
+        function getCanvasCoordinates(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
         // 觸控事件處理
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -1459,22 +1471,24 @@
             
             if (modalOpen) return;
             
-            const rect = canvas.getBoundingClientRect();
-            
             for (let touch of e.changedTouches) {
-                const x = touch.clientX - rect.left;
-                const y = touch.clientY - rect.top;
-                const canvasWidth = canvas.width;
+                // 轉換為 Canvas 座標
+                const canvasCoords = getCanvasCoordinates(touch.clientX, touch.clientY);
                 
-                // 儲存觸控點資訊（不包含加速功能）
-                touchIdentifiers.set(touch.identifier, {
-                    x: x,
-                    y: y,
-                    side: x < canvasWidth / 2 ? 'left' : 'right'
-                });
-                
-                // 更新控制狀態
-                updateTouchControls();
+                // 判斷是否在 Canvas 範圍內
+                if (canvasCoords.x >= 0 && canvasCoords.x <= canvas.width &&
+                    canvasCoords.y >= 0 && canvasCoords.y <= canvas.height) {
+                    
+                    // 儲存觸控點資訊
+                    touchIdentifiers.set(touch.identifier, {
+                        x: canvasCoords.x,
+                        y: canvasCoords.y,
+                        side: canvasCoords.x < canvas.width / 2 ? 'left' : 'right'
+                    });
+                    
+                    // 更新控制狀態
+                    updateTouchControls();
+                }
             }
         });
 
@@ -1483,19 +1497,16 @@
             e.preventDefault();
             if (modalOpen) return;
             
-            const rect = canvas.getBoundingClientRect();
-            
             for (let touch of e.changedTouches) {
                 if (touchIdentifiers.has(touch.identifier)) {
-                    const x = touch.clientX - rect.left;
-                    const y = touch.clientY - rect.top;
-                    const canvasWidth = canvas.width;
+                    // 轉換為 Canvas 座標
+                    const canvasCoords = getCanvasCoordinates(touch.clientX, touch.clientY);
                     
                     // 更新觸控點資訊
                     touchIdentifiers.set(touch.identifier, {
-                        x: x,
-                        y: y,
-                        side: x < canvasWidth / 2 ? 'left' : 'right'
+                        x: canvasCoords.x,
+                        y: canvasCoords.y,
+                        side: canvasCoords.x < canvas.width / 2 ? 'left' : 'right'
                     });
                     
                     // 更新控制狀態
@@ -1523,7 +1534,7 @@
             updateTouchControls();
         });
 
-        // 更新觸控控制狀態（不包含加速）
+        // 更新觸控控制狀態
         function updateTouchControls() {
             touchLeft = false;
             touchRight = false;
@@ -1552,8 +1563,6 @@
 
         // 滑鼠事件（為了桌面也能用滑鼠操作）
         let mouseDown = false;
-        let mouseX = 0;
-        let mouseY = 0;
 
         canvas.addEventListener('mousedown', (e) => {
             if (!gameRunning && !modalOpen) {
@@ -1564,36 +1573,36 @@
             if (modalOpen) return;
             
             mouseDown = true;
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
             
-            const canvasWidth = canvas.width;
+            // 轉換為 Canvas 座標
+            const canvasCoords = getCanvasCoordinates(e.clientX, e.clientY);
             
-            // 模擬觸控
-            touchIdentifiers.set('mouse', {
-                x: mouseX,
-                y: mouseY,
-                side: mouseX < canvasWidth / 2 ? 'left' : 'right'
-            });
-            
-            updateTouchControls();
+            // 判斷是否在 Canvas 範圍內
+            if (canvasCoords.x >= 0 && canvasCoords.x <= canvas.width &&
+                canvasCoords.y >= 0 && canvasCoords.y <= canvas.height) {
+                
+                // 模擬觸控
+                touchIdentifiers.set('mouse', {
+                    x: canvasCoords.x,
+                    y: canvasCoords.y,
+                    side: canvasCoords.x < canvas.width / 2 ? 'left' : 'right'
+                });
+                
+                updateTouchControls();
+            }
         });
 
         canvas.addEventListener('mousemove', (e) => {
             if (!mouseDown || modalOpen) return;
             
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
-            
-            const canvasWidth = canvas.width;
+            // 轉換為 Canvas 座標
+            const canvasCoords = getCanvasCoordinates(e.clientX, e.clientY);
             
             // 更新滑鼠觸控
             touchIdentifiers.set('mouse', {
-                x: mouseX,
-                y: mouseY,
-                side: mouseX < canvasWidth / 2 ? 'left' : 'right'
+                x: canvasCoords.x,
+                y: canvasCoords.y,
+                side: canvasCoords.x < canvas.width / 2 ? 'left' : 'right'
             });
             
             updateTouchControls();

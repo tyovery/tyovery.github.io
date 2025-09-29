@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下樓梯</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        #mainContainer {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        #leftPanel {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            width: 200px;
+        }
+        
+        #rightPanel {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            width: 200px;
+        }
+        
+        #gameContainer {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            position: relative;
+        }
+        
+        canvas {
+            border: 3px solid #fff;
+            border-radius: 5px;
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+        }
+        
+        #gameInfo {
+            color: white;
+            font-size: 20px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .health-bar {
+            display: inline-block;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 15px;
+            min-width: 150px;
+        }
+        
+        .health-fill {
+            height: 20px;
+            background: linear-gradient(90deg, #ff6b6b, #ff8787);
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        
+        .shield-display {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .shield-icon {
+            font-size: 24px;
+        }
+        
+        #gameOver {
+            display: none;
+            color: #ff6b6b;
+            font-size: 28px;
+            margin-top: 10px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #nameInputModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 1000;
+            text-align: center;
+        }
+        
+        #nameInputModal h3 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        #playerNameInput {
+            padding: 10px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            width: 200px;
+            background: rgba(255,255,255,0.9);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .modal-button {
+            padding: 10px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        #submitNameBtn {
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+            color: white;
+        }
+        
+        #skipNameBtn {
+            background: linear-gradient(45deg, #f44336, #ef5350);
+            color: white;
+        }
+        
+        .modal-button:hover {
+            transform: scale(1.05);
+        }
+        
+        #modalOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+        }
+        
+        #pauseOverlay {
+            display: none;
+            position: absolute;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        
+        button {
+            margin-top: 10px;
+            padding: 10px 30px;
+            font-size: 18px;
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        button:hover {
+            transform: scale(1.1);
+        }
+        
+        .clear-button {
+            margin-top: 15px;
+            padding: 8px 20px;
+            font-size: 14px;
+            background: linear-gradient(45deg, #ff6b6b, #ff4444);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            width: 100%;
+        }
+        
+        .clear-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .controls {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .legend {
+            color: white;
+            font-size: 14px;
+            text-align: left;
+        }
+        
+        .legend-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .legend-item {
+            margin: 8px 0;
+            padding: 5px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        
+        .spike-icon {
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid #ff5252;
+            margin-right: 5px;
+        }
+        
+        .trampoline-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: #FFD700;
+            margin-right: 8px;
+        }
+        
+        .leaderboard {
+            margin-top: 20px;
+        }
+        
+        .leaderboard-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .leaderboard-entry {
+            background: rgba(255,255,255,0.1);
+            padding: 5px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        
+        .leaderboard-rank {
+            font-weight: bold;
+            color: #FFD700;
+        }
+        
+        .leaderboard-name {
+            flex: 1;
+            text-align: left;
+            margin: 0 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .speed-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #FFD700;
+            font-size: 24px;
+            font-weight: bold;
+            display: none;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .score-highlight {
+            transition: color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div id="modalOverlay"></div>
+    <div id="nameInputModal">
+        <h3>🎉 恭喜進入排行榜！</h3>
+        <input type="text" id="playerNameInput" placeholder="輸入你的名字" maxlength="10">
+        <div class="modal-buttons">
+            <button class="modal-button" id="submitNameBtn" onclick="submitScore()">確認</button>
+            <button class="modal-button" id="skipNameBtn" onclick="skipNameInput()">跳過</button>
+        </div>
+    </div>
+    
+    <div id="mainContainer">
+        <div id="leftPanel">
+            <div class="controls">操作說明</div>
+            <div>← → 或 A D：移動</div>
+            <div>↓ 或 S：加速下降</div>
+            <div>空白鍵：暫停</div>
+            <div>R：重新開始（遊戲結束時）</div>
+            <br>
+            <div class="legend">
+                <div class="legend-title">平台說明</div>
+                <div class="legend-item">🟩 普通平台<br>回復1血</div>
+                <div class="legend-item">🟦 輸送帶<br>會移動角色</div>
+                <div class="legend-item">🟫 破爛平台<br>會碎掉</div>
+                <div class="legend-item"><span class="spike-icon"></span></span> 尖刺平台<br>扣3血</div>
+                <div class="legend-item"><span class="trampoline-icon"></span> 彈床<br>向上彈跳</div>
+                <div class="legend-item">❤️ 紅心<br>回滿血</div>
+                <div class="legend-item">🛡️ 護盾<br>抵擋一次傷害</div>
+            </div>
+        </div>
+        
+        <div id="gameContainer">
+            <div class="speed-indicator" id="speedIndicator">快速下降中 ⚡</div>
+            <div id="gameInfo">
+                <div>層數: <span id="score" class="score-highlight">0.00</span></div>
+                <div class="health-bar">
+                    <div class="health-fill" id="healthBar" style="width: 100%"></div>
+                </div>
+                <div>生命: <span id="healthText">10/10</span></div>
+                <div class="shield-display">
+                    <span class="shield-icon">🛡️</span>
+                    <span id="shieldCount">0</span>
+                </div>
+            </div>
+            <canvas id="gameCanvas" width="400" height="600"></canvas>
+            <div id="pauseOverlay">暫停</div>
+            <div id="gameOver">遊戲結束！最終層數：<span id="finalScore">0.00</span></div>
+            <button onclick="resetGame()">重新開始</button>
+        </div>
+        
+        <div id="rightPanel">
+            <div class="leaderboard">
+                <div class="leaderboard-title">🏆 排行榜</div>
+                <div id="leaderboardList"></div>
+                <button class="clear-button" onclick="clearLeaderboard()">清除記錄</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const healthTextElement = document.getElementById('healthText');
+        const healthBarElement = document.getElementById('healthBar');
+        const shieldCountElement = document.getElementById('shieldCount');
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const nameInputModal = document.getElementById('nameInputModal');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const speedIndicator = document.getElementById('speedIndicator');
+
+        // 防止方向鍵滾動頁面
+        window.addEventListener("keydown", function(e) {
+            if(["ArrowUp","ArrowDown"," "].indexOf(e.key) > -1) {
+                e.preventDefault();
+            }
+            // 當輸入框沒有焦點時，阻止左右鍵滾動
+            if (!modalOpen && ["ArrowLeft","ArrowRight"].indexOf(e.key) > -1) {
+                e.preventDefault();
+            }
+        }, false);
+
+        // 遊戲狀態
+        let gameRunning = true;
+        let gamePaused = false;
+        let modalOpen = false;
+        let score = 0;
+        let totalDistance = 0;
+        let currentScore = 0;
+        let scoreSubmitted = false;
+        let baseScrollSpeed = 1.5;
+        let currentScrollSpeed = baseScrollSpeed;
+        let leaderboard = JSON.parse(localStorage.getItem('jumpGameLeaderboard') || '[]');
+        let lastPlayerName = localStorage.getItem('jumpGameLastName') || '';
+
+        // 平台類型
+        const PLATFORM_TYPES = {
+            NORMAL: 'normal',
+            CONVEYOR: 'conveyor',
+            FRAGILE: 'fragile',
+            SPIKE: 'spike',
+            TRAMPOLINE: 'trampoline'
+        };
+
+        // 玩家設定
+        const player = {
+            x: canvas.width / 2 - 15,
+            y: canvas.height / 2 - 60,
+            width: 30,
+            height: 60,
+            velocityY: 0,
+            speed: 5,
+            onPlatform: false,
+            health: 10,
+            maxHealth: 10,
+            shields: 0,
+            lastPlatform: null,
+            platformsLeft: new Set(),
+            onFragilePlatform: null,
+            wasOnPlatform: false,
+            justBouncedFrom: null
+        };
+
+        // 平台和道具陣列
+        let platforms = [];
+        let hearts = [];
+        let shields = [];
+        let particles = [];
+
+        // 控制按鍵
+        const keys = {};
+
+        // 清除排行榜
+        function clearLeaderboard() {
+            if (confirm('確定要清除所有排行榜記錄嗎？\n此操作無法復原！')) {
+                leaderboard = [];
+                localStorage.setItem('jumpGameLeaderboard', JSON.stringify(leaderboard));
+                updateLeaderboard();
+            }
+        }
+
+        // 更新分數顯示顏色
+        function updateScoreColor() {
+            if (leaderboard.length === 0) return;
+            
+            const lastPlace = leaderboard[leaderboard.length - 1].score;
+            const firstPlace = leaderboard[0].score;
+            
+            if (score > firstPlace) {
+                scoreElement.style.color = '#FFD700'; // 黃色
+                scoreElement.style.textShadow = '0 0 10px #FFD700, 2px 2px 4px rgba(0,0,0,0.5)';
+            } else if (score > lastPlace) {
+                scoreElement.style.color = '#1CDFDF'; // 青色
+                scoreElement.style.textShadow = '0 0 10px #1CDFDF, 2px 2px 4px rgba(0,0,0,0.5)';
+            } else {
+                scoreElement.style.color = 'white'; // 白色
+                scoreElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+            }
+        }
+
+        // 檢查分數是否可進入排行榜
+        function qualifiesForLeaderboard(score) {
+            if (leaderboard.length < 10) return true;
+            return score > leaderboard[leaderboard.length - 1].score;
+        }
+
+        // 提交分數
+        function submitScore() {
+            if (!scoreSubmitted && playerNameInput.value.trim()) {
+                const playerName = playerNameInput.value.trim();
+                localStorage.setItem('jumpGameLastName', playerName); // 記住名字
+                lastPlayerName = playerName; // 更新最後名字變數
+                leaderboard.push({ 
+                    name: playerName,
+                    score: currentScore, 
+                    date: new Date().toISOString() 
+                });
+                updateLeaderboard();
+                scoreSubmitted = true;
+                closeNameInputModal();
+            }
+        }
+
+        // 跳過名字輸入
+        function skipNameInput() {
+            closeNameInputModal();
+        }
+
+        // 關閉名字輸入框
+        function closeNameInputModal() {
+            nameInputModal.style.display = 'none';
+            modalOverlay.style.display = 'none';
+            modalOpen = false;
+        }
+
+        // 打開名字輸入框
+        function openNameInputModal() {
+            nameInputModal.style.display = 'block';
+            modalOverlay.style.display = 'block';
+            modalOpen = true;
+            // 還原最後一次輸入的名字
+            playerNameInput.value = lastPlayerName;
+            playerNameInput.focus();
+            playerNameInput.select(); // 選中文字方便修改
+        }
+
+        // 更新排行榜顯示
+        function updateLeaderboard() {
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10); // 只保留前10名
+            localStorage.setItem('jumpGameLeaderboard', JSON.stringify(leaderboard));
+            
+            leaderboardList.innerHTML = '';
+            leaderboard.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'leaderboard-entry';
+                div.innerHTML = `
+                    <span class="leaderboard-rank">#${index + 1}</span>
+                    <span class="leaderboard-name">${entry.name || '匿名'}</span>
+                    <span>${entry.score.toFixed(2)} 層</span>
+                `;
+                leaderboardList.appendChild(div);
+            });
+            
+            if (leaderboard.length === 0) {
+                leaderboardList.innerHTML = '<div style="text-align: center; opacity: 0.5;">暫無紀錄</div>';
+            }
+        }
+
+        // 檢查道具生成位置是否合適
+        function isValidItemPosition(x, y) {
+            // 檢查是否離平台太近
+            for (let platform of platforms) {
+                if (Math.abs(y - platform.y) < 60 && 
+                    x > platform.x - 30 && 
+                    x < platform.x + platform.width + 30) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 創建平台
+        function createPlatform(y, forceType = null) {
+            let type = forceType;
+            
+            if (!type) {
+                const rand = Math.random();
+                // 平台類型機率分配
+                if (rand < 0.45) {
+                    type = PLATFORM_TYPES.NORMAL; // 45%
+                } else if (rand < 0.65) {
+                    type = PLATFORM_TYPES.CONVEYOR; // 20%
+                } else if (rand < 0.80) {
+                    type = PLATFORM_TYPES.FRAGILE; // 15%
+                } else if (rand < 0.90) {
+                    type = PLATFORM_TYPES.SPIKE; // 10%
+                } else {
+                    type = PLATFORM_TYPES.TRAMPOLINE; // 10%
+                }
+            }
+
+            const platform = {
+                id: Math.random().toString(36).substr(2, 9),
+                x: Math.random() * (canvas.width - 100),
+                y: y,
+                width: 80 + Math.random() * 40,
+                height: 15,
+                type: type,
+                counted: false,
+                breaking: false,
+                breakTimer: 0,
+                conveyorDirection: Math.random() > 0.5 ? 1 : -1,
+                conveyorSpeed: 1 + Math.random(),
+                trampolineCompression: 0
+            };
+
+            return platform;
+        }
+
+        // 初始化平台
+        function initPlatforms() {
+            platforms = [];
+            
+            // 創建主角站立的初始平台（在畫面中間）
+            const startPlatform = {
+                id: 'start',
+                x: canvas.width / 2 - 60,
+                y: canvas.height / 2,
+                width: 120,
+                height: 15,
+                type: PLATFORM_TYPES.NORMAL,
+                counted: false,
+                breaking: false,
+                breakTimer: 0
+            };
+            platforms.push(startPlatform);
+            
+            // 創建其他平台
+            for (let i = 1; i < 8; i++) {
+                platforms.push(createPlatform(startPlatform.y + (i * 80)));
+            }
+            
+            // 上方也加一些平台
+            for (let i = 1; i < 3; i++) {
+                platforms.push(createPlatform(startPlatform.y - (i * 80)));
+            }
+        }
+
+        // 創建粒子效果
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    life: 30,
+                    color: color,
+                    size: Math.random() * 5 + 2
+                });
+            }
+        }
+
+        // 繪製尖刺
+        function drawSpikes() {
+            ctx.fillStyle = '#ff4444';
+            const spikeWidth = 20;
+            const spikeHeight = 30;
+            
+            for (let x = 0; x < canvas.width; x += spikeWidth) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x + spikeWidth/2, spikeHeight);
+                ctx.lineTo(x + spikeWidth, 0);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.fillRect(0, 0, canvas.width, 5);
+        }
+
+        // 繪製層級分隔線
+        function drawLayerLines() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([10, 10]);
+            
+            // 計算每條分隔線的位置
+            const lineOffset = (totalDistance % canvas.height);
+            
+            for (let i = 0; i <= 1; i++) {
+                const lineY = i * canvas.height - lineOffset;
+                if (lineY >= 0 && lineY <= canvas.height) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, lineY);
+                    ctx.lineTo(canvas.width, lineY);
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.setLineDash([]);
+        }
+
+        // 繪製玩家
+        function drawPlayer() {
+            // 護盾效果
+            if (player.shields > 0) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(100, 200, 255, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, 35, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // 玩家身體（根據血量改變顏色）
+            const healthRatio = player.health / player.maxHealth;
+            if (healthRatio > 0.6) {
+                ctx.fillStyle = '#FFD700';
+            } else if (healthRatio > 0.3) {
+                ctx.fillStyle = '#FFA500';
+            } else {
+                ctx.fillStyle = '#FF6347';
+            }
+            
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // 玩家眼睛
+            ctx.fillStyle = '#000';
+            ctx.fillRect(player.x + 5, player.y + 15, 5, 8);
+            ctx.fillRect(player.x + 20, player.y + 15, 5, 8);
+            
+            // 表情（根據血量改變）
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            if (healthRatio > 0.3) {
+                ctx.arc(player.x + 15, player.y + 40, 8, 0, Math.PI);
+            } else {
+                ctx.arc(player.x + 15, player.y + 45, 8, Math.PI, 0);
+            }
+            ctx.stroke();
+        }
+
+        // 繪製平台
+        function drawPlatforms() {
+            platforms.forEach(platform => {
+                if (platform.breaking) {
+                    ctx.globalAlpha = Math.max(0.3, 1 - (platform.breakTimer / 30));
+                }
+
+                // 平台陰影
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(platform.x + 3, platform.y + 3, platform.width, platform.height);
+                
+                // 根據類型繪製平台
+                switch(platform.type) {
+                    case PLATFORM_TYPES.NORMAL:
+                        ctx.fillStyle = '#4CAF50';
+                        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                        break;
+                        
+                    case PLATFORM_TYPES.CONVEYOR:
+                        ctx.fillStyle = '#2196F3';
+                        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                        // 繪製箭頭
+                        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                        const arrowY = platform.y + platform.height/2;
+                        for (let i = 0; i < 3; i++) {
+                            const arrowX = platform.x + (i * 30) + ((Date.now() / 50) % 30);
+                            if (arrowX < platform.x + platform.width - 10) {
+                                ctx.beginPath();
+                                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                                ctx.lineWidth = 2;
+                                if (platform.conveyorDirection > 0) {
+                                    ctx.moveTo(arrowX, arrowY);
+                                    ctx.lineTo(arrowX + 10, arrowY);
+                                    ctx.lineTo(arrowX + 7, arrowY - 3);
+                                    ctx.moveTo(arrowX + 10, arrowY);
+                                    ctx.lineTo(arrowX + 7, arrowY + 3);
+                                } else {
+                                    ctx.moveTo(arrowX + 10, arrowY);
+                                    ctx.lineTo(arrowX, arrowY);
+                                    ctx.lineTo(arrowX + 3, arrowY - 3);
+                                    ctx.moveTo(arrowX, arrowY);
+                                    ctx.lineTo(arrowX + 3, arrowY + 3);
+                                }
+                                ctx.stroke();
+                            }
+                        }
+                        break;
+                        
+                    case PLATFORM_TYPES.FRAGILE:
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                        // 繪製更明顯的裂縫
+                        ctx.strokeStyle = '#2F1F0F';
+                        ctx.lineWidth = 3;
+                        // 主要裂縫
+                        ctx.beginPath();
+                        ctx.moveTo(platform.x + platform.width * 0.2, platform.y);
+                        ctx.lineTo(platform.x + platform.width * 0.35, platform.y + platform.height/2);
+                        ctx.lineTo(platform.x + platform.width * 0.3, platform.y + platform.height);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(platform.x + platform.width * 0.6, platform.y);
+                        ctx.lineTo(platform.x + platform.width * 0.65, platform.y + platform.height/2);
+                        ctx.lineTo(platform.x + platform.width * 0.7, platform.y + platform.height);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(platform.x + platform.width * 0.8, platform.y);
+                        ctx.lineTo(platform.x + platform.width * 0.75, platform.y + platform.height);
+                        ctx.stroke();
+                        
+                        // 細小裂縫
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = '#4A2F1F';
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            const crackX = platform.x + Math.random() * platform.width;
+                            ctx.moveTo(crackX, platform.y);
+                            ctx.lineTo(crackX + (Math.random() - 0.5) * 20, platform.y + platform.height);
+                            ctx.stroke();
+                        }
+                        break;
+                        
+                    case PLATFORM_TYPES.SPIKE:
+                        ctx.fillStyle = '#B71C1C';
+                        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                        // 繪製尖刺
+                        ctx.fillStyle = '#FF5252';
+                        const spikeCount = Math.floor(platform.width / 15);
+                        for (let i = 0; i < spikeCount; i++) {
+                            const spikeX = platform.x + (i * 15) + 7.5;
+                            ctx.beginPath();
+                            ctx.moveTo(spikeX - 5, platform.y);
+                            ctx.lineTo(spikeX, platform.y - 8);
+                            ctx.lineTo(spikeX + 5, platform.y);
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                        break;
+                        
+                    case PLATFORM_TYPES.TRAMPOLINE:
+                        // 彈床主體
+                        ctx.fillStyle = '#FFD700';
+                        const compressionOffset = platform.trampolineCompression * 5;
+                        ctx.fillRect(platform.x, platform.y + compressionOffset, platform.width, platform.height - compressionOffset);
+                        
+                        // 彈簧效果
+                        ctx.strokeStyle = '#FFA500';
+                        ctx.lineWidth = 3;
+                        const springCount = Math.floor(platform.width / 20);
+                        for (let i = 0; i < springCount; i++) {
+                            const springX = platform.x + (i + 0.5) * (platform.width / springCount);
+                            ctx.beginPath();
+                            for (let j = 0; j < 3; j++) {
+                                const zigzagY = platform.y + platform.height + j * 3 - compressionOffset;
+                                ctx.moveTo(springX - 5, zigzagY);
+                                ctx.lineTo(springX + 5, zigzagY + 1.5);
+                            }
+                            ctx.stroke();
+                        }
+                        
+                        // 彈床表面波浪
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.fillRect(platform.x, platform.y + compressionOffset, platform.width, 3);
+                        break;
+                }
+                
+                // 平台高光
+                if (platform.type !== PLATFORM_TYPES.SPIKE) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.fillRect(platform.x, platform.y, platform.width, 3);
+                }
+                
+                ctx.globalAlpha = 1;
+                
+                // 彈床回彈動畫
+                if (platform.trampolineCompression > 0) {
+                    platform.trampolineCompression -= 0.2;
+                    if (platform.trampolineCompression < 0) {
+                        platform.trampolineCompression = 0;
+                    }
+                }
+            });
+        }
+
+        // 繪製紅心
+        function drawHearts() {
+            hearts.forEach(heart => {
+                // 漂浮動畫
+                const float = Math.sin(Date.now() / 500 + heart.x) * 5;
+                
+                ctx.fillStyle = '#FF1744';
+                ctx.font = '30px Arial';
+                ctx.fillText('❤️', heart.x - 15, heart.y + float + 15);
+                
+                // 光暈效果
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(255, 23, 68, 0.2)';
+                ctx.arc(heart.x, heart.y + float, 25, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // 繪製護盾
+        function drawShields() {
+            shields.forEach(shield => {
+                // 漂浮動畫
+                const float = Math.sin(Date.now() / 600 + shield.x) * 3;
+                
+                ctx.fillStyle = '#2196F3';
+                ctx.font = '25px Arial';
+                ctx.fillText('🛡️', shield.x - 12, shield.y + float + 12);
+                
+                // 光暈效果
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
+                ctx.arc(shield.x, shield.y + float, 20, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // 繪製粒子
+        function drawParticles() {
+            particles = particles.filter(particle => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vy += 0.3;
+                particle.life--;
+                
+                if (particle.life > 0) {
+                    ctx.globalAlpha = particle.life / 30;
+                    ctx.fillStyle = particle.color;
+                    ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
+                    ctx.globalAlpha = 1;
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        // 更新生命值顯示
+        function updateHealthDisplay() {
+            const healthPercent = (player.health / player.maxHealth) * 100;
+            healthBarElement.style.width = healthPercent + '%';
+            healthTextElement.textContent = `${Math.max(0, player.health)}/${player.maxHealth}`;
+            
+            // 根據血量改變顏色
+            if (healthPercent > 60) {
+                healthBarElement.style.background = 'linear-gradient(90deg, #4CAF50, #66BB6A)';
+            } else if (healthPercent > 30) {
+                healthBarElement.style.background = 'linear-gradient(90deg, #FF9800, #FFB74D)';
+            } else {
+                healthBarElement.style.background = 'linear-gradient(90deg, #f44336, #ef5350)';
+            }
+        }
+
+        // 更新護盾顯示
+        function updateShieldDisplay() {
+            shieldCountElement.textContent = player.shields;
+        }
+
+        // 處理傷害
+        function takeDamage(damage) {
+            if (player.shields > 0) {
+                player.shields--;
+                updateShieldDisplay();
+                createParticles(player.x + player.width/2, player.y, '#2196F3', 10);
+            } else {
+                player.health -= damage;
+                createParticles(player.x + player.width/2, player.y, '#FF0000', 15);
+                updateHealthDisplay();
+                
+                if (player.health <= 0) {
+                    gameOver();
+                }
+            }
+        }
+
+        // 更新遊戲邏輯
+        function update() {
+            if (!gameRunning || gamePaused) return;
+
+            // 檢查是否按住下鍵或S鍵
+            if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+                currentScrollSpeed = baseScrollSpeed * 3;
+                speedIndicator.style.display = 'block';
+            } else {
+                currentScrollSpeed = baseScrollSpeed;
+                speedIndicator.style.display = 'none';
+            }
+
+            // 玩家移動
+            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+                player.x -= player.speed;
+            }
+            if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+                player.x += player.speed;
+            }
+
+            // 邊界檢查
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) {
+                player.x = canvas.width - player.width;
+            }
+
+            // 如果在破爛平台上，暫停重力但仍可移動
+            if (!player.onFragilePlatform) {
+                // 重力
+                player.velocityY += 0.5;
+                player.y += player.velocityY;
+            } else {
+                player.velocityY = 0;
+            }
+
+            // 檢查是否離開平台
+            if (player.wasOnPlatform && !player.onPlatform) {
+                // 剛離開平台，加入已離開列表（但彈床除外）
+                if (player.lastPlatform && player.lastPlatform.type !== PLATFORM_TYPES.TRAMPOLINE) {
+                    player.platformsLeft.add(player.lastPlatform.id);
+                }
+            }
+            player.wasOnPlatform = player.onPlatform;
+
+            // 如果剛從彈床彈起，當下落時移除它從離開列表
+            if (player.justBouncedFrom && player.velocityY > 0) {
+                player.platformsLeft.delete(player.justBouncedFrom);
+                player.justBouncedFrom = null;
+            }
+
+            // 平台碰撞檢測
+            player.onPlatform = false;
+            let currentPlatform = null;
+            
+            platforms.forEach(platform => {
+                if (!platform.breaking &&
+                    player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+                    
+                    // 檢查是否是已離開的平台（彈床總是可以重新站上）
+                    if (platform.type !== PLATFORM_TYPES.TRAMPOLINE && player.platformsLeft.has(platform.id)) {
+                        // 穿過平台
+                        return;
+                    }
+                    
+                    // 只有從上方下落才能站上平台（檢查垂直速度和位置）
+                    if (player.velocityY > 0 && player.y < platform.y) {
+                        currentPlatform = platform;
+                        player.y = platform.y - player.height;
+                        player.velocityY = 0;
+                        player.onPlatform = true;
+                        
+                        // 處理不同平台效果
+                        if (player.lastPlatform !== platform || platform.type === PLATFORM_TYPES.TRAMPOLINE) {
+                            player.lastPlatform = platform;
+                            
+                            switch(platform.type) {
+                                case PLATFORM_TYPES.NORMAL:
+                                    if (player.health < player.maxHealth) {
+                                        player.health = Math.min(player.health + 1, player.maxHealth);
+                                        createParticles(player.x + player.width/2, player.y, '#4CAF50', 5);
+                                        updateHealthDisplay();
+                                    }
+                                    break;
+                                    
+                                case PLATFORM_TYPES.FRAGILE:
+                                    platform.breaking = true;
+                                    player.onFragilePlatform = platform;
+                                    if (player.health < player.maxHealth) {
+                                        player.health = Math.min(player.health + 1, player.maxHealth);
+                                        updateHealthDisplay();
+                                    }
+                                    break;
+                                    
+                                case PLATFORM_TYPES.SPIKE:
+                                    takeDamage(3);
+                                    break;
+                                    
+                                case PLATFORM_TYPES.CONVEYOR:
+                                    if (player.health < player.maxHealth) {
+                                        player.health = Math.min(player.health + 1, player.maxHealth);
+                                        updateHealthDisplay();
+                                    }
+                                    break;
+                                    
+                                case PLATFORM_TYPES.TRAMPOLINE:
+                                    // 計算彈跳速度：1/5層 = canvas.height / 5 的高度
+                                    const jumpHeight = canvas.height / 5;
+                                    player.velocityY = -Math.sqrt(2 * 0.5 * jumpHeight);
+                                    platform.trampolineCompression = 1;
+                                    player.justBouncedFrom = platform.id; // 記錄剛彈跳的平台
+                                    createParticles(player.x + player.width/2, platform.y, '#FFD700', 15);
+                                    if (player.health < player.maxHealth) {
+                                        player.health = Math.min(player.health + 1, player.maxHealth);
+                                        updateHealthDisplay();
+                                    }
+                                    break;
+                            }
+                        }
+                        
+                        // 輸送帶效果
+                        if (platform.type === PLATFORM_TYPES.CONVEYOR) {
+                            player.x += platform.conveyorDirection * platform.conveyorSpeed;
+                        }
+                    }
+                }
+            });
+
+            // 處理破爛平台
+            if (player.onFragilePlatform) {
+                player.onFragilePlatform.breakTimer++;
+                if (player.onFragilePlatform.breakTimer > 30) {
+                    createParticles(
+                        player.onFragilePlatform.x + player.onFragilePlatform.width/2, 
+                        player.onFragilePlatform.y, 
+                        '#8B4513', 
+                        20
+                    );
+                    player.onFragilePlatform.y = -100; // 移出畫面
+                    player.onFragilePlatform = null;
+                    player.velocityY = 2; // 給一個小的下落速度
+                }
+            }
+
+            // 平台上升
+            platforms.forEach(platform => {
+                platform.y -= currentScrollSpeed;
+            });
+            player.y -= currentScrollSpeed;
+            totalDistance += currentScrollSpeed;
+            
+            hearts.forEach(heart => {
+                heart.y -= currentScrollSpeed;
+            });
+            
+            shields.forEach(shield => {
+                shield.y -= currentScrollSpeed;
+            });
+
+            // 計算層數（精確到小數點後2位）
+            score = totalDistance / canvas.height;
+            scoreElement.textContent = score.toFixed(2);
+            updateScoreColor(); // 更新分數顏色
+            
+            // 檢查是否生成道具
+            const intScore = Math.floor(score);
+            const lastIntScore = Math.floor((totalDistance - currentScrollSpeed) / canvas.height);
+            
+            if (intScore > lastIntScore) {
+                // 每10層生成一個紅心
+                if (intScore % 10 === 0 && intScore > 0) {
+                    let attempts = 0;
+                    let heartX, heartY;
+                    do {
+                        heartX = Math.random() * (canvas.width - 30) + 15;
+                        heartY = canvas.height + 50 + Math.random() * 100;
+                        attempts++;
+                    } while (!isValidItemPosition(heartX, heartY) && attempts < 10);
+                    
+                    if (attempts < 10) {
+                        hearts.push({
+                            x: heartX,
+                            y: heartY,
+                            width: 30,
+                            height: 30
+                        });
+                    }
+                }
+                
+                // 每5層生成一個護盾
+                if (intScore % 5 === 0 && intScore > 0) {
+                    let attempts = 0;
+                    let shieldX, shieldY;
+                    do {
+                        shieldX = Math.random() * (canvas.width - 30) + 15;
+                        shieldY = canvas.height + 100 + Math.random() * 100;
+                        attempts++;
+                    } while (!isValidItemPosition(shieldX, shieldY) && attempts < 10);
+                    
+                    if (attempts < 10) {
+                        shields.push({
+                            x: shieldX,
+                            y: shieldY,
+                            width: 25,
+                            height: 25
+                        });
+                    }
+                }
+            }
+
+            // 移除超出畫面的物件
+            platforms = platforms.filter(platform => platform.y > -50);
+            hearts = hearts.filter(heart => heart.y > -50);
+            shields = shields.filter(shield => shield.y > -50);
+            
+            // 當最下面的平台上升到一定高度時，添加新平台
+            const lowestPlatform = Math.max(...platforms.map(p => p.y));
+            if (lowestPlatform < canvas.height - 100) {
+                platforms.push(createPlatform(canvas.height + 20));
+            }
+
+            // 紅心收集檢測
+            hearts = hearts.filter(heart => {
+                const float = Math.sin(Date.now() / 500 + heart.x) * 5;
+                if (player.x < heart.x + 15 &&
+                    player.x + player.width > heart.x - 15 &&
+                    player.y < heart.y + float + 15 &&
+                    player.y + player.height > heart.y + float - 15) {
+                    
+                    player.health = player.maxHealth;
+                    createParticles(heart.x, heart.y + float, '#FF1744', 20);
+                    updateHealthDisplay();
+                    return false;
+                }
+                return true;
+            });
+
+            // 護盾收集檢測
+            shields = shields.filter(shield => {
+                const float = Math.sin(Date.now() / 600 + shield.x) * 3;
+                if (player.x < shield.x + 12 &&
+                    player.x + player.width > shield.x - 12 &&
+                    player.y < shield.y + float + 12 &&
+                    player.y + player.height > shield.y + float - 12) {
+                    
+                    player.shields++;
+                    createParticles(shield.x, shield.y + float, '#2196F3', 15);
+                    updateShieldDisplay();
+                    return false;
+                }
+                return true;
+            });
+
+            // 檢查是否碰到尖刺（扣5血並穿過當前平台）
+            if (player.y <= 30) {
+                takeDamage(5);
+                player.y = 31; // 彈開一點
+                player.velocityY = 2;
+                // 將當前站立的平台加入已離開列表，使其可被穿過
+                if (player.lastPlatform) {
+                    player.platformsLeft.add(player.lastPlatform.id);
+                }
+                player.onFragilePlatform = null; // 取消破爛平台狀態
+            }
+
+            // 檢查是否掉出畫面（死亡）
+            if (player.y > canvas.height) {
+                player.health = 0;
+                gameOver();
+            }
+        }
+
+        // 遊戲結束
+        function gameOver() {
+            gameRunning = false;
+            gameOverElement.style.display = 'block';
+            currentScore = parseFloat(score.toFixed(2));
+            finalScoreElement.textContent = currentScore.toFixed(2);
+            scoreSubmitted = false;
+            
+            // 檢查是否可以進入排行榜
+            if (qualifiesForLeaderboard(currentScore)) {
+                setTimeout(() => {
+                    openNameInputModal();
+                }, 500);
+            }
+        }
+
+        // 重置遊戲
+        function resetGame() {
+            gameRunning = true;
+            gamePaused = false;
+            pauseOverlay.style.display = 'none';
+            score = 0;
+            totalDistance = 0;
+            scoreElement.textContent = '0.00';
+            scoreElement.style.color = 'white';
+            scoreElement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+            gameOverElement.style.display = 'none';
+            speedIndicator.style.display = 'none';
+            currentScrollSpeed = baseScrollSpeed;
+            closeNameInputModal();
+            
+            player.x = canvas.width / 2 - 15;
+            player.y = canvas.height / 2 - 60;
+            player.velocityY = 0;
+            player.health = player.maxHealth;
+            player.shields = 0;
+            player.lastPlatform = null;
+            player.platformsLeft.clear();
+            player.onFragilePlatform = null;
+            player.wasOnPlatform = false;
+            player.justBouncedFrom = null;
+            
+            hearts = [];
+            shields = [];
+            particles = [];
+            
+            updateHealthDisplay();
+            updateShieldDisplay();
+            initPlatforms();
+        }
+
+        // 遊戲主循環
+        function gameLoop() {
+            // 清除畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 繪製背景漸層
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a1a2e');
+            gradient.addColorStop(1, '#16213e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 繪製層級分隔線
+            drawLayerLines();
+            
+            // 更新和繪製
+            update();
+            drawPlatforms();
+            drawHearts();
+            drawShields();
+            drawPlayer();
+            drawParticles();
+            drawSpikes();
+            
+            // 暫停提示
+            if (gamePaused) {
+                pauseOverlay.style.display = 'block';
+                pauseOverlay.style.left = canvas.offsetLeft + canvas.width/2 - 60 + 'px';
+                pauseOverlay.style.top = canvas.offsetTop + canvas.height/2 - 30 + 'px';
+            } else {
+                pauseOverlay.style.display = 'none';
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 鍵盤事件
+        document.addEventListener('keydown', (e) => {
+            // 如果模態框開啟，只處理Enter鍵和左右方向鍵
+            if (modalOpen) {
+                if (e.key === 'Enter') {
+                    submitScore();
+                }
+                // 允許左右方向鍵控制輸入框游標
+                return;
+            }
+            
+            // 空白鍵暫停
+            if (e.key === ' ' && gameRunning) {
+                gamePaused = !gamePaused;
+                return;
+            }
+            
+            // R鍵重新開始（遊戲結束時）
+            if ((e.key === 'r' || e.key === 'R') && !gameRunning) {
+                resetGame();
+                return;
+            }
+            
+            if (!gamePaused) {
+                keys[e.key] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // 初始化遊戲
+        initPlatforms();
+        updateHealthDisplay();
+        updateShieldDisplay();
+        updateLeaderboard();
+        gameLoop();
+    </script>
+</body>
+</html>

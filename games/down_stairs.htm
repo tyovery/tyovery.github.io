@@ -15,6 +15,15 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Arial', sans-serif;
             overflow: hidden;
+            /* 防止手機瀏覽器的下拉刷新 */
+            overscroll-behavior: none;
+            /* 防止文字選取 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            /* 防止觸控時的高亮 */
+            -webkit-tap-highlight-color: transparent;
         }
         
         #mainContainer {
@@ -52,6 +61,8 @@
             border: 3px solid #fff;
             border-radius: 5px;
             background: linear-gradient(to bottom, #1a1a2e, #16213e);
+            /* 防止觸控時的預設行為 */
+            touch-action: none;
         }
         
         #gameInfo {
@@ -303,6 +314,65 @@
         .score-highlight {
             transition: color 0.3s;
         }
+        
+        /* 觸控提示 */
+        .touch-indicator {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        
+        .touch-indicator.active {
+            opacity: 0.3;
+        }
+        
+        #leftTouchIndicator {
+            left: 0;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0.2), transparent);
+        }
+        
+        #rightTouchIndicator {
+            right: 0;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to left, rgba(255,255,255,0.2), transparent);
+        }
+        
+        /* 手機版操作說明 */
+        .mobile-controls {
+            display: none;
+            color: white;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            #leftPanel, #rightPanel {
+                display: none;
+            }
+            
+            .mobile-controls {
+                display: block;
+            }
+            
+            #gameContainer {
+                padding: 10px;
+            }
+            
+            canvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -318,14 +388,14 @@
     
     <div id="mainContainer">
         <div id="leftPanel">
-            <div class="controls">操作說明</div>
+            <div class="controls">操作說明&nbsp;&nbsp;&nbsp;<button onclick="resetGame()">新遊戲</button></div>
             <div>← → 或 A D：移動</div>
             <div>↓ 或 S：加速下降</div>
             <div>空白鍵：暫停</div>
             <div>R：重新開始（遊戲結束時）</div>
             <br>
             <div class="legend">
-                <div class="legend-title">平台說明</div>
+                <div class="legend-title">遊戲元素</div>
                 <div class="legend-item">🟩 普通平台<br>回復1血</div>
                 <div class="legend-item">🟦 輸送帶<br>會移動角色</div>
                 <div class="legend-item">🟫 破爛平台<br>會碎掉</div>
@@ -350,9 +420,14 @@
                 </div>
             </div>
             <canvas id="gameCanvas" width="400" height="600"></canvas>
+            <div class="touch-indicator" id="leftTouchIndicator"></div>
+            <div class="touch-indicator" id="rightTouchIndicator"></div>
             <div id="pauseOverlay">暫停</div>
             <div id="gameOver">遊戲結束！最終層數：<span id="finalScore">0.00</span></div>
-            <button onclick="resetGame()">重新開始</button>
+            <div class="mobile-controls">
+                📱 觸控操作：按住畫面左側向左移動，右側向右移動<br>
+                💡 長按畫面下半部分加速下降
+            </div>
         </div>
         
         <div id="rightPanel">
@@ -379,6 +454,8 @@
         const modalOverlay = document.getElementById('modalOverlay');
         const playerNameInput = document.getElementById('playerNameInput');
         const speedIndicator = document.getElementById('speedIndicator');
+        const leftTouchIndicator = document.getElementById('leftTouchIndicator');
+        const rightTouchIndicator = document.getElementById('rightTouchIndicator');
 
         // 防止方向鍵滾動頁面
         window.addEventListener("keydown", function(e) {
@@ -403,6 +480,13 @@
         let currentScrollSpeed = baseScrollSpeed;
         let leaderboard = JSON.parse(localStorage.getItem('jumpGameLeaderboard') || '[]');
         let lastPlayerName = localStorage.getItem('jumpGameLastName') || '';
+
+        // 觸控相關變數
+        let touchLeft = false;
+        let touchRight = false;
+        let touchDown = false;
+        let touchStartTime = 0;
+        let touchIdentifiers = new Map(); // 追蹤多點觸控
 
         // 平台類型
         const PLATFORM_TYPES = {
@@ -956,8 +1040,8 @@
         function update() {
             if (!gameRunning || gamePaused) return;
 
-            // 檢查是否按住下鍵或S鍵
-            if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+            // 檢查是否按住下鍵或S鍵（包含觸控）
+            if (keys['ArrowDown'] || keys['s'] || keys['S'] || touchDown) {
                 currentScrollSpeed = baseScrollSpeed * 3;
                 speedIndicator.style.display = 'block';
             } else {
@@ -965,11 +1049,11 @@
                 speedIndicator.style.display = 'none';
             }
 
-            // 玩家移動
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+            // 玩家移動（包含觸控）
+            if (keys['ArrowLeft'] || keys['a'] || keys['A'] || touchLeft) {
                 player.x -= player.speed;
             }
-            if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+            if (keys['ArrowRight'] || keys['d'] || keys['D'] || touchRight) {
                 player.x += player.speed;
             }
 
@@ -1344,6 +1428,203 @@
 
         document.addEventListener('keyup', (e) => {
             keys[e.key] = false;
+        });
+
+        // 觸控事件處理
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        // 處理觸控開始
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameRunning && !modalOpen) {
+                resetGame();
+                return;
+            }
+            
+            if (modalOpen) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            
+            for (let touch of e.changedTouches) {
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                
+                // 儲存觸控點資訊
+                touchIdentifiers.set(touch.identifier, {
+                    x: x,
+                    y: y,
+                    side: x < canvasWidth / 2 ? 'left' : 'right',
+                    isDown: y > canvasHeight * 0.9 // 下半部90%的區域視為加速區
+                });
+                
+                // 更新控制狀態
+                updateTouchControls();
+            }
+            
+            // 觸控開始時間
+            if (e.touches.length === 1) {
+                touchStartTime = Date.now();
+            }
+        });
+
+        // 處理觸控移動
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (modalOpen) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            
+            for (let touch of e.changedTouches) {
+                if (touchIdentifiers.has(touch.identifier)) {
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    const canvasWidth = canvas.width;
+                    const canvasHeight = canvas.height;
+                    
+                    // 更新觸控點資訊
+                    touchIdentifiers.set(touch.identifier, {
+                        x: x,
+                        y: y,
+                        side: x < canvasWidth / 2 ? 'left' : 'right',
+                        isDown: y > canvasHeight * 0.9
+                    });
+                    
+                    // 更新控制狀態
+                    updateTouchControls();
+                }
+            }
+        });
+
+        // 處理觸控結束
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            for (let touch of e.changedTouches) {
+                touchIdentifiers.delete(touch.identifier);
+            }
+            
+            // 更新控制狀態
+            updateTouchControls();
+            
+            // 檢查是否是短暫點擊（用於暫停）
+            if (e.touches.length === 0 && gameRunning && !modalOpen) {
+                const touchDuration = Date.now() - touchStartTime;
+                if (touchDuration < 200) { // 200ms內的點擊視為暫停
+                    gamePaused = !gamePaused;
+                }
+            }
+        });
+
+        // 處理觸控取消
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            touchIdentifiers.clear();
+            updateTouchControls();
+        });
+
+        // 更新觸控控制狀態
+        function updateTouchControls() {
+            touchLeft = false;
+            touchRight = false;
+            touchDown = false;
+            
+            for (let [id, info] of touchIdentifiers) {
+                if (info.side === 'left') {
+                    touchLeft = true;
+                } else if (info.side === 'right') {
+                    touchRight = true;
+                }
+                
+                if (info.isDown) {
+                    touchDown = true;
+                }
+            }
+            
+            // 更新視覺提示
+            if (touchLeft) {
+                leftTouchIndicator.classList.add('active');
+            } else {
+                leftTouchIndicator.classList.remove('active');
+            }
+            
+            if (touchRight) {
+                rightTouchIndicator.classList.add('active');
+            } else {
+                rightTouchIndicator.classList.remove('active');
+            }
+        }
+
+        // 滑鼠事件（為了桌面也能用滑鼠操作）
+        let mouseDown = false;
+        let mouseX = 0;
+        let mouseY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!gameRunning && !modalOpen) {
+                resetGame();
+                return;
+            }
+            
+            if (modalOpen) return;
+            
+            mouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            
+            // 模擬觸控
+            touchIdentifiers.set('mouse', {
+                x: mouseX,
+                y: mouseY,
+                side: mouseX < canvasWidth / 2 ? 'left' : 'right',
+                isDown: mouseY > canvasHeight * 0.9
+            });
+            
+            updateTouchControls();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!mouseDown || modalOpen) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            
+            // 更新滑鼠觸控
+            touchIdentifiers.set('mouse', {
+                x: mouseX,
+                y: mouseY,
+                side: mouseX < canvasWidth / 2 ? 'left' : 'right',
+                isDown: mouseY > canvasHeight * 0.9
+            });
+            
+            updateTouchControls();
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            mouseDown = false;
+            touchIdentifiers.delete('mouse');
+            updateTouchControls();
+        });
+
+        canvas.addEventListener('mouseleave', (e) => {
+            mouseDown = false;
+            touchIdentifiers.delete('mouse');
+            updateTouchControls();
         });
 
         // 初始化遊戲

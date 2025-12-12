@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>踩地雷</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            font-size: 2.5em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        select, button, input {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input {
+            background: #2a2a4a;
+            color: #fff;
+            border: 2px solid #4a4a6a;
+            text-align: center;
+            width: 80px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00ffff;
+        }
+
+        select {
+            background: #2a2a4a;
+            color: #fff;
+            border: 2px solid #4a4a6a;
+        }
+
+        select:hover {
+            border-color: #00ffff;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            height: 48px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #2a2a4a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #4a4a6a;
+        }
+
+        .mode-toggle.active {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #4a4a6a;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #00ff88;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 26px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #2a2a4a;
+            padding: 10px 15px;
+            border-radius: 8px;
+            height: 48px;
+        }
+
+        .stat-icon {
+            font-size: 1.3em;
+        }
+
+        #detector-button-stat {
+            padding: 0;
+        }
+
+        #detector-button-stat .detector-btn {
+            height: 100%;
+            padding: 0 15px;
+            margin: 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #00ccff 0%, #0066ff 100%);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #detector-button-stat .detector-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 204, 255, 0.4);
+        }
+
+        #detector-button-stat .detector-btn.active {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+
+        #detector-button-stat .detector-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #game-board {
+            display: grid;
+            gap: 2px;
+            background: #333;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .cell {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            border-radius: 4px;
+            user-select: none;
+            position: relative;
+        }
+
+        .cell.hidden {
+            background: linear-gradient(145deg, #5a5a7a, #4a4a6a);
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3),
+                        -1px -1px 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .cell.hidden:hover {
+            background: linear-gradient(145deg, #6a6a8a, #5a5a7a);
+            transform: scale(1.05);
+        }
+
+        .cell.revealed {
+            background: #2a2a3a;
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.revealed.number:hover {
+            background: #3a3a4a;
+            cursor: pointer;
+        }
+
+        .cell.mine {
+            background: #ff4444;
+        }
+
+        .cell.mine-hit {
+            background: #ff0000;
+            animation: explode 0.3s ease;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .cell.flagged::after {
+            content: '🚩';
+            font-size: 1.2em;
+        }
+
+        .cell.auto-revealed {
+            animation: autoReveal 0.5s ease;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .cell.replay-highlight {
+            animation: replayPulse 0.5s ease;
+        }
+
+        .cell.detected-mine {
+            border: 2px solid #ffcc00 !important;
+        }
+
+        .cell.detected-safe {
+            border: 2px solid #00ff88 !important;
+        }
+
+        .cell.hidden.detected-mine {
+            background: linear-gradient(145deg, #5a5a7a, #4a4a6a) !important;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3),
+                        -1px -1px 3px rgba(255, 255, 255, 0.1),
+                        0 0 0 2px #ffcc00 !important;
+        }
+
+        .cell.hidden.detected-safe {
+            background: linear-gradient(145deg, #5a5a7a, #4a4a6a) !important;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3),
+                        -1px -1px 3px rgba(255, 255, 255, 0.1),
+                        0 0 0 2px #00ff88 !important;
+        }
+
+        .cell.revealed.detected-mine {
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3),
+                        0 0 0 2px #ffcc00 !important;
+        }
+
+        .cell.revealed.detected-safe {
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3),
+                        0 0 0 2px #00ff88 !important;
+        }
+
+        @keyframes replayPulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.8); }
+            100% { box-shadow: 0 0 20px 10px rgba(255, 255, 0, 0); }
+        }
+
+        @keyframes autoReveal {
+            0% { transform: scale(1); background: #00ff88; }
+            100% { transform: scale(1); }
+        }
+
+        .cell[data-number="1"] { color: #3498db; }
+        .cell[data-number="2"] { color: #27ae60; }
+        .cell[data-number="3"] { color: #e74c3c; }
+        .cell[data-number="4"] { color: #9b59b6; }
+        .cell[data-number="5"] { color: #e67e22; }
+        .cell[data-number="6"] { color: #1abc9c; }
+        .cell[data-number="7"] { color: #34495e; }
+        .cell[data-number="8"] { color: #95a5a6; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 99;
+            backdrop-filter: blur(3px);
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 40, 0.95);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            animation: popIn 0.3s ease;
+            border: 2px solid #4a4a6a;
+            min-width: 350px;
+        }
+
+        .message .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8em;
+            cursor: pointer;
+            color: #888;
+            transition: all 0.3s;
+            line-height: 1;
+        }
+
+        .message .close-btn:hover {
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .message h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .message.win h2 {
+            color: #00ff88;
+        }
+
+        .message.lose h2 {
+            color: #ff4444;
+        }
+
+        .message p {
+            margin: 10px 0;
+            color: #ccc;
+        }
+
+        .message .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .message button {
+            min-width: 120px;
+        }
+
+        .message button.secondary {
+            background: linear-gradient(135deg, #4a4a6a 0%, #3a3a5a 100%);
+        }
+
+        .message button.rewind {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .hint-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 255, 136, 0.9);
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            animation: slideUp 0.3s ease, fadeOut 0.5s ease 2s forwards;
+            z-index: 50;
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateX(-50%) translateY(100px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .leaderboard-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 40, 0.98);
+            padding: 30px 40px;
+            border-radius: 20px;
+            z-index: 100;
+            animation: popIn 0.3s ease;
+            border: 2px solid #4a4a6a;
+            min-width: 500px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .leaderboard-container .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8em;
+            cursor: pointer;
+            color: #888;
+            transition: all 0.3s;
+        }
+
+        .leaderboard-container .close-btn:hover {
+            color: #fff;
+        }
+
+        .leaderboard-container h2 {
+            color: #00ffff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .leaderboard-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .leaderboard-tabs button {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .leaderboard-tabs button.active {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            color: #000;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 10px 12px;
+            text-align: center;
+            border-bottom: 1px solid #3a3a5a;
+            font-size: 0.9em;
+        }
+
+        .leaderboard-table th {
+            background: #2a2a4a;
+            color: #00ffff;
+        }
+
+        .leaderboard-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .leaderboard-table .rank-1 { color: #ffd700; }
+        .leaderboard-table .rank-2 { color: #c0c0c0; }
+        .leaderboard-table .rank-3 { color: #cd7f32; }
+
+        .leaderboard-table button {
+            padding: 5px 10px;
+            font-size: 0.8em;
+            min-width: auto;
+        }
+
+        .no-records {
+            text-align: center;
+            color: #888;
+            padding: 30px;
+        }
+
+        .replay-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: #2a2a4a;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .replay-controls button {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .replay-controls .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .replay-controls select {
+            padding: 8px 12px;
+        }
+
+        .replay-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #aaa;
+        }
+
+        .replay-mode-indicator {
+            background: #ff6b6b;
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+
+        .replay-show-mines-btn {
+            background: linear-gradient(135deg, #ff9900 0%, #ff6600 100%) !important;
+        }
+
+        .replay-show-mines-btn.active {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%) !important;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .name-input-container {
+            margin: 20px 0;
+        }
+
+        .name-input-container input {
+            padding: 10px 15px;
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            background: #2a2a4a;
+            color: #fff;
+            font-size: 1em;
+            width: 200px;
+            text-align: center;
+        }
+
+        .name-input-container input:focus {
+            outline: none;
+            border-color: #00ffff;
+        }
+
+        .custom-difficulty {
+            display: none;
+            gap: 10px;
+            align-items: center;
+            background: #2a2a4a;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .custom-difficulty.show {
+            display: flex;
+        }
+
+        .custom-difficulty .input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .custom-difficulty label {
+            color: #ccc;
+        }
+
+        .custom-difficulty input {
+            width: 60px;
+            padding: 8px;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            background: #2a2a4a;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .instructions h3 {
+            color: #00ffff;
+            margin-bottom: 10px;
+        }
+
+        .instructions p {
+            color: #aaa;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .instructions .highlight {
+            color: #ffcc00;
+        }
+
+        .delete-data-btn {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%) !important;
+            color: white !important;
+            margin-top: 15px;
+        }
+
+        .delete-data-btn:hover {
+            background: linear-gradient(135deg, #ff6666 0%, #ff0000 100%) !important;
+        }
+
+        .delete-confirmation {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .delete-confirmation p {
+            color: #ff6666;
+            margin-bottom: 15px;
+        }
+
+        .delete-confirmation .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .delete-confirmation button {
+            padding: 8px 20px;
+            font-size: 0.9em;
+        }
+
+        .detector-btn {
+            background: linear-gradient(135deg, #00ccff 0%, #0066ff 100%) !important;
+        }
+
+        .detector-btn.active {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+        
+        .replay-player-move {
+            animation: playerMoveHighlight 0.5s ease;
+        }
+        
+        @keyframes playerMoveHighlight {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.8); }
+            50% { box-shadow: 0 0 10px 5px rgba(255, 255, 0, 0.8); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>💣 踩地雷</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>難度</label>
+            <select id="difficulty">
+                <option value="easy">簡單 (9×9, 10雷)</option>
+                <option value="medium" selected>中等 (16×16, 40雷)</option>
+                <option value="hard">困難 (16×30, 99雷)</option>
+                <option value="custom">自訂...</option>
+            </select>
+        </div>
+        <button id="new-game">🔄 新遊戲</button>
+        <button id="show-leaderboard">🏆 排行榜</button>
+    </div>
+
+    <div class="custom-difficulty" id="custom-difficulty">
+        <div class="input-group">
+            <label>行數:</label>
+            <input type="number" id="custom-rows" min="5" max="30" value="16">
+        </div>
+        <div class="input-group">
+            <label>列數:</label>
+            <input type="number" id="custom-cols" min="5" max="50" value="16">
+        </div>
+        <div class="input-group">
+            <label>地雷:</label>
+            <input type="number" id="custom-mines" min="1" max="500" value="40">
+        </div>
+        <button id="apply-custom">✓ 套用</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <span class="stat-icon">💣</span>
+            <span id="mines-left">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">⏱️</span>
+            <span id="timer">0.000</span>
+        </div>
+        <div class="stat" id="detector-button-stat">
+            <button id="detector-btn" class="detector-btn">🔍 探測器</button>
+        </div>
+        <div class="stat" id="detector-stat">
+            <span class="stat-icon">🔍</span>
+            <span>使用次數: <span id="detector-count">0</span></span>
+        </div>
+        <div class="stat" id="rewind-stat" style="display: none;">
+            <span class="stat-icon">⏪</span>
+            <span>倒流: <span id="rewind-count">0</span></span>
+        </div>
+    </div>
+
+    <div id="replay-controls-container"></div>
+
+    <div id="game-board"></div>
+
+    <div class="instructions">
+        <h3>遊戲說明</h3>
+        <p>
+            <strong>左鍵點擊</strong> 未開格子 → 打開格子<br>
+            <strong>右鍵點擊</strong> 未開格子 → 標記/取消地雷旗<br>
+            <span class="highlight"><strong>左鍵點擊數字格</strong> → 若周圍旗子數=數字，自動展開周圍格子</span><br><br>
+            <strong>探測器：</strong>點擊探測器按鈕後，再點擊一個未開的格子，可以探測該格子是否為地雷（不限使用次數）<br>
+            <strong>時光倒流：</strong>踩到地雷時可以撤回操作繼續遊戲！
+        </p>
+    </div>
+
+    <script>
+        class Minesweeper {
+            constructor() {
+                this.board = [];
+                this.rows = 16;
+                this.cols = 16;
+                this.mines = 40;
+                this.minesLeft = 40;
+                this.revealedCount = 0;
+                this.gameOver = false;
+                this.gameStarted = false;
+                this.detectorMode = false; // 探測器模式
+                this.detectorUsed = 0; // 使用探測器的次數
+                this.timer = 0;
+                this.timerInterval = null;
+                this.rewindCount = 0;
+
+                this.moveHistory = [];
+                this.boardSnapshots = [];
+                this.isReplaying = false;
+                this.replayIndex = 0;
+                this.replayInterval = null;
+                this.replaySpeed = 1;
+                this.replaySessionId = 0;
+                this.savedMinePositions = [];
+                this.lastHitMine = null;
+                this.shouldAutoShowMines = false;
+                this.replaySnapshots = []; // 重播每一步的快照
+                this.showMinesInReplay = false; // 重播時是否顯示地雷
+                this.lastMoveCell = null; // 記錄最後操作的格子，用於重播高亮
+
+                this.customRows = 16;
+                this.customCols = 16;
+                this.customMines = 40;
+
+                this.boardElement = document.getElementById('game-board');
+                this.minesLeftElement = document.getElementById('mines-left');
+                this.timerElement = document.getElementById('timer');
+                this.detectorStat = document.getElementById('detector-stat');
+                this.detectorCountElement = document.getElementById('detector-count');
+                this.detectorBtn = document.getElementById('detector-btn');
+                this.rewindStat = document.getElementById('rewind-stat');
+                this.rewindCountElement = document.getElementById('rewind-count');
+                this.replayControlsContainer = document.getElementById('replay-controls-container');
+                this.customDifficultyPanel = document.getElementById('custom-difficulty');
+
+                this.setupEventListeners();
+                this.loadLeaderboard();
+                this.newGame();
+            }
+
+            setupEventListeners() {
+                document.getElementById('new-game').addEventListener('click', () => this.newGame());
+                document.getElementById('difficulty').addEventListener('change', (e) => {
+                    if (e.target.value === 'custom') {
+                        this.customDifficultyPanel.classList.add('show');
+                    } else {
+                        this.customDifficultyPanel.classList.remove('show');
+                        this.newGame();
+                    }
+                });
+                document.getElementById('show-leaderboard').addEventListener('click', () => this.showLeaderboard());
+                document.getElementById('apply-custom').addEventListener('click', () => this.applyCustomDifficulty());
+                
+                this.detectorBtn.addEventListener('click', () => this.toggleDetectorMode());
+
+                this.boardElement.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+
+            applyCustomDifficulty() {
+                const rows = parseInt(document.getElementById('custom-rows').value);
+                const cols = parseInt(document.getElementById('custom-cols').value);
+                const mines = parseInt(document.getElementById('custom-mines').value);
+
+                if (rows < 5 || rows > 30) {
+                    this.showHint('行數必須在 5-30 之間！');
+                    return;
+                }
+                if (cols < 5 || cols > 50) {
+                    this.showHint('列數必須在 5-50 之間！');
+                    return;
+                }
+                const maxMines = (rows * cols) - 9;
+                if (mines < 1 || mines > maxMines) {
+                    this.showHint(`地雷數必須在 1-${maxMines} 之間！`);
+                    return;
+                }
+
+                this.customRows = rows;
+                this.customCols = cols;
+                this.customMines = mines;
+                this.newGame();
+            }
+
+            getDifficulty() {
+                const diff = document.getElementById('difficulty').value;
+                switch(diff) {
+                    case 'easy': return { rows: 9, cols: 9, mines: 10 };
+                    case 'medium': return { rows: 16, cols: 16, mines: 40 };
+                    case 'hard': return { rows: 16, cols: 30, mines: 99 };
+                    case 'custom': return { rows: this.customRows, cols: this.customCols, mines: this.customMines };
+                }
+            }
+
+            getDifficultyKey() {
+                const diff = document.getElementById('difficulty').value;
+                if (diff === 'custom') {
+                    return `custom_${this.rows}x${this.cols}_${this.mines}`;
+                }
+                return diff;
+            }
+
+            toggleDetectorMode() {
+                if (this.gameOver || this.isReplaying) return;
+                
+                this.detectorMode = !this.detectorMode;
+                this.detectorBtn.classList.toggle('active', this.detectorMode);
+                
+                if (this.detectorMode) {
+                    this.showHint('🔍 探測器模式已啟用，點擊一個格子進行探測');
+                } else {
+                    this.showHint('探測器模式已取消');
+                }
+            }
+
+            newGame() {
+                this.stopAllTimers();
+                this.shouldAutoShowMines = false;
+                this.detectorMode = false;
+                this.detectorUsed = 0;
+
+                const { rows, cols, mines } = this.getDifficulty();
+                this.rows = rows;
+                this.cols = cols;
+                this.mines = mines;
+                this.minesLeft = mines;
+                this.revealedCount = 0;
+                this.gameOver = false;
+                this.gameStarted = false;
+                this.timer = 0;
+                this.rewindCount = 0;
+                this.moveHistory = [];
+                this.boardSnapshots = [];
+                this.savedMinePositions = [];
+                this.lastHitMine = null;
+                this.isReplaying = false;
+                this.replaySnapshots = [];
+                this.showMinesInReplay = false;
+                this.lastMoveCell = null;
+                this.hideReplayControls();
+
+                this.detectorBtn.classList.remove('active');
+                this.rewindStat.style.display = 'none';
+                this.updateDetectorDisplay();
+
+                this.board = [];
+                for (let r = 0; r < rows; r++) {
+                    this.board[r] = [];
+                    for (let c = 0; c < cols; c++) {
+                        this.board[r][c] = {
+                            mine: false,
+                            revealed: false,
+                            flagged: false,
+                            number: 0,
+                            detected: false,
+                            detectionResult: null // 'mine' 或 'safe'
+                        };
+                    }
+                }
+
+                this.updateStats();
+                this.render();
+            }
+
+            updateDetectorDisplay() {
+                this.detectorCountElement.textContent = this.detectorUsed;
+                this.detectorBtn.textContent = `🔍 探測器`;
+                this.detectorBtn.disabled = false;
+            }
+
+            stopAllTimers() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+                if (this.replayInterval) {
+                    clearTimeout(this.replayInterval);
+                    this.replayInterval = null;
+                }
+                this.replaySessionId++;
+            }
+
+            placeMines(firstR, firstC) {
+                let placed = 0;
+                const safeCells = new Set();
+                
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = firstR + dr;
+                        const nc = firstC + dc;
+                        if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+                            safeCells.add(`${nr},${nc}`);
+                        }
+                    }
+                }
+
+                this.savedMinePositions = [];
+                while (placed < this.mines) {
+                    const r = Math.floor(Math.random() * this.rows);
+                    const c = Math.floor(Math.random() * this.cols);
+                    
+                    if (!this.board[r][c].mine && !safeCells.has(`${r},${c}`)) {
+                        this.board[r][c].mine = true;
+                        this.savedMinePositions.push({ r, c });
+                        placed++;
+                    }
+                }
+
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        if (!this.board[r][c].mine) {
+                            this.board[r][c].number = this.countAdjacentMines(r, c);
+                        }
+                    }
+                }
+            }
+
+            countAdjacentMines(r, c) {
+                let count = 0;
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        const nr = r + dr;
+                        const nc = c + dc;
+                        if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+                            if (this.board[nr][nc].mine) count++;
+                        }
+                    }
+                }
+                return count;
+            }
+
+            saveBoardSnapshot() {
+                const snapshot = {
+                    board: JSON.parse(JSON.stringify(this.board)),
+                    revealedCount: this.revealedCount,
+                    minesLeft: this.minesLeft,
+                    timer: this.timer,
+                    detectorUsed: this.detectorUsed
+                };
+                this.boardSnapshots.push(snapshot);
+            }
+
+            restoreSnapshot(index) {
+                if (index < 0 || index >= this.boardSnapshots.length) return false;
+                
+                const snapshot = this.boardSnapshots[index];
+                this.board = JSON.parse(JSON.stringify(snapshot.board));
+                this.revealedCount = snapshot.revealedCount;
+                this.minesLeft = snapshot.minesLeft;
+                this.detectorUsed = snapshot.detectorUsed;
+                
+                this.boardSnapshots = this.boardSnapshots.slice(0, index + 1);
+                this.moveHistory = this.moveHistory.slice(0, index);
+                
+                return true;
+            }
+
+            render() {
+                this.boardElement.innerHTML = '';
+                this.boardElement.style.gridTemplateColumns = `repeat(${this.cols}, 35px)`;
+
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = r;
+                        cell.dataset.col = c;
+
+                        const cellData = this.board[r][c];
+
+                        // 如果是重播模式且顯示地雷選項開啟，則顯示地雷
+                        if (this.isReplaying && this.showMinesInReplay && cellData.mine && !cellData.revealed && !cellData.flagged) {
+                            cell.classList.add('mine');
+                            cell.textContent = '💣';
+                            cell.classList.add('hidden');
+                        } else if (cellData.revealed) {
+                            cell.classList.add('revealed');
+                            if (cellData.mine) {
+                                cell.classList.add('mine');
+                                if (this.lastHitMine && this.lastHitMine.r === r && this.lastHitMine.c === c) {
+                                    cell.classList.add('mine-hit');
+                                }
+                                cell.textContent = '💣';
+                            } else if (cellData.number > 0) {
+                                cell.classList.add('number');
+                                cell.textContent = cellData.number;
+                                cell.dataset.number = cellData.number;
+                            }
+                        } else {
+                            cell.classList.add('hidden');
+                            if (cellData.flagged) {
+                                cell.classList.add('flagged');
+                            }
+                        }
+
+                        // 顯示探測結果（只對格子外框著色）
+                        if (cellData.detected) {
+                            if (cellData.detectionResult === 'mine') {
+                                cell.classList.add('detected-mine');
+                            } else if (cellData.detectionResult === 'safe') {
+                                cell.classList.add('detected-safe');
+                            }
+                        }
+
+                        // 如果是重播模式且這是玩家最後點擊的格子，添加高亮效果
+                        if (this.isReplaying && this.lastMoveCell && 
+                            this.lastMoveCell.r === r && this.lastMoveCell.c === c) {
+                            cell.classList.add('replay-player-move');
+                        }
+
+                        if (!this.isReplaying) {
+                            cell.addEventListener('click', (e) => this.handleClick(r, c));
+                            cell.addEventListener('contextmenu', (e) => {
+                                e.preventDefault();
+                                this.handleRightClick(r, c);
+                            });
+                        }
+
+                        this.boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            handleClick(r, c) {
+                if (this.gameOver || this.isReplaying) return;
+                
+                // 如果是在探測器模式下，使用探測器
+                if (this.detectorMode) {
+                    this.useDetector(r, c);
+                    return;
+                }
+                
+                const cell = this.board[r][c];
+                
+                if (cell.revealed) {
+                    if (cell.number > 0) {
+                        this.saveBoardSnapshot();
+                        this.recordMove('chord', r, c);
+                        this.chordReveal(r, c);
+                    }
+                    return;
+                }
+                
+                if (cell.flagged) return;
+
+                if (!this.gameStarted) {
+                    this.gameStarted = true;
+                    this.placeMines(r, c);
+                    this.startTimer();
+                    this.saveBoardSnapshot();
+                }
+
+                this.saveBoardSnapshot();
+                this.recordMove('reveal', r, c);
+                this.reveal(r, c);
+            }
+
+            useDetector(r, c) {
+                if (this.gameOver || this.isReplaying) return;
+                
+                const cell = this.board[r][c];
+                if (cell.revealed || cell.flagged) {
+                    this.showHint('無法探測已打開或已標記的格子');
+                    return;
+                }
+                
+                if (!this.gameStarted) {
+                    this.showHint('請先打開一個格子開始遊戲');
+                    return;
+                }
+
+                this.detectorUsed++;
+                this.saveBoardSnapshot();
+                this.recordMove('detect', r, c);
+                
+                // 標記為已探測並記錄結果（只記錄結果，不添加動畫）
+                cell.detected = true;
+                cell.detectionResult = cell.mine ? 'mine' : 'safe';
+                
+                // 顯示探測結果
+                if (cell.mine) {
+                    this.showHint(`🔍 探測結果：這個格子是地雷！`);
+                } else {
+                    this.showHint(`🔍 探測結果：這個格子是安全的！`);
+                }
+                
+                this.updateDetectorDisplay();
+                this.render();
+                
+                // 退出探測器模式
+                this.detectorMode = false;
+                this.detectorBtn.classList.remove('active');
+            }
+
+            chordReveal(r, c) {
+                if (this.gameOver) return;
+                
+                const cell = this.board[r][c];
+                if (!cell.revealed || cell.number === 0) return;
+
+                const neighbors = this.getNeighbors(r, c);
+                const flaggedCount = neighbors.filter(n => this.board[n.r][n.c].flagged).length;
+                
+                if (flaggedCount !== cell.number) return;
+
+                const toReveal = neighbors.filter(n => 
+                    !this.board[n.r][n.c].revealed && !this.board[n.r][n.c].flagged
+                );
+
+                for (const n of toReveal) {
+                    if (!this.gameOver) {
+                        this.reveal(n.r, n.c);
+                    }
+                }
+            }
+
+            handleRightClick(r, c) {
+                if (this.gameOver || this.isReplaying) return;
+                
+                // 如果在探測器模式下，右鍵取消探測器模式
+                if (this.detectorMode) {
+                    this.detectorMode = false;
+                    this.detectorBtn.classList.remove('active');
+                    return;
+                }
+                
+                const cell = this.board[r][c];
+                if (cell.revealed) return;
+
+                this.saveBoardSnapshot();
+                this.recordMove('flag', r, c);
+                cell.flagged = !cell.flagged;
+                this.minesLeft += cell.flagged ? -1 : 1;
+                
+                this.updateStats();
+                this.render();
+            }
+
+            reveal(r, c, isAuto = false) {
+                if (this.gameOver) return;
+                
+                const cell = this.board[r][c];
+                if (cell.revealed || cell.flagged) return;
+
+                cell.revealed = true;
+                this.revealedCount++;
+
+                if (cell.mine) {
+                    this.gameOver = true;
+                    this.lastHitMine = { r, c };
+                    this.stopTimer();
+                    this.render();
+                    if (!this.isReplaying) {
+                        this.showMessage(false);
+                    }
+                    return;
+                }
+
+                if (cell.number === 0) {
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (dr === 0 && dc === 0) continue;
+                            const nr = r + dr;
+                            const nc = c + dc;
+                            if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+                                this.reveal(nr, nc);
+                            }
+                        }
+                    }
+                }
+
+                this.render();
+
+                this.checkWin();
+            }
+
+            revealAllMines() {
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        if (this.board[r][c].mine) {
+                            this.board[r][c].revealed = true;
+                        }
+                    }
+                }
+                this.render();
+            }
+
+            timeRewind() {
+                /*
+				// 找到最後一次輸掉的操作（最後一次reveal或chord操作）
+                let lastRevealMoveIndex = -1;
+                for (let i = this.moveHistory.length - 1; i >= 0; i--) {
+                    const move = this.moveHistory[i];
+                    if (move.type === 'reveal' || move.type === 'chord' || move.type === 'auto') {
+                        lastRevealMoveIndex = i;
+                        break;
+                    }
+                }
+
+                if (lastRevealMoveIndex === -1) {
+                    this.showHint('無法倒流！');
+                    return;
+                }
+
+                // 只撤回最後輸掉的那個格子的操作
+                const snapshotIndex = Math.max(0, lastRevealMoveIndex - 1);
+				*/
+                const snapshotIndex = this.moveHistory.length ;
+				
+                this.rewindCount++;
+                this.rewindStat.style.display = 'flex';
+                this.rewindCountElement.textContent = this.rewindCount;
+
+                this.restoreSnapshot(snapshotIndex);
+
+                this.gameOver = false;
+                this.lastHitMine = null;
+                this.detectorMode = false;
+                this.detectorBtn.classList.remove('active');
+
+                if (!this.timerInterval) {
+                    this.startTimer();
+                }
+
+                this.updateStats();
+                this.updateDetectorDisplay();
+                this.render();
+                this.removeOverlay();
+                this.showHint('⏪ 時光倒流成功！');
+            }
+
+            checkWin() {
+                if (this.gameOver) return;
+                
+                const totalCells = this.rows * this.cols;
+                const safeCells = totalCells - this.mines;
+                
+                if (this.revealedCount === safeCells) {
+                    this.gameOver = true;
+                    this.stopTimer();
+                    
+                    for (let r = 0; r < this.rows; r++) {
+                        for (let c = 0; c < this.cols; c++) {
+                            if (this.board[r][c].mine && !this.board[r][c].flagged) {
+                                this.board[r][c].flagged = true;
+                            }
+                        }
+                    }
+                    this.minesLeft = 0;
+                    this.updateStats();
+                    this.render();
+                    
+                    if (!this.isReplaying) {
+                        this.showMessage(true);
+                    }
+                }
+            }
+
+            getNeighbors(r, c) {
+                const neighbors = [];
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        const nr = r + dr;
+                        const nc = c + dc;
+                        if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+                            neighbors.push({ r: nr, c: nc });
+                        }
+                    }
+                }
+                return neighbors;
+            }
+
+            recordMove(type, r, c) {
+                this.moveHistory.push({
+                    type,
+                    r,
+                    c,
+                    time: this.timer,
+                    snapshotIndex: this.boardSnapshots.length - 1,
+                    detectorUsed: this.detectorUsed
+                });
+            }
+
+            startReplay(moveHistory = null, minePositions = null, rows = null, cols = null, mines = null) {
+                this.stopAllTimers();
+                
+                // 重置播放速度為1倍
+                this.replaySpeed = 1;
+
+                const historyToUse = moveHistory || this.moveHistory;
+                const minesToUse = minePositions || this.savedMinePositions;
+
+                if (historyToUse.length === 0) {
+                    this.showHint('沒有可重播的記錄！');
+                    return;
+                }
+
+                if (rows !== null) {
+                    this.rows = rows;
+                    this.cols = cols;
+                    this.mines = mines;
+                }
+
+                this.moveHistory = JSON.parse(JSON.stringify(historyToUse));
+                this.savedMinePositions = JSON.parse(JSON.stringify(minesToUse));
+
+                this.isReplaying = true;
+                this.replayIndex = 0;
+                this.gameOver = false;
+                this.revealedCount = 0;
+                this.minesLeft = this.mines;
+                this.timer = 0;
+                this.detectorUsed = 0;
+                this.rewindCount = 0;
+                this.detectorMode = false;
+                this.showMinesInReplay = false;
+                this.lastMoveCell = null;
+                
+                // 創建初始快照
+                this.replaySnapshots = [];
+                
+                // 初始棋盤（第0步）
+                this.board = [];
+                for (let r = 0; r < this.rows; r++) {
+                    this.board[r] = [];
+                    for (let c = 0; c < this.cols; c++) {
+                        this.board[r][c] = {
+                            mine: false,
+                            revealed: false,
+                            flagged: false,
+                            number: 0,
+                            detected: false,
+                            detectionResult: null
+                        };
+                    }
+                }
+
+                for (const pos of this.savedMinePositions) {
+                    this.board[pos.r][pos.c].mine = true;
+                }
+
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        if (!this.board[r][c].mine) {
+                            this.board[r][c].number = this.countAdjacentMines(r, c);
+                        }
+                    }
+                }
+                
+                // 保存初始快照（第0步）
+                this.replaySnapshots.push({
+                    board: JSON.parse(JSON.stringify(this.board)),
+                    revealedCount: 0,
+                    minesLeft: this.mines,
+                    timer: 0,
+                    detectorUsed: 0,
+                    gameOver: false
+                });
+                
+                // 逐步執行並保存每一步的快照
+                for (let i = 0; i < this.moveHistory.length; i++) {
+                    const move = this.moveHistory[i];
+                    
+                    switch (move.type) {
+                        case 'reveal':
+                            this.revealReplay(move.r, move.c);
+                            break;
+                        case 'flag':
+                            const cell = this.board[move.r][move.c];
+                            if (!cell.revealed) {
+                                cell.flagged = !cell.flagged;
+                                this.minesLeft += cell.flagged ? -1 : 1;
+                            }
+                            break;
+                        case 'chord':
+                            this.chordRevealReplay(move.r, move.c);
+                            break;
+                        case 'detect':
+                            this.board[move.r][move.c].detected = true;
+                            this.board[move.r][move.c].detectionResult = this.board[move.r][move.c].mine ? 'mine' : 'safe';
+                            this.detectorUsed++;
+                            break;
+                    }
+                    
+                    this.replaySnapshots.push({
+                        board: JSON.parse(JSON.stringify(this.board)),
+                        revealedCount: this.revealedCount,
+                        minesLeft: this.minesLeft,
+                        timer: move.time,
+                        detectorUsed: this.detectorUsed,
+                        gameOver: this.gameOver
+                    });
+                }
+                
+                // 重置到第一步
+                this.restoreReplaySnapshot(0);
+                this.updateStats();
+                this.updateDetectorDisplay();
+                this.render();
+                this.showReplayControls();
+            }
+
+            revealReplay(r, c) {
+                const cell = this.board[r][c];
+                if (cell.revealed || cell.flagged) return;
+
+                cell.revealed = true;
+                this.revealedCount++;
+
+                if (cell.mine) {
+                    this.gameOver = true;
+                    return;
+                }
+
+                if (cell.number === 0) {
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (dr === 0 && dc === 0) continue;
+                            const nr = r + dr;
+                            const nc = c + dc;
+                            if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+                                this.revealReplay(nr, nc);
+                            }
+                        }
+                    }
+                }
+            }
+
+            chordRevealReplay(r, c) {
+                const cell = this.board[r][c];
+                if (!cell.revealed || cell.number === 0) return;
+
+                const neighbors = this.getNeighbors(r, c);
+                const flaggedCount = neighbors.filter(n => this.board[n.r][n.c].flagged).length;
+                
+                if (flaggedCount !== cell.number) return;
+
+                const toReveal = neighbors.filter(n => 
+                    !this.board[n.r][n.c].revealed && !this.board[n.r][n.c].flagged
+                );
+
+                for (const n of toReveal) {
+                    if (!this.gameOver) {
+                        this.revealReplay(n.r, n.c);
+                    }
+                }
+            }
+
+            restoreReplaySnapshot(index) {
+                if (index < 0 || index >= this.replaySnapshots.length) return;
+                
+                const snapshot = this.replaySnapshots[index];
+                this.board = JSON.parse(JSON.stringify(snapshot.board));
+                this.revealedCount = snapshot.revealedCount;
+                this.minesLeft = snapshot.minesLeft;
+                this.timer = snapshot.timer;
+                this.detectorUsed = snapshot.detectorUsed;
+                this.gameOver = snapshot.gameOver;
+                this.replayIndex = index;
+                
+                // 設置最後操作的格子，用於高亮顯示
+                if (index > 0 && this.moveHistory[index - 1]) {
+                    const move = this.moveHistory[index - 1];
+                    this.lastMoveCell = { r: move.r, c: move.c };
+                } else {
+                    this.lastMoveCell = null;
+                }
+                
+                // 更新時間顯示
+                this.timerElement.textContent = this.timer.toFixed(3);
+            }
+
+            showReplayControls() {
+                const totalMoves = this.replaySnapshots.length - 1; // 減去初始狀態
+                this.replayControlsContainer.innerHTML = `
+                    <div class="replay-controls">
+                        <span class="replay-mode-indicator">🔴 重播模式</span>
+                        <button id="replay-start">⏮ 開頭</button>
+                        <button id="replay-prev">⏪ 上一步</button>
+                        <button id="replay-play">▶ 播放</button>
+                        <button id="replay-pause" disabled>⏸ 暫停</button>
+                        <button id="replay-step">⏩ 下一步</button>
+                        <button id="replay-end">⏭ 結尾</button>
+                        <button id="replay-show-mines" class="replay-show-mines-btn">💣 顯示地雷</button>
+                        <div class="speed-control">
+                            <label>速度:</label>
+                            <select id="replay-speed">
+                                <option value="0.5">0.5x</option>
+                                <option value="1" selected>1x</option>
+                                <option value="2">2x</option>
+                                <option value="4">4x</option>
+                            </select>
+                        </div>
+                        <div class="replay-progress">
+                            <span>步驟: <span id="replay-current">0</span> / ${totalMoves}</span>
+                        </div>
+                        <button id="replay-stop">↩️ 退出重播</button>
+                    </div>
+                `;
+
+                // 設置速度選擇框為1倍
+                const speedSelect = document.getElementById('replay-speed');
+                if (speedSelect) {
+                    speedSelect.value = '1';
+                }
+
+                document.getElementById('replay-start').addEventListener('click', () => this.replayToStart());
+                document.getElementById('replay-prev').addEventListener('click', () => this.stepReplayBack());
+                document.getElementById('replay-play').addEventListener('click', () => this.playReplay());
+                document.getElementById('replay-pause').addEventListener('click', () => this.pauseReplay());
+                document.getElementById('replay-step').addEventListener('click', () => this.stepReplay());
+                document.getElementById('replay-end').addEventListener('click', () => this.replayToEnd());
+                document.getElementById('replay-show-mines').addEventListener('click', () => this.toggleShowMinesInReplay());
+                document.getElementById('replay-speed').addEventListener('change', (e) => {
+                    this.replaySpeed = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('replay-stop').addEventListener('click', () => {
+                    this.stopAllTimers();
+                    this.isReplaying = false;
+                    this.hideReplayControls();
+                    this.newGame();
+                });
+            }
+
+            toggleShowMinesInReplay() {
+                this.showMinesInReplay = !this.showMinesInReplay;
+                const btn = document.getElementById('replay-show-mines');
+                if (btn) {
+                    btn.classList.toggle('active', this.showMinesInReplay);
+                    btn.textContent = this.showMinesInReplay ? '💣 隱藏地雷' : '💣 顯示地雷';
+                }
+                this.render();
+            }
+
+            hideReplayControls() {
+                this.replayControlsContainer.innerHTML = '';
+            }
+
+            replayToStart() {
+                this.pauseReplay();
+                this.restoreReplaySnapshot(0);
+                this.updateStats();
+                this.updateDetectorDisplay();
+                this.render();
+                const currentEl = document.getElementById('replay-current');
+                if (currentEl) currentEl.textContent = 0;
+            }
+
+            stepReplayBack() {
+                this.pauseReplay();
+                if (this.replayIndex <= 0) {
+                    this.showHint('已經是開頭了！');
+                    return;
+                }
+                
+                this.restoreReplaySnapshot(this.replayIndex - 1);
+                this.updateStats();
+                this.updateDetectorDisplay();
+                this.render();
+                const currentEl = document.getElementById('replay-current');
+                if (currentEl) currentEl.textContent = this.replayIndex;
+            }
+
+            playReplay() {
+                if (this.replayIndex >= this.replaySnapshots.length - 1) {
+                    this.showHint('重播結束！');
+                    return;
+                }
+
+                const playBtn = document.getElementById('replay-play');
+                const pauseBtn = document.getElementById('replay-pause');
+                if (playBtn) playBtn.disabled = true;
+                if (pauseBtn) pauseBtn.disabled = false;
+
+                const currentSessionId = this.replaySessionId;
+
+                const executeNext = () => {
+                    if (currentSessionId !== this.replaySessionId) {
+                        return;
+                    }
+
+                    if (!this.isReplaying || this.replayIndex >= this.replaySnapshots.length - 1) {
+                        this.pauseReplay();
+                        if (this.replayIndex >= this.replaySnapshots.length - 1) {
+                            this.showHint('重播結束！');
+                        }
+                        return;
+                    }
+
+                    this.restoreReplaySnapshot(this.replayIndex + 1);
+                    this.updateStats();
+                    this.updateDetectorDisplay();
+                    this.render();
+                    const currentEl = document.getElementById('replay-current');
+                    if (currentEl) currentEl.textContent = this.replayIndex;
+
+                    this.replayInterval = setTimeout(executeNext, 500 / this.replaySpeed);
+                };
+
+                executeNext();
+            }
+
+            pauseReplay() {
+                if (this.replayInterval) {
+                    clearTimeout(this.replayInterval);
+                    this.replayInterval = null;
+                }
+                const playBtn = document.getElementById('replay-play');
+                const pauseBtn = document.getElementById('replay-pause');
+                if (playBtn) playBtn.disabled = false;
+                if (pauseBtn) pauseBtn.disabled = true;
+            }
+
+            stepReplay() {
+                this.pauseReplay();
+                if (this.replayIndex >= this.replaySnapshots.length - 1) {
+                    this.showHint('重播結束！');
+                    return;
+                }
+
+                this.restoreReplaySnapshot(this.replayIndex + 1);
+                this.updateStats();
+                this.updateDetectorDisplay();
+                this.render();
+                const currentEl = document.getElementById('replay-current');
+                if (currentEl) currentEl.textContent = this.replayIndex;
+            }
+
+            replayToEnd() {
+                this.pauseReplay();
+                this.restoreReplaySnapshot(this.replaySnapshots.length - 1);
+                this.updateStats();
+                this.updateDetectorDisplay();
+                this.render();
+                const currentEl = document.getElementById('replay-current');
+                if (currentEl) currentEl.textContent = this.replayIndex;
+            }
+
+            loadLeaderboard() {
+                const saved = localStorage.getItem('minesweeper-leaderboard-v3');
+                this.leaderboard = saved ? JSON.parse(saved) : {};
+            }
+
+            saveLeaderboard() {
+                localStorage.setItem('minesweeper-leaderboard-v3', JSON.stringify(this.leaderboard));
+            }
+
+            reformatAllLeaderboardEntries() {
+                // 遍歷所有難度
+                Object.keys(this.leaderboard).forEach(difficultyKey => {
+                    const entries = this.leaderboard[difficultyKey];
+                    if (!entries || entries.length === 0) return;
+                    
+                    // 1. 確保日期格式為 YYYY-MM-DD
+                    entries.forEach(entry => {
+                        if (entry.date) {
+                            // 如果日期是 Date 對象，轉換為 YYYY-MM-DD 格式
+                            if (entry.date instanceof Date) {
+                                const year = entry.date.getFullYear();
+                                const month = String(entry.date.getMonth() + 1).padStart(2, '0');
+                                const day = String(entry.date.getDate()).padStart(2, '0');
+                                entry.date = `${year}-${month}-${day}`;
+                            }
+                            // 如果日期是其他格式，嘗試轉換
+                            else if (typeof entry.date === 'string' && !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) {
+                                try {
+                                    const date = new Date(entry.date);
+                                    if (!isNaN(date.getTime())) {
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        entry.date = `${year}-${month}-${day}`;
+                                    }
+                                } catch (e) {
+                                    // 如果轉換失敗，使用當前日期
+                                    const now = new Date();
+                                    const year = now.getFullYear();
+                                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                                    const day = String(now.getDate()).padStart(2, '0');
+                                    entry.date = `${year}-${month}-${day}`;
+                                }
+                            }
+                        } else {
+                            // 如果沒有日期，使用當前日期
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            entry.date = `${year}-${month}-${day}`;
+                        }
+                    });
+                    
+                    // 2. 重新排序（探測器使用次數少至多，然後倒流次數少至多，然後時間少至多）
+                    entries.sort((a, b) => {
+                        const detectorA = a.detectorUsed || 0;
+                        const detectorB = b.detectorUsed || 0;
+                        const rewindA = a.rewindCount || 0;
+                        const rewindB = b.rewindCount || 0;
+                        
+                        if (detectorA !== detectorB) return detectorA - detectorB;
+                        if (rewindA !== rewindB) return rewindA - rewindB;
+                        return a.time - b.time;
+                    });
+                    
+                    // 3. 只保留前10名
+                    this.leaderboard[difficultyKey] = entries.slice(0, 10);
+                });
+                
+                // 保存重整後的排行榜
+                this.saveLeaderboard();
+            }
+
+            reformatLeaderboardEntries(difficultyKey) {
+                const entries = this.leaderboard[difficultyKey];
+                if (!entries || entries.length === 0) return;
+                
+                // 重新排序
+                entries.sort((a, b) => {
+                    const detectorA = a.detectorUsed || 0;
+                    const detectorB = b.detectorUsed || 0;
+                    const rewindA = a.rewindCount || 0;
+                    const rewindB = b.rewindCount || 0;
+                    
+                    if (detectorA !== detectorB) return detectorA - detectorB;
+                    if (rewindA !== rewindB) return rewindA - rewindB;
+                    return a.time - b.time;
+                });
+                
+                // 只保留前10名
+                this.leaderboard[difficultyKey] = entries.slice(0, 10);
+            }
+
+            addToLeaderboard(name, time, difficultyKey) {
+                if (!this.leaderboard[difficultyKey]) {
+                    this.leaderboard[difficultyKey] = [];
+                }
+
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const formattedDate = `${year}-${month}-${day}`;
+
+                const entry = {
+                    name,
+                    time: parseFloat(time.toFixed(3)),
+                    date: formattedDate,
+                    detectorUsed: this.detectorUsed,
+                    rewindCount: this.rewindCount,
+                    moveHistory: JSON.parse(JSON.stringify(this.moveHistory)),
+                    minePositions: JSON.parse(JSON.stringify(this.savedMinePositions)),
+                    rows: this.rows,
+                    cols: this.cols,
+                    mines: this.mines
+                };
+
+                this.leaderboard[difficultyKey].push(entry);
+                this.reformatLeaderboardEntries(difficultyKey);
+                this.saveLeaderboard();
+            }
+
+            canEnterLeaderboard(difficultyKey) {
+                const entries = this.leaderboard[difficultyKey] || [];
+                
+                // 如果排行榜不滿10個，可以直接上榜
+                if (entries.length < 10) {
+                    return true;
+                }
+                
+                // 如果已滿10個，檢查當前成績是否比最後一名好
+                const lastEntry = entries[entries.length - 1];
+                
+                // 比較規則：探測器使用次數少至多，然後倒流次數少至多，然後時間少至多
+                if (this.detectorUsed < lastEntry.detectorUsed) {
+                    return true;
+                } else if (this.detectorUsed > lastEntry.detectorUsed) {
+                    return false;
+                } else {
+                    // 探測器使用次數相同，比較倒流次數
+                    if (this.rewindCount < lastEntry.rewindCount) {
+                        return true;
+                    } else if (this.rewindCount > lastEntry.rewindCount) {
+                        return false;
+                    } else {
+                        // 都相同，比較時間
+                        return this.timer < lastEntry.time;
+                    }
+                }
+            }
+
+            deleteLeaderboardData(difficultyKey) {
+                if (confirm(`確定要刪除「${this.getDifficultyLabel(difficultyKey)}」的所有記錄嗎？此操作無法復原！`)) {
+                    delete this.leaderboard[difficultyKey];
+                    this.saveLeaderboard();
+                    this.showHint('✅ 已刪除記錄！');
+                    return true;
+                }
+                return false;
+            }
+
+            getDifficultyLabel(difficultyKey) {
+                if (difficultyKey === 'easy') return '簡單';
+                if (difficultyKey === 'medium') return '中等';
+                if (difficultyKey === 'hard') return '困難';
+                if (difficultyKey.startsWith('custom_')) {
+                    const match = difficultyKey.match(/custom_(\d+)x(\d+)_(\d+)/);
+                    if (match) {
+                        return `自訂 ${match[1]}×${match[2]} ${match[3]}雷`;
+                    }
+                }
+                return difficultyKey;
+            }
+
+            showLeaderboard() {
+                this.removeOverlay();
+
+                // 重整所有名次排序與日期格式
+                this.reformatAllLeaderboardEntries();
+
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                overlay.id = 'leaderboard-overlay';
+                document.body.appendChild(overlay);
+
+                const container = document.createElement('div');
+                container.className = 'leaderboard-container';
+                container.id = 'leaderboard-container';
+
+                const difficulties = [
+                    { key: 'easy', label: '簡單' },
+                    { key: 'medium', label: '中等' },
+                    { key: 'hard', label: '困難' }
+                ];
+
+                // 重新加載排行榜數據
+                this.loadLeaderboard();
+                
+                Object.keys(this.leaderboard).forEach(key => {
+                    if (!difficulties.find(d => d.key === key) && key.startsWith('custom_')) {
+                        const match = key.match(/custom_(\d+)x(\d+)_(\d+)/);
+                        if (match) {
+                            difficulties.push({
+                                key: key,
+                                label: `自訂 ${match[1]}×${match[2]} ${match[3]}雷`
+                            });
+                        }
+                    }
+                });
+
+                const currentDiff = this.getDifficultyKey();
+                
+                container.innerHTML = `
+                    <span class="close-btn" id="close-leaderboard">&times;</span>
+                    <h2>🏆 排行榜</h2>
+                    <div class="leaderboard-tabs">
+                        ${difficulties.map(d => `
+                            <button class="${currentDiff === d.key ? 'active' : ''}" data-diff="${d.key}">${d.label}</button>
+                        `).join('')}
+                    </div>
+                    <div id="leaderboard-content"></div>
+                `;
+
+                document.body.appendChild(container);
+
+                // 始終顯示當前選擇的難度，即使沒有記錄
+                this.renderLeaderboardContent(currentDiff);
+
+                document.getElementById('close-leaderboard').addEventListener('click', () => {
+                    this.removeOverlay();
+                });
+
+                overlay.addEventListener('click', () => {
+                    this.removeOverlay();
+                });
+
+                container.querySelectorAll('.leaderboard-tabs button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        container.querySelectorAll('.leaderboard-tabs button').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.renderLeaderboardContent(btn.dataset.diff);
+                    });
+                });
+            }
+
+            renderLeaderboardContent(difficultyKey) {
+                const content = document.getElementById('leaderboard-content');
+                const records = this.leaderboard[difficultyKey] || [];
+
+                if (records.length === 0) {
+                    content.innerHTML = `
+                        <div class="no-records">暫無記錄</div>
+                        ${records.length === 0 ? '' : `
+                            <div class="delete-confirmation">
+                                <button class="delete-data-btn" data-diff="${difficultyKey}">🗑️ 刪除此難度所有數據</button>
+                            </div>
+                        `}
+                    `;
+                    
+                    if (records.length === 0) {
+                        const deleteBtn = content.querySelector('.delete-data-btn');
+                        if (deleteBtn) {
+                            deleteBtn.addEventListener('click', (e) => {
+                                const diff = e.target.dataset.diff;
+                                if (this.deleteLeaderboardData(diff)) {
+                                    this.renderLeaderboardContent(diff);
+                                }
+                            });
+                        }
+                    }
+                    return;
+                }
+
+                let html = `
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>名字</th>
+                                <th>時間</th>
+                                <th>倒流</th>
+                                <th>探測器</th>
+                                <th>日期</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                records.forEach((record, index) => {
+                    const rankClass = index < 3 ? `rank-${index + 1}` : '';
+                    const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
+                    const hasReplay = record.moveHistory && record.moveHistory.length > 0;
+                    html += `
+                        <tr class="${rankClass}">
+                            <td>${rankIcon}</td>
+                            <td>${this.escapeHtml(record.name)}</td>
+                            <td>${record.time.toFixed(3)}秒</td>
+                            <td>${record.rewindCount || 0}次</td>
+                            <td>${record.detectorUsed || 0}次</td>
+                            <td>${record.date}</td>
+                            <td>
+                                ${hasReplay ? `<button class="replay-btn" data-diff="${difficultyKey}" data-index="${index}">📹 重播</button>` : '-'}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                html += `
+                    <div class="delete-confirmation">
+                        <button class="delete-data-btn" data-diff="${difficultyKey}">🗑️ 刪除此難度所有數據</button>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+
+                content.querySelectorAll('.replay-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const diff = e.target.dataset.diff;
+                        const idx = parseInt(e.target.dataset.index);
+                        const record = this.leaderboard[diff][idx];
+                        this.removeOverlay();
+                        this.startReplay(
+                            record.moveHistory,
+                            record.minePositions,
+                            record.rows,
+                            record.cols,
+                            record.mines
+                        );
+                    });
+                });
+                
+                const deleteBtn = content.querySelector('.delete-data-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', (e) => {
+                        const diff = e.target.dataset.diff;
+                        if (this.deleteLeaderboardData(diff)) {
+                            this.renderLeaderboardContent(diff);
+                        }
+                    });
+                }
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            removeOverlay() {
+                const overlay = document.getElementById('leaderboard-overlay');
+                const container = document.getElementById('leaderboard-container');
+                const messageOverlay = document.getElementById('message-overlay');
+                const message = document.querySelector('.message');
+
+                if (overlay) overlay.remove();
+                if (container) container.remove();
+                if (messageOverlay) messageOverlay.remove();
+                if (message) message.remove();
+                
+                // 輸掉遊戲且關閉介面時自動顯示所有地雷格子
+                if (this.shouldAutoShowMines && this.gameOver) {
+                    this.revealAllMines();
+                    this.shouldAutoShowMines = false;
+                }
+            }
+
+            showHint(message) {
+                const existing = document.querySelector('.hint-message');
+                if (existing) existing.remove();
+
+                const hint = document.createElement('div');
+                hint.className = 'hint-message';
+                hint.textContent = message;
+                document.body.appendChild(hint);
+
+                setTimeout(() => hint.remove(), 2500);
+            }
+
+            showMessage(win) {
+                this.removeOverlay();
+                this.shouldAutoShowMines = !win;
+
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                overlay.id = 'message-overlay';
+                document.body.appendChild(overlay);
+
+                const message = document.createElement('div');
+                message.className = `message ${win ? 'win' : 'lose'}`;
+                
+                const difficultyKey = this.getDifficultyKey();
+                const canRewind = !win && this.boardSnapshots.length >= 2;
+                
+                // 判斷是否可以上榜（只有勝利時才需要判斷）
+                let canEnterLeaderboard = false;
+                if (win) {
+                    canEnterLeaderboard = this.canEnterLeaderboard(difficultyKey);
+                }
+                
+                if (win && !canEnterLeaderboard) {
+                    // 勝利但未上榜的情況
+                    message.innerHTML = `
+                        <span class="close-btn" id="close-message">&times;</span>
+                        <h2>🎉 恭喜獲勝！</h2>
+                        <p>時間: ${this.timer.toFixed(3)} 秒</p>
+                        <p>探測器使用次數: ${this.detectorUsed}</p>
+                        ${this.rewindCount > 0 ? `<p>時光倒流次數: ${this.rewindCount}</p>` : ''}
+                        <p style="color: #ffcc00; font-size: 1.2em; margin-top: 15px;">
+                            🎯 您的成績未達上榜標準，請繼續努力！
+                        </p>
+                        <div class="button-group">
+                            <button id="play-again">🔄 再玩一次</button>
+                            ${this.moveHistory.length > 0 ? '<button id="replay-game" class="secondary">📹 重播</button>' : ''}
+                        </div>
+                    `;
+                } else if (win) {
+                    // 勝利且可以上榜的情況
+                    message.innerHTML = `
+                        <span class="close-btn" id="close-message">&times;</span>
+                        <h2>🎉 恭喜獲勝！</h2>
+                        <p>時間: ${this.timer.toFixed(3)} 秒</p>
+                        <p>探測器使用次數: ${this.detectorUsed}</p>
+                        ${this.rewindCount > 0 ? `<p>時光倒流次數: ${this.rewindCount}</p>` : ''}
+                        <div class="name-input-container">
+                            <input type="text" id="player-name" placeholder="輸入您的名字" maxlength="20">
+                        </div>
+                        <div class="button-group">
+                            <button id="save-score">💾 儲存成績</button>
+                            <button id="play-again">🔄 再玩一次</button>
+                            ${this.moveHistory.length > 0 ? '<button id="replay-game" class="secondary">📹 重播(不儲存成績)</button>' : ''}
+                        </div>
+                    `;
+                } else {
+                    // 輸掉的情況
+                    message.innerHTML = `
+                        <span class="close-btn" id="close-message">&times;</span>
+                        <h2>💥 踩到地雷！</h2>
+                        <p>時間: ${this.timer.toFixed(3)} 秒</p>
+                        <p>探測器使用次數: ${this.detectorUsed}</p>
+                        ${this.rewindCount > 0 ? `<p>時光倒流次數: ${this.rewindCount}</p>` : ''}
+                        <div class="button-group">
+                            ${canRewind ? '<button id="time-rewind" class="rewind">⏪ 時光倒流</button>' : ''}
+                            <button id="play-again">🔄 再玩一次</button>
+                            ${this.moveHistory.length > 0 ? '<button id="replay-game" class="secondary">📹 重播</button>' : ''}
+                        </div>
+                    `;
+                }
+                
+                document.body.appendChild(message);
+
+                document.getElementById('close-message').addEventListener('click', () => {
+                    this.removeOverlay();
+                });
+
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        this.removeOverlay();
+                    }
+                });
+
+                document.getElementById('play-again').addEventListener('click', () => {
+                    this.removeOverlay();
+                    this.newGame();
+                });
+
+                const rewindBtn = document.getElementById('time-rewind');
+                if (rewindBtn) {
+                    rewindBtn.addEventListener('click', () => {
+                        this.shouldAutoShowMines = false;
+                        this.removeOverlay();
+                        this.timeRewind();
+                    });
+                }
+
+                const replayBtn = document.getElementById('replay-game');
+                if (replayBtn) {
+                    replayBtn.addEventListener('click', () => {
+                        this.shouldAutoShowMines = false;
+                        this.removeOverlay();
+                        this.startReplay();
+                    });
+                }
+
+                if (win && canEnterLeaderboard) {
+                    const saveBtn = document.getElementById('save-score');
+                    const nameInput = document.getElementById('player-name');
+                    
+                    saveBtn.addEventListener('click', () => {
+                        const name = nameInput.value.trim() || '匿名玩家';
+                        this.addToLeaderboard(name, this.timer, difficultyKey);
+                        this.removeOverlay();
+                        this.showLeaderboard();
+                    });
+
+                    nameInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            saveBtn.click();
+                        }
+                    });
+
+                    nameInput.focus();
+                }
+            }
+
+            startTimer() {
+                // 清除舊的計時器
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                this.timerInterval = setInterval(() => {
+                    this.timer += 0.004; // 每10毫秒增加0.01秒
+                    this.timerElement.textContent = this.timer.toFixed(3);
+                }, 4); // 每10毫秒更新一次
+            }
+
+            stopTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+
+            updateStats() {
+                this.minesLeftElement.textContent = this.minesLeft;
+                this.timerElement.textContent = this.timer.toFixed(3);
+                this.rewindCountElement.textContent = this.rewindCount;
+            }
+        }
+
+        const game = new Minesweeper();
+    </script>
+</body>
+</html>

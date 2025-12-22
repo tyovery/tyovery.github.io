@@ -809,8 +809,9 @@
 		/* 添加响应式处理，确保在小屏幕上也能正常显示 */
 		@media (max-width: 768px) {
 			.vote-slider-container {
-				max-width: 90%;
+				max-width: 95%;
 				margin: 0px auto;
+				width: calc(100% - 200px);
 			}
 			
 			.vote-slider {
@@ -820,7 +821,7 @@
 			}
 			
 			.vote-slider::-webkit-slider-thumb {
-				width: 120px;
+				width: 40px;
 				height: 40px;
 			}
 			
@@ -829,18 +830,58 @@
 				height: 40px;
 			}
 			
+			/* 統計頁的一般項目的高度設為2倍，並分為3行 */
+			.list-item.ranking-item {
+				min-height: 100px !important;
+				padding: 15px !important;
+				height: auto !important;
+			}
+			
+			.list-item.ranking-item .item-name {
+				font-size: 1.1em !important;
+				margin-bottom: 8px !important;
+				display: block !important;
+				width: 100% !important;
+			}
+			
+			.list-item.ranking-item .mood-display {
+				margin: 8px 0 !important;
+				display: block !important;
+				width: 100% !important;
+				text-align: left !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child {
+				flex-direction: column !important;
+				align-items: flex-start !important;
+				height: auto !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child > span:first-child {
+				width: 100% !important;
+				margin-bottom: 5px !important;
+				font-size: 1.3em !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child > div {
+				margin-top: 8px !important;
+				flex-direction: column !important;
+				align-items: flex-start !important;
+				width: 100% !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child > div > span {
+				margin-top: 5px !important;
+				font-size: 0.95em !important;
+				line-height: 1.4 !important;
+			}
+			
 			/* 不限制 "gameSettings" 內的元素在同一行 */
 			#gameSettings {
 				flex-wrap: wrap !important;
 				gap: 10px !important;
 			}
 			
-			/* 統計頁的一般項目 */
-			.list-item.ranking-item {
-				min-height: 80px !important;
-				padding: 20px 15px !important;
-			}
-	
 			#annualHotModal .chart-modal-content {
 				max-width: 95vw;
 				padding: 15px;
@@ -6008,10 +6049,10 @@
 			contextMenuList.appendChild(countAboveBtn);
 			contextMenuList.appendChild(countBelowBtn);
 			contextMenuList.appendChild(toggleFreezeBtn);
-			contextMenuList.appendChild(freezeAboveBtn);
-			contextMenuList.appendChild(unfreezeAboveBtn);
 			contextMenuList.appendChild(freezeBelowBtn);
 			contextMenuList.appendChild(unfreezeBelowBtn);
+			contextMenuList.appendChild(freezeAboveBtn);
+			contextMenuList.appendChild(unfreezeAboveBtn);
 			
 			contextMenu.style.display = 'block';
 			contextMenu.style.left = `${event.pageX}px`;
@@ -6096,10 +6137,10 @@
 			contextMenuList.appendChild(copyFullRankingBtn);
 			contextMenuList.appendChild(countAboveBtn);
 			contextMenuList.appendChild(countBelowBtn);
-			contextMenuList.appendChild(freezeAboveBtn);
-			contextMenuList.appendChild(unfreezeAboveBtn);
 			contextMenuList.appendChild(freezeBelowBtn);
 			contextMenuList.appendChild(unfreezeBelowBtn);
+			contextMenuList.appendChild(freezeAboveBtn);
+			contextMenuList.appendChild(unfreezeAboveBtn);
 			
 			contextMenu.style.display = 'block';
 			contextMenu.style.left = `${event.pageX}px`;

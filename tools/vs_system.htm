@@ -360,8 +360,9 @@
         .edit-mood-btn.active {
             background: var(--primary);
             border-color: var(--primary);
-            transform: scale(1.1);
+            transform: scale(1.0);
         }
+		.edit-mood-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
         .item-mood-buttons {
             display: flex;
             gap: 5px;
@@ -475,6 +476,14 @@
             border: 2px solid var(--success);
         }
         .ranking-item.frozen { border: 2px solid var(--frozen); }
+		.ranking-separator {
+			background: rgba(245, 101, 101, 0.1) !important;
+			border: 2px solid rgba(245, 101, 101, 0.3) !important;
+			border-radius: 10px !important;
+			margin: 10px 0 !important;
+			height: 10px !important;
+			padding: 15px !important;
+		}
         .no-history-data {
             text-align: center;
             padding: 0px;
@@ -497,7 +506,7 @@
             height: 100%;
         }
         
-        /* 新增平台筛选按钮样式 */
+        /* 平台筛选按钮样式 */
         .platform-filter-buttons {
 			display: flex;
 			gap: 10px;
@@ -565,7 +574,7 @@
 			background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23666" d="M18.223 3.086a1.25 1.25 0 0 1 0 1.768L17.08 5.996h1.17A3.75 3.75 0 0 1 22 9.746v7.5a3.75 3.75 0 0 1-3.75 3.75H5.75A3.75 3.75 0 0 1 2 17.246v-7.5a3.75 3.75 0 0 1 3.75-3.75h1.18L5.777 4.854a1.25 1.25 0 1 1 1.767-1.768l2.652 2.652c.079.079.145.165.198.257h3.213c.053-.092.12-.178.199-.257l2.651-2.652a1.25 1.25 0 0 1 1.768 0zm.027 5.42H5.75a1.25 1.25 0 0 0-1.25 1.25v7.5a1.25 1.25 0 0 0 1.25 1.25h12.5a1.25 1.25 0 0 0 1.25-1.25v-7.5a1.25 1.25 0 0 0-1.25-1.25zm-10 2.5c.69 0 1.25.56 1.25 1.25v1.25a1.25 1.25 0 1 1-2.5 0v-1.25c0-.69.56-1.25 1.25-1.25zm7.5 0c.69 0 1.25.56 1.25 1.25v1.25a1.25 1.25 0 1 1-2.5 0v-1.25c0-.69.56-1.25 1.25-1.25z"/></svg>');
 		}
 
-        /* 新增：放大圖表樣式 */
+        /* 放大圖表 */
         .chart-modal {
             position: fixed;
             top: 0;
@@ -599,7 +608,7 @@
             height: 500px;
         }
 
-        /* 新增：排名動畫樣式 */
+        /* 排名動畫 */
         .ranking-animation-modal {
 			position: fixed;
 			top: 0;
@@ -684,6 +693,159 @@
             display: flex;
             align-items: center;
         }
+
+		/* 年度热门表格 */
+		#annualHotTable {
+			table-layout: fixed;
+			width: 100%;
+			min-width: 0; /* 添加这行防止最小宽度导致的滚动 */
+			border-collapse: collapse;
+			margin-top: 15px;
+		}
+		
+		#annualHotTable th {
+			padding: 12px;
+			text-align: left;
+			background: linear-gradient(135deg, var(--primary), var(--secondary));
+			color: white;
+			font-weight: bold;
+			position: sticky;
+			top: 0;
+		}
+
+		#annualHotTable td {
+			padding: 12px;
+			border-bottom: 1px solid #e2e8f0;
+		}
+		
+		#annualHotTable th, #annualHotTable td {
+			padding: 12px;
+			word-wrap: break-word;
+			word-break: break-word;
+			overflow: hidden;
+			box-sizing: border-box; /* 添加这行确保padding包含在宽度内 */
+		}
+		
+		#annualHotTable th:nth-child(1), #annualHotTable td:nth-child(1) { width: 7%; }
+		#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 55%; }
+		#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 10%; }
+		#annualHotTable th:nth-child(4), #annualHotTable td:nth-child(4) { width: 10%; }
+		#annualHotTable th:nth-child(5), #annualHotTable td:nth-child(5) { width: 8%; }
+		#annualHotTable th:nth-child(6), #annualHotTable td:nth-child(6) { width: 10%; }
+		
+		#annualHotTable tr {
+			transition: all 0.3s;
+			width: 100%;
+			display: table-row; /* 确保行保持表格行布局 */
+		}
+
+		#annualHotTable tr:nth-child(even) {
+			background-color: #f8f9fa;
+		}
+
+		/* 修改悬停效果，移除横向移动避免溢出 */
+		#annualHotTable tr:hover {
+			background-color: #edf2f7;
+			/* 移除transform: translateX(5px); 避免导致溢出 */
+			box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+		}
+		
+		/* 禁止annualHotBody的横向滚动条 */
+		#annualHotBody {
+			overflow-x: hidden !important;
+			width: 100%;
+		}
+		
+		/* 确保弹窗容器不会产生滚动条 */
+		#annualHotModal {
+			overflow: hidden !important;
+		}
+		
+		/* 年度热门弹窗内容区域禁止横向滚动 */
+		#annualHotModal .chart-modal-content {
+			overflow-x: hidden !important;
+			overflow-y: auto !important;
+			max-height: 80vh;
+			width: 100%;
+			max-width: 1000px;
+			margin: 0 auto;
+		}
+
+		.score-increase {
+			color: var(--success);
+			font-weight: bold;
+		}
+
+		.score-decrease {
+			color: var(--danger);
+			font-weight: bold;
+		}
+
+		.score-no-change {
+			color: var(--gray);
+			font-weight: bold;
+		}
+		
+		/* 高亮动画 */
+		@keyframes highlightPulse {
+			0% { 
+				background-color: rgba(102, 126, 234, 0.1); 
+				box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.3);
+			}
+			50% { 
+				background-color: rgba(102, 126, 234, 0.3); 
+				box-shadow: 0 0 20px 10px rgba(102, 126, 234, 0.2);
+			}
+			100% { 
+				background-color: rgba(102, 126, 234, 0.1); 
+				box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+			}
+		}
+		
+		.highlight-animation {
+			animation: highlightPulse 3s ease-in-out;
+		}
+		
+		/* 添加响应式处理，确保在小屏幕上也能正常显示 */
+		@media (max-width: 768px) {
+			.vote-slider-container {
+				max-width: 90%;
+				margin: 0px auto;
+			}
+			
+			.vote-slider {
+				width: 100%;
+				max-width: 100%;
+				height: 50px;
+			}
+			
+			.vote-slider::-webkit-slider-thumb {
+				width: 40px;
+				height: 40px;
+			}
+			
+			.lock-btn, .freeze-btn {
+				width: 40px;
+				height: 40px;
+			}
+	
+			#annualHotModal .chart-modal-content {
+				max-width: 95vw;
+				padding: 15px;
+			}
+			
+			#annualHotTable th, #annualHotTable td {
+				padding: 8px;
+				font-size: 14px;
+			}
+			
+			#annualHotTable th:nth-child(1), #annualHotTable td:nth-child(1) { width: 10%; }
+			#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 22%; }
+			#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 22%; }
+			#annualHotTable th:nth-child(4), #annualHotTable td:nth-child(4) { width: 15%; }
+			#annualHotTable th:nth-child(5), #annualHotTable td:nth-child(5) { width: 15%; }
+			#annualHotTable th:nth-child(6), #annualHotTable td:nth-child(6) { width: 16%; }
+		}
     </style>
 </head>
 <body>
@@ -709,18 +871,21 @@
                             <label for="extractMode">抽取模式：</label>
                             <select id="extractMode" class="form-control" style="width: auto; display: inline-block;">
 								<option value="quickConverge">快速收斂</option>
-								<option value="uniform">均勻隨機</option>
-								<option value="maxError">最大誤差</option>
-								<option value="leastVoted">最少票次</option>
-								<option value="newest">最近加入</option>
 								<option value="similarScore">分數相近</option>
-								<option value="weakest">名次最低</option>
-								<option value="lowestWinRate">勝率最低</option>
-                                <option value="middle">名次中段</option>
-								<option value="nearAverage">近平均分</option>
-								<option value="middleWinRate">勝率中段</option>
+								<option value="leastVolatility">波動最小</option>
+								<option value="highestTrend">升率最高</option>
+								<option value="lowestTrend">降率最高</option>
+								<option value="uniform">均勻隨機</option>
 								<option value="strongest">名次最高</option>
+								<option value="middle">名次中段</option>
+								<option value="weakest">名次最低</option>
 								<option value="highestWinRate">勝率最高</option>
+								<option value="middleWinRate">勝率中段</option>
+								<option value="lowestWinRate">勝率最低</option>
+								<option value="nearAverage">近平均分</option>
+								<option value="leastVoted">最少票次</option>
+								<option value="maxError">最大誤差</option>
+								<option value="newest">最近加入</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -734,7 +899,7 @@
                                     <div class="voting-mood-filter-buttons" id="votingMoodFilter"></div>
                                 </div>
                                 <div class="voting-keyword-filter">
-                                    <input type="text" id="keywordFilter" class="form-control" style="width: 280px; padding-right: 35px;" placeholder="以關鍵字篩選..." oninput="updateItemCountMax()" onkeydown="handleKeywordFilterKeydown(event)">
+                                    <input type="text" id="keywordFilter" class="form-control" style="width: 300px; padding-right: 35px;" placeholder="以關鍵字篩選..." oninput="updateItemCountMax()" onkeydown="handleKeywordFilterKeydown(event)">
                                     <button type="button" class="clear-filter-btn" onclick="clearVotingFilters()">❌</button>
                                 </div>
                             </div>
@@ -893,19 +1058,47 @@
                     <button class="btn btn-primary" onclick="refreshStats()">🔄 重新整理</button>
                 </div>
                 
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <label for="statsGameSelect">選擇遊戲：</label>
+                <div class="flex-center" style="text-align: center; margin-bottom: 20px;">
+					<button class="btn btn-primary" onclick="showAnnualHot()">年度熱門</button>
+                    <label for="statsGameSelect" style="display: flex; align-items: center;">選擇遊戲：</label>
                     <select id="statsGameSelect" class="form-control" style="width: auto; display: inline-block;">
                         <option value="">請選擇遊戲</option>
                     </select>
-                </div>
-
-                <div class="flex-center">
-                    <button class="btn btn-info" onclick="exportStats()">匯出統計</button>
+					<button class="btn btn-info" onclick="exportStats()">匯出統計</button>
                     <button class="btn btn-warning" onclick="document.getElementById('importStatsFile').click()">匯入統計</button>
-                    <button class="btn btn-danger" onclick="clearStats()">清除數據</button>
+					<button class="btn btn-danger" onclick="clearStats()">清除數據</button>
                     <input type="file" id="importStatsFile" accept=".json" class="hidden">
                 </div>
+				
+				<!-- 年度热门弹窗 -->
+				<div id="annualHotModal" class="chart-modal hidden">
+					<div class="chart-modal-content" style="max-width: 1000px; max-height: 80vh;">
+						<h3 style="margin: 0px 0; text-align: center;">年度熱門項目</h3>
+						<div style="margin: 0px 0; text-align: center;">
+							<small>統計所有遊戲中，最近366日內投票次數最多的項目。</small>
+						</div>
+						<div style="overflow-x: auto;">
+							<table id="annualHotTable" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+								<thead>
+									<tr style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;">
+										<th style="padding: 12px; text-align: left; border-radius: 5px 0 0 0;">排名</th>
+										<th style="padding: 12px; text-align: left;">項目名稱</th>
+										<th style="padding: 12px; text-align: left;">所屬遊戲</th>
+										<th style="padding: 12px; text-align: left;">分數變動</th>
+										<th style="padding: 12px; text-align: left;">票次</th>
+										<th style="padding: 12px; text-align: left; border-radius: 0 5px 0 0;">目前分數</th>
+									</tr>
+								</thead>
+								<tbody id="annualHotBody">
+									<!-- 动态生成数据 -->
+								</tbody>
+							</table>
+						</div>
+						<div style="margin-top: 20px; text-align: center;">
+							<button class="btn btn-primary" onclick="closeAnnualHotModal()">關閉</button>
+						</div>
+					</div>
+				</div>
 
                 <div id="statsContent" class="hidden">
                     <div class="grid">
@@ -982,6 +1175,8 @@
                                     <option value="score">依分數</option>
 									<option value="error">依誤差</option>
                                     <option value="winRate">依勝率</option>
+									<option value="volatility">依波動</option>
+									<option value="trend">依趨勢</option>
                                     <option value="votes">依票次</option>
                                     <option value="time">依新加</option>
                                 </select>
@@ -994,6 +1189,7 @@
         </div>
     </div>
 	<center>
+		ver 0.3&emsp;~tyovery~&emsp;2025-12<br />
 		ver 0.2&emsp;~tyovery~&emsp;2025-11<br />
 		ver 0.1&emsp;~tyovery~&emsp;2025-10<br /><br />
 	</center>
@@ -1027,6 +1223,12 @@
 			</div>
 		</div>
 	</div>
+	
+	<div id="contextMenu" class="context-menu" style="display: none; position: absolute; background: white; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000;">
+		<ul id="contextMenuList" style="list-style: none; margin: 0; padding: 5px 10px;">
+			<!-- 动态生成菜单项 -->
+		</ul>
+	</div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1037,7 +1239,7 @@
         let player1 = null, player2 = null, youtubeReady = false, currentPlayingPlayer = null;
         let selectedGameId = localStorage.getItem('selectedGameId') || '';
         let selectedItemCount = parseInt(localStorage.getItem('selectedItemCount')) || 0;
-        let selectedExtractMode = localStorage.getItem('selectedExtractMode') || 'uniform';
+        let selectedExtractMode = localStorage.getItem('selectedExtractMode') || 'quickConverge';
 		let currentGameExtractMode = '';
         let currentPage = 1, itemsPerPage = 10, statsVisible = localStorage.getItem('statsVisible') === 'true', filteredItems = [];
         let currentVideoLinks = [null, null], visibleItemObserver = null;
@@ -1141,6 +1343,67 @@
             if (N == 0) return 0.5;
             return (N + W - L) / (2 * N);
         }
+		
+		// 計算月度波動的函數
+		function calculateRecentVolatility(item) {
+			if (!item.scoreHistory || item.scoreHistory.length === 0) {
+				return 0;
+			}
+			
+			const now = Date.now();
+			const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+			
+			// 過濾最近30天的分數記錄
+			const recentScores = item.scoreHistory
+				.filter(record => record.timestamp >= thirtyDaysAgo)
+				.map(record => record.score);
+			
+			if (recentScores.length === 0) {
+				return 0;
+			}
+			
+			const maxScore = Math.max(...recentScores);
+			const minScore = Math.min(...recentScores);
+			
+			return maxScore - minScore;
+		}
+		
+		// 獲取月度波動顯示符號的函數
+		function getRecentVolatilitySymbol(item) {
+			if (!item.scoreHistory || item.scoreHistory.length < 3) {
+				return "?";
+			}
+			
+			const now = Date.now();
+			const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+			
+			// 過濾最近30天的分數記錄
+			const recentScores = item.scoreHistory
+				.filter(record => record.timestamp >= thirtyDaysAgo)
+				.map(record => record.score);
+			
+			if (recentScores.length < 3) {
+				return "?";
+			}
+			
+			const volatility = calculateRecentVolatility(item);
+			if (volatility === 0) {
+				return "≈";
+			}
+			
+			// 獲取最初和最後分數
+			const firstScore = recentScores[0];
+			const lastScore = recentScores[recentScores.length - 1];
+			const scoreDiff = lastScore - firstScore;
+			const absScoreDiff = Math.abs(scoreDiff);
+			
+			// 如果分數變化達到波動值的50%
+			if (absScoreDiff >= volatility * 0.95) {
+				return scoreDiff > 0 ? "↑" : "↓";
+			} else {
+				return "≈";
+			}
+		}
 
         function migrateOldData() {
             Object.values(games).forEach(game => {
@@ -1390,7 +1653,7 @@
 			});
 		}
 
-        function updateItemStats() {
+		function updateItemStats() {
 			if (!currentPair || !currentGame) return;
 			
 			const sortedItems = sortItemsByRank(currentGame.items);
@@ -1398,7 +1661,9 @@
 			[0, 1].forEach(idx => {
 				const item = currentPair[idx];
 				const rank = sortedItems.findIndex(i => i.id === item.id) + 1;
-                const winRate = ( calculateWinRate(item) * 100 ).toFixed(1) ;
+				const winRate = ( calculateWinRate(item) * 100 ).toFixed(1) ;
+				const recentVolatility = calculateRecentVolatility(item);
+				const volatilitySymbol = getRecentVolatilitySymbol(item);
 				let error = calculateError(item);
 				error = error === Infinity ? '∞' : Math.round(error) ;
 				
@@ -1409,31 +1674,50 @@
 				
 				const currentVideoUrl = currentVideoLinks[idx] || '[沒有]' ;
 				
+				// 计算上次投票天数
+				let lastVoteString = '(?)' ;
+				if (item.scoreHistory && item.scoreHistory.length > 0) {
+					const lastVoteTime = Math.max(...item.scoreHistory.map(record => record.timestamp));
+					const currentTime = Date.now();
+					// let diffHours = (currentTime - lastVoteTime) / (1000 * 60 * 60) ;
+					let diffTime = (currentTime - lastVoteTime) / 1e3 ; // 秒
+					lastVoteString = diffTime <= 3 ? '剛剛' :
+					diffTime <= 60 ? ~~diffTime + '秒前' :
+					( diffTime /= 60 ) <= 60 ? ~~diffTime + '分鐘前' :
+					( diffTime /= 60 ) <= 24 ? ~~diffTime + '小時前' :
+					~~(diffTime/24) + '天前' ;
+				}
+				
 				document.getElementById(`stats${idx + 1}`).innerHTML = `
-					<div>排名: ${rank} | 分數: ${item.score}±${error} | 勝率: ${winRate}% | 票次: ${item.votes} | 連結: ${validLinkCount}/${totalLinkCount}</div>
+					<div>排名: ${rank} | 分數: ${item.score}±${error} | 勝率: ${winRate}% | 波動: ${recentVolatility}${volatilitySymbol} | 票次: ${item.votes} | 上次: ${lastVoteString} | 連結: ${validLinkCount}/${totalLinkCount}</div>
 					<div class="current-video-url">${currentVideoUrl}</div>`;
 			});
 		}
 
         function setMaxItems() {
-            const gameId = document.getElementById('gameSelect').value;
-            if (gameId) {
-                const keyword = document.getElementById('keywordFilter').value.toLowerCase().trim();
-                let items = games[gameId].items;
-                
-                if (keyword) {
-                    items = items.filter(item => item.name.toLowerCase().includes(keyword));
-                }
-                
-                if (selectedMoodFilters.length > 0) {
-                    items = applyMoodFilter(items, selectedMoodFilters, votingMoodLogic);
-                }
-                
-                items = items.filter(item => !item.frozen);
-                
-                document.getElementById('itemCount').value = items.length;
-            }
-        }
+			const gameId = document.getElementById('gameSelect').value;
+			if (gameId) {
+				const keyword = document.getElementById('keywordFilter').value.toLowerCase().trim();
+				let items = games[gameId].items;
+			   
+				if (keyword) {
+					items = items.filter(item => item.name.toLowerCase().includes(keyword));
+				}
+			   
+				if (selectedMoodFilters.length > 0) {
+					items = applyMoodFilter(items, selectedMoodFilters, votingMoodLogic);
+				}
+			   
+				items = items.filter(item => !item.frozen);
+			   
+				const maxCount = items.length;
+				document.getElementById('itemCount').value = maxCount;
+
+				// 自動儲存目前設定的參賽項目數
+				selectedItemCount = maxCount;
+				localStorage.setItem('selectedItemCount', selectedItemCount);
+			}
+		}
 
         function applyMoodFilter(items, moodFilters, logic) {
             if (moodFilters.length === 0) return items;
@@ -1744,6 +2028,16 @@
             const game = games[selectedGameForEdit];
             const lines = itemsInput.split('\n');
             let addedCount = 0;
+			
+			console.log(game.items);
+			
+			const scores = game.items.map( item => item.score ) ;
+			
+			console.log(scores);
+			
+			const avgScore = game.items.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 1500;
+			const scoreStdDev = calculateStandardDeviation(scores);
+			const defaultScore = Math.ceil( avgScore - scoreStdDev ); // 預設分數為 ceil( μ - σ )
 
             lines.forEach(line => {
                 line = line.trim();
@@ -1758,10 +2052,10 @@
                             name: itemName, 
                             links: itemLink ? [itemLink] : [],
                             invalidLinks: [],
-                            score: 1500, votes: 0, wins: 0, losses: 0, addedTime: Date.now(),
+                            score: defaultScore, votes: 0, wins: 0, losses: 0, addedTime: Date.now(),
                             moods: [],
                             frozen: false,
-                            scoreHistory: [{timestamp: Date.now(), score: 1500}]
+                            scoreHistory: [{timestamp: Date.now(), score: defaultScore}]
                         });
                         addedCount++;
                     }
@@ -2496,6 +2790,33 @@
 						
 						selectedItems = selectedItems.slice(startIdx, startIdx + itemCount);
 						break;
+					case 'leastVolatility':
+						// 波動最小模式：按月度波動升序排列，選取波動最小的項目
+						selectedItems.sort((a, b) => {
+							const volatilityA = calculateRecentVolatility(a);
+							const volatilityB = calculateRecentVolatility(b);
+							return volatilityA - volatilityB;
+						});
+						selectedItems = selectedItems.slice(0, itemCount);
+						break;
+					case 'highestTrend':
+						// 升率最高模式：按趋势值从大到小排序，选择前 itemCount 个
+						selectedItems.sort((a, b) => {
+							const trendA = calculateTrendValue(a);
+							const trendB = calculateTrendValue(b);
+							return trendB - trendA; // 降序排列，趋势值大的在前
+						});
+						selectedItems = selectedItems.slice(0, itemCount);
+						break;
+					case 'lowestTrend':
+						// 降率最高模式：按趋势值从小到大排序，选择前 itemCount 个
+						selectedItems.sort((a, b) => {
+							const trendA = calculateTrendValue(a);
+							const trendB = calculateTrendValue(b);
+							return trendA - trendB; // 升序排列，趋势值小的在前
+						});
+						selectedItems = selectedItems.slice(0, itemCount);
+						break;
 					case 'quickConverge':
 						break;
 				}
@@ -2503,7 +2824,7 @@
 				// 使用固定的 currentGameExtractMode 來決定 activeItems
 				activeItems = currentGameExtractMode === 'quickConverge' ? selectedItems : 
 							 currentGameExtractMode === 'uniform' ? uniformPool : 
-							 currentGameExtractMode === 'middle' || currentGameExtractMode === 'middleWinRate' || currentGameExtractMode === 'nearAverage' || currentGameExtractMode === 'maxError' || currentGameExtractMode === 'similarScore' ? selectedItems : 
+							 currentGameExtractMode === 'middle' || currentGameExtractMode === 'middleWinRate' || currentGameExtractMode === 'nearAverage' || currentGameExtractMode === 'maxError' || currentGameExtractMode === 'similarScore' || currentGameExtractMode === 'leastVolatility' ? selectedItems : 
 							 selectedItems.slice(0, itemCount);
 							 
 				if (currentGameExtractMode !== 'quickConverge' && activeItems.length < 4) { alert('選擇的項目數不足 4 個'); return; }
@@ -2682,11 +3003,14 @@
 				'nearAverage': '近平均分',
 				'middleWinRate': '勝率中段',
 				'strongest': '名次最高',
-				'highestWinRate': '勝率最高'
+				'highestWinRate': '勝率最高',
+				'leastVolatility': '波動最小',
+				'highestTrend': '升率最高',
+				'lowestTrend': '降率最高'
 			};
 			
 			// 使用固定的 currentGameExtractMode 來顯示模式名稱
-			document.getElementById('currentExtractMode').textContent = extractModeNames[currentGameExtractMode] || currentGameExtractMode;
+			document.getElementById('currentExtractMode').textContent = extractModeNames[currentGameExtractMode] ?? currentGameExtractMode;
 			document.getElementById('currentPoolSize').textContent = activeItems.length;
 			document.getElementById('currentVoteCount').textContent = voteHistory.length;
 		}
@@ -2744,23 +3068,53 @@
 
 		// 找分數最接近且誤差最小的項目
         function findClosestItem(baseItem, items) {
-            let closestItem = null;
-            let minScoreDiff = Infinity;
-            let minError = Infinity;
-            
-            items.forEach(item => {
-                const scoreDiff = Math.abs(item.score - baseItem.score);
-                const error = calculateError(item);
-                
-                if (scoreDiff < minScoreDiff || (scoreDiff === minScoreDiff && error < minError)) {
-                    minScoreDiff = scoreDiff;
-                    minError = error;
-                    closestItem = item;
-                }
-            });
-            
-            return closestItem;
-        }
+			const baseError = calculateError(baseItem);
+			
+			/* // 如果 baseItem 的誤差為無限大，則選擇誤差最小的項目
+			if (baseError === Infinity) {
+				let minError = Infinity;
+				let minErrorItem = null;
+				
+				items.forEach(item => {
+					const error = calculateError(item);
+					if (error < minError) {
+						minError = error;
+						minErrorItem = item;
+					}
+				});
+				
+				return minErrorItem;
+			}*/
+			
+			// 先嘗試找誤差不為 Infinity 的項目
+			let validItems = items.filter(item => {
+				const error = calculateError(item);
+				return error !== Infinity;
+			});
+			
+			// 如果沒有誤差有效的項目，則使用所有項目
+			if (validItems.length === 0) {
+				validItems = items;
+			}
+			
+			// 在有效項目中找分數最接近且誤差最小的項目
+			let closestItem = null;
+			let minScoreDiff = Infinity;
+			let minError = Infinity;
+			
+			validItems.forEach(item => {
+				const scoreDiff = Math.abs(item.score - baseItem.score);
+				const error = calculateError(item);
+				
+				if (scoreDiff < minScoreDiff || (scoreDiff === minScoreDiff && error < minError)) {
+					minScoreDiff = scoreDiff;
+					minError = error;
+					closestItem = item;
+				}
+			});
+			
+			return closestItem;
+		}
 
         function createMoodButtons() {
             [1, 2].forEach(optionNum => {
@@ -2872,8 +3226,8 @@
 			else if (playerNum === 2 && player2) { try { player2.destroy(); } catch(e) {} player2 = null; }
 
 			const buttons = `
-				<button class="invalid-btn ${isInvalid ? 'active' : ''}" onclick="toggleInvalidLink(${playerNum})">⚠️</button>
-				<button class="reload-btn" onclick="reloadVideo(${playerNum})">
+				<button class="invalid-btn ${isInvalid ? 'active' : ''}" onclick="toggleInvalidLink(${playerNum})" title="標記為無效影片">⚠️</button>
+				<button class="reload-btn" onclick="reloadVideo(${playerNum})" title="更換影片來源">
 					<svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
 				</button>`;
 
@@ -3437,7 +3791,9 @@
 		
 		function statsHelp() {
 			let txt = `勝率 為 加權勝率，根據投票時的勝利程度分配。` ;
-			txt += `\n\n誤差範圍以 95% 置信區間計算，公式為：\n1.96 * 400 / [ √(npq) ln(10) ]\nn = 票次    p = 勝率    q = 敗率(1-p)` ;
+			txt += `\n\n波動 為 最近 30日 的 最高分數 - 最低分數 。` ;
+			txt += `\n↑↓代表期間上升或下降達到波動的 95%。` ;
+			txt += `\n\n誤差範圍以 95% 置信區間計算，公式為：\n1.96 * 400 / [ √(npq) ln(10) ]\nn = 票次    p = 勝率    q = 敗率 = 1-p` ;
 			alert(txt);
 		}
 
@@ -3447,6 +3803,13 @@
 			// 銷毀現有的圖表實例
 			if (scoreDistributionChart) {
 				scoreDistributionChart.destroy();
+			}
+			
+			// 检查是否有项目
+			if (!game.items || game.items.length === 0) {
+				// 清空画布，不显示任何内容
+				ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+				return;
 			}
 			
 			// 按分數排序項目
@@ -3463,10 +3826,15 @@
 			// 計算y軸範圍
 			const firstItem = sortedItems[0];
 			const lastItem = sortedItems[sortedItems.length - 1];
-			const firstError = calculateError(firstItem) === Infinity ? 500 : calculateError(firstItem);
-			const lastError = calculateError(lastItem) === Infinity ? 500 : calculateError(lastItem);
+			const firstError = Math.min(500,calculateError(firstItem));
+			const lastError = Math.min(500,calculateError(lastItem));
 			const yMin = lastItem.score - lastError;
 			const yMax = firstItem.score + firstError;
+			
+			// 根據凍結狀態設置顏色
+			const pointColors = sortedItems.map(item => 
+				item.frozen ? 'rgba(100, 200, 255, 1)' : 'rgba(255, 152, 61, 1)'
+			);
 			
 			// 創建圖表
 			scoreDistributionChart = new Chart(ctx, {
@@ -3478,10 +3846,12 @@
 							x: labels[index],
 							y: score
 						})),
-						backgroundColor: 'rgba(255, 152, 61, 1)',
+						backgroundColor: pointColors,
+						pointBackgroundColor: pointColors,
+						pointBorderColor: pointColors,
 						pointRadius: 1,
 						pointHoverRadius: 1,
-						pointHoverBackgroundColor: 'rgba(255, 152, 61, 1)'
+						pointHoverBackgroundColor: pointColors
 					}]
 				},
 				options: {
@@ -3493,6 +3863,8 @@
 							title: {
 								display: false
 							},
+							min: 1,
+							max: sortedItems.length,
 							reverse: false
 						},
 						y: {
@@ -3512,7 +3884,7 @@
 							display: false // 隱藏標題
 						},
 						tooltip: {
-							enabled: false // 禁用tooltip，鼠标悬停时不显示任何信息
+							enabled: false // 鼠标悬停时不显示任何信息
 						}
 					},
 					elements: {
@@ -3534,13 +3906,16 @@
 						const yScale = chart.scales.y;
 						
 						ctx.save();
-						ctx.strokeStyle = '#3efa8d';
 						ctx.lineWidth = 1;
 						
 						meta.data.forEach((point, index) => {
 							const x = xScale.getPixelForValue(labels[index]);
 							const y = yScale.getPixelForValue(scores[index]);
 							const error = errors[index];
+							const item = sortedItems[index];
+							
+							// 根據凍結狀態設置誤差線顏色
+							ctx.strokeStyle = item.frozen ? 'rgba(100, 200, 255, 0.3)' : '#3efa8d';
 							
 							if (error > 0) {
 								const errorTop = yScale.getPixelForValue(scores[index] + error);
@@ -3569,7 +3944,7 @@
 			});
 		}
 
-        // 新增：放大分數分布圖表
+        // 放大分數分布圖表
         function toggleScoreDistributionChart(show) {
             const modal = document.getElementById('scoreDistributionModal');
             
@@ -3591,6 +3966,8 @@
 			if (!gameId) return;
 			
 			const game = games[gameId];
+			if (!game.items.length) return;
+			
 			const sortedItems = sortItemsByRank(game.items);
 			
 			// 準備數據
@@ -3604,10 +3981,23 @@
 			// 計算y軸範圍
 			const firstItem = sortedItems[0];
 			const lastItem = sortedItems[sortedItems.length - 1];
-			const firstError = calculateError(firstItem) === Infinity ? 500 : calculateError(firstItem);
-			const lastError = calculateError(lastItem) === Infinity ? 500 : calculateError(lastItem);
-			const yMin = lastItem.score - lastError;
-			const yMax = firstItem.score + firstError;
+			const firstError = Math.min(500,calculateError(firstItem));
+			const lastError = Math.min(500,calculateError(lastItem));
+			const yMin = Math.floor(lastItem.score - lastError);
+			const yMax = Math.ceil(firstItem.score + firstError);
+			
+			// 計算平均值和標準差
+			const avgScore = game.items.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 1500;
+			const scoreStdDev = calculateStandardDeviation(scores);
+			const avgPlusStdDev = avgScore + scoreStdDev;
+			const avgMinusStdDev = avgScore - scoreStdDev;
+			const avgPlus2StdDev = avgScore + 2 * scoreStdDev;
+			const avgMinus2StdDev = avgScore - 2 * scoreStdDev;
+			
+			// 根據凍結狀態設置顏色
+			const pointColors = sortedItems.map(item => 
+				item.frozen ? 'rgba(100, 200, 255, 1)' : 'rgba(255, 152, 61, 1)'
+			);
 			
 			// 創建大圖表
 			scoreDistributionChartLarge = new Chart(ctx, {
@@ -3619,10 +4009,12 @@
 							x: labels[index],
 							y: score
 						})),
-						backgroundColor: 'rgba(255, 152, 61, 1)',
+						backgroundColor: pointColors,
+						pointBackgroundColor: pointColors,
+						pointBorderColor: pointColors,
 						pointRadius: 3,
 						pointHoverRadius: 5,
-						pointHoverBackgroundColor: 'rgba(255, 152, 61, 1)'
+						pointHoverBackgroundColor: pointColors
 					}]
 				},
 				options: {
@@ -3667,11 +4059,15 @@
 									const item = sortedItems[index];
 									const error = errors[index];
 									const winRate = (calculateWinRate(item) * 100).toFixed(1);
+									const recentVolatility = calculateRecentVolatility(item);
+									const volatilitySymbol = getRecentVolatilitySymbol(item);
+									// const frozenStatus = item.frozen ? ' (凍結)' : '';
 									return [
 										`項目: ${item.name}`,
-										`分數: ${item.score}±${error === Infinity ? '∞' : Math.round(error)}`,
 										`排名: ${index + 1}`,
-										`勝率: ${winRate}%`,
+										`分數: ${item.score}±${error === Infinity ? '∞' : Math.round(error)}`,
+										`加權勝率: ${winRate}%`,
+										`月度波動: ${recentVolatility}${volatilitySymbol}`,
 										`票次: ${item.votes}`
 									];
 								}
@@ -3720,13 +4116,16 @@
 						const yScale = chart.scales.y;
 						
 						ctx.save();
-						ctx.strokeStyle = '#3efa8d';
 						ctx.lineWidth = 2;
 						
 						meta.data.forEach((point, index) => {
 							const x = xScale.getPixelForValue(labels[index]);
 							const y = yScale.getPixelForValue(scores[index]);
 							const error = errors[index];
+							const item = sortedItems[index];
+							
+							// 根據凍結狀態設置誤差線顏色
+							ctx.strokeStyle = item.frozen ? 'rgba(100, 200, 255, 0.5)' : '#3efa8d';
 							
 							if (error > 0) {
 								const errorTop = yScale.getPixelForValue(scores[index] + error);
@@ -3748,6 +4147,86 @@
 								ctx.stroke();
 							}
 						});
+						
+						ctx.restore();
+					}
+				}, {
+					id: 'stdDevLines',
+					afterDatasetsDraw(chart, args, options) {
+						const { ctx } = chart;
+						const yScale = chart.scales.y;
+						const xScale = chart.scales.x;
+						
+						// 繪製平均值 ± 1個標準差和 ± 2個標準差的水平線
+						ctx.save();
+						
+						// 平均值線 - 藍色虛線
+						const avgPixel = yScale.getPixelForValue(avgScore);
+						ctx.strokeStyle = 'rgba(0, 0, 255, 0.3)';
+						ctx.setLineDash([5, 5]);
+						ctx.lineWidth = 2;
+						ctx.beginPath();
+						ctx.moveTo(xScale.left, avgPixel);
+						ctx.lineTo(xScale.right, avgPixel);
+						ctx.stroke();
+						
+						// 平均值 + 2倍標準差線 - 紅色虛線
+						const avgPlus2StdDevPixel = yScale.getPixelForValue(avgPlus2StdDev);
+						ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+						ctx.setLineDash([5, 5]);
+						ctx.lineWidth = 1.5;
+						ctx.beginPath();
+						ctx.moveTo(xScale.left, avgPlus2StdDevPixel);
+						ctx.lineTo(xScale.right, avgPlus2StdDevPixel);
+						ctx.stroke();
+						
+						// 平均值 + 標準差線 - 紅色虛線
+						const avgPlusStdDevPixel = yScale.getPixelForValue(avgPlusStdDev);
+						ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+						ctx.setLineDash([5, 5]);
+						ctx.lineWidth = 1.5;
+						ctx.beginPath();
+						ctx.moveTo(xScale.left, avgPlusStdDevPixel);
+						ctx.lineTo(xScale.right, avgPlusStdDevPixel);
+						ctx.stroke();
+						
+						// 平均值 - 標準差線 - 紅色虛線
+						const avgMinusStdDevPixel = yScale.getPixelForValue(avgMinusStdDev);
+						ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+						ctx.setLineDash([5, 5]);
+						ctx.lineWidth = 1.5;
+						ctx.beginPath();
+						ctx.moveTo(xScale.left, avgMinusStdDevPixel);
+						ctx.lineTo(xScale.right, avgMinusStdDevPixel);
+						ctx.stroke();
+						
+						// 平均值 - 2倍標準差線 - 紅色虛線
+						const avgMinus2StdDevPixel = yScale.getPixelForValue(avgMinus2StdDev);
+						ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+						ctx.setLineDash([5, 5]);
+						ctx.lineWidth = 1.5;
+						ctx.beginPath();
+						ctx.moveTo(xScale.left, avgMinus2StdDevPixel);
+						ctx.lineTo(xScale.right, avgMinus2StdDevPixel);
+						ctx.stroke();
+						
+						// 添加標籤
+						ctx.fillStyle = 'rgba(0, 0, 255, 0.7)';
+						ctx.font = 'bold 12px Microsoft JhengHei';
+						ctx.textAlign = 'right';
+						ctx.fillText(`μ`, xScale.left + 15, avgPixel + 10);
+						
+						ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+						ctx.fillText(`μ + 2σ`, xScale.right - 10, avgPlus2StdDevPixel - 10);
+						
+						ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+						ctx.fillText(`μ + σ`, xScale.right - 10, avgPlusStdDevPixel - 10);
+						
+						ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+						ctx.fillText(`μ - σ`, xScale.left + 35, avgMinusStdDevPixel + 10);
+						
+						ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+						ctx.fillText(`μ - 2σ`, xScale.left + 40, avgMinus2StdDevPixel + 10);
 						
 						ctx.restore();
 					}
@@ -4108,7 +4587,6 @@
 			});
 		}
 
-
 		function updateCanvasSize() {
 			if (!rankingAnimationCanvas) return;
 			
@@ -4329,80 +4807,6 @@
 			currentRankingFrame = 0;
 		}
 		
-		// 生成连续日期范围的辅助函数
-		function generateDateRange(startDate, endDate) {
-			const dates = [];
-			const currentDate = new Date(startDate);
-			
-			while (currentDate <= endDate) {
-				dates.push(new Date(currentDate));
-				currentDate.setDate(currentDate.getDate() + 1);
-			}
-			
-			return dates;
-		}
-		
-		// 创建初始状态
-		function createInitialState(items) {
-			const state = {};
-			items.forEach(item => {
-				state[item.id] = {
-					id: item.id,
-					name: item.name,
-					score: 1500,
-					votes: 0,
-					wins: 0,
-					losses: 0,
-					addedTime: item.addedTime || Date.now()
-				};
-			});
-			return state;
-		}
-		
-		// 应用投票到状态
-		function applyVotesToState(state, votes, originalItems) {
-			const newState = JSON.parse(JSON.stringify(state));
-			
-			votes.forEach(vote => {
-				const item1 = newState[vote.item1];
-				const item2 = newState[vote.item2];
-				
-				if (!item1 || !item2) return;
-				
-				// 计算分数变化
-				const scoreA = item1.score, scoreB = item2.score;
-				const winRateA = 1 - (vote.value / 100), winRateB = vote.value / 100;
-				const expectedA = 1 / (1 + Math.pow(10, (scoreB - scoreA) / 400));
-				const expectedB = 1 / (1 + Math.pow(10, (scoreA - scoreB) / 400));
-				
-				let error1 = calculateError(item1);
-				let error2 = calculateError(item2);
-				if (error1 === Infinity) error1 = 700;
-				if (error2 === Infinity) error2 = 700;
-				
-				const k_min = 16;
-				const k_max = 481.648;
-				let k1 = k_min + (k_max - k_min) * error1**2 / (error1**2 + 463725.2449534823);
-				let k2 = k_min + (k_max - k_min) * error2**2 / (error2**2 + 463725.2449534823);
-				k1 = Math.max(k_min, Math.min(k_max, k1));
-				k2 = Math.max(k_min, Math.min(k_max, k2));
-				
-				// 更新分数
-				item1.score = Math.round(item1.score + k1 * (winRateA - expectedA));
-				item2.score = Math.round(item2.score + k2 * (winRateB - expectedB));
-				
-				// 更新投票统计
-				item1.votes++;
-				item2.votes++;
-				item1.wins += 1 - vote.value/100;
-				item1.losses += vote.value/100;
-				item2.wins += vote.value/100;
-				item2.losses += 1 - vote.value/100;
-			});
-			
-			return newState;
-		}
-
         function drawRankingFrame(frameIndex) {
 			if (!rankingAnimationCtx || frameIndex >= rankingAnimationData.length) return;
 			
@@ -4866,19 +5270,6 @@
 			});
 		}
 
-        function resetRankingAnimation() {
-            if (rankingAnimationInterval) {
-                clearInterval(rankingAnimationInterval);
-                rankingAnimationInterval = null;
-                document.getElementById('playPauseBtn').textContent = '播放';
-            }
-            
-            currentRankingFrame = 0;
-            document.getElementById('frameSlider').value = 0;
-            updateFrameSliderValue();
-            drawRankingFrame(currentRankingFrame);
-        }
-
         function closeRankingAnimation() {
 			const modal = document.getElementById('rankingAnimationModal');
 			modal.classList.add('hidden');
@@ -4903,22 +5294,104 @@
 		}
 
         function loadStats() {
+			// const startTime = Date.now();
 			const gameId = document.getElementById('statsGameSelect').value;
-			selectedGameId = gameId; localStorage.setItem('selectedGameId', selectedGameId);
-			if (!gameId) { document.getElementById('statsContent').classList.add('hidden'); return; }
-
-			const searchText = document.getElementById('rankingSearch').value;
-
+			selectedGameId = gameId; 
+			localStorage.setItem('selectedGameId', selectedGameId);
+			
+			if (!gameId) { 
+				document.getElementById('statsContent').classList.add('hidden'); 
+				return; 
+			}
+			
 			const game = games[gameId];
 			document.getElementById('statsContent').classList.remove('hidden');
+			
+			// 确保游戏对象存在，如果不存在则创建空结构
+			if (!game) {
+				// 如果游戏不存在，显示空状态
+				showEmptyStats();
+				return;
+			}
+			
+			// 检查游戏是否有项目，如果没有则重置卡片数值
+			if (!game.items || game.items.length === 0) {
+				showEmptyStats();
+				return;
+			}
+
+			// 计算基础统计数据並保存結果
+			const stats = calculateBasicStats(game);
+			
+			// 渲染图表（需要处理空项目情况）
+			renderScoreDistributionChart(game);
+			
+			// 渲染排行榜，傳入統計數據
+			renderRankingList(game, stats);
+			
+			// 恢复搜索状态
+			restoreSearchState();
+			
+			// console.log(`載入耗時: ${Date.now()-startTime}`) ;
+		}
+		
+		// 显示空统计状态的函数
+		function showEmptyStats() {
+			// 更新基础统计数据显示为默认值
+			document.getElementById('totalItems').textContent = '0';
+			document.getElementById('totalVotes').textContent = '0';
+			document.getElementById('expectedVotes').textContent = '0';
+			document.getElementById('avgError').textContent = '?';
+			document.getElementById('avgScore').textContent = '?';
+			document.getElementById('medianScore').textContent = '?';
+			document.getElementById('maxScore').textContent = '?';
+			document.getElementById('minScore').textContent = '?';
+			document.getElementById('stdDevScore').textContent = '?';
+			
+			// 清空排行榜
+			document.getElementById('rankingList').innerHTML = '<div class="no-history-data">此遊戲目前沒有項目</div>';
+			
+			// 更新排行榜标题
+			document.getElementById('rankingTitle').textContent = '排行榜 (0/0)';
+			
+			// 销毁现有的分布图表（如果有）
+			if (scoreDistributionChart) {
+				scoreDistributionChart.destroy();
+				scoreDistributionChart = null;
+			}
+			
+			// 分数分布小图保持空白，不显示任何内容
+			const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+			// 移除了显示提示信息的代码，保持完全空白
+		}
+		
+		// 2. 计算基础统计数据
+		function calculateBasicStats(game) {
+			// 检查游戏项目是否存在且不为空
+			if (!game.items || game.items.length === 0) {
+				return {
+					maxScore: 1500, 
+					minScore: 1500, 
+					avgScore: 1500, 
+					medianScore: 1500,
+					scoreStdDev: 0, 
+					upperThreshold2: 1500, 
+					upperThreshold: 1500, 
+					lowerThreshold: 1500, 
+					lowerThreshold2: 1500
+				};
+			}
+			
 			document.getElementById('totalItems').textContent = game.items.length;
 			document.getElementById('totalVotes').textContent = game.votes.length;
 			
-			let expectedValue = 25 * game.items.length ;
-			document.getElementById('expectedVotes').textContent = expectedValue ;
+			let expectedValue = 25 * game.items.length;
+			document.getElementById('expectedVotes').textContent = expectedValue;
 			
 			let minScore = Infinity, maxScore = -Infinity, totalScore = 0;
 			let scores = [];
+			
 			game.items.forEach(item => {
 				if (item.score < minScore) minScore = item.score;
 				if (item.score > maxScore) maxScore = item.score;
@@ -4927,23 +5400,57 @@
 			});
 			
 			scores.sort((a, b) => a - b);
-			let medianScore;
-			const mid = Math.floor(scores.length / 2);
-			if (scores.length % 2 === 0) {
-				medianScore = (scores[mid - 1] + scores[mid]) / 2;
-			} else {
-				medianScore = scores[mid];
-			}
-			
+			const medianScore = calculateMedian(scores);
 			const avgScore = game.items.length > 0 ? (totalScore / game.items.length).toFixed(2) : 1500;
 			const scoreStdDev = calculateStandardDeviation(scores);
-			document.getElementById('maxScore').textContent = maxScore;
-			document.getElementById('minScore').textContent = minScore;
-			document.getElementById('avgScore').textContent = avgScore;
-			document.getElementById('stdDevScore').textContent = scoreStdDev.toFixed(2);
-			document.getElementById('medianScore').textContent = medianScore.toFixed(1);
-
+			
+			// 计算分隔线阈值
+			const upperThreshold2 = parseFloat(avgScore) + 2 * parseFloat(scoreStdDev);
+			const upperThreshold = parseFloat(avgScore) + parseFloat(scoreStdDev);
+			const lowerThreshold = parseFloat(avgScore) - parseFloat(scoreStdDev);
+			const lowerThreshold2 = parseFloat(avgScore) - 2 * parseFloat(scoreStdDev);
+			
+			// 更新DOM元素
+			updateStatsElements({
+				maxScore, minScore, avgScore, medianScore, 
+				scoreStdDev, upperThreshold2, upperThreshold, 
+				lowerThreshold, lowerThreshold2
+			});
+			
+			// 计算平均误差
+			calculateAverageError(game);
+			
+			// 返回統計數據供其他函數使用
+			return {
+				maxScore, minScore, avgScore: parseFloat(avgScore), medianScore, 
+				scoreStdDev, upperThreshold2, upperThreshold, 
+				lowerThreshold, lowerThreshold2
+			};
+		}
+		
+		// 3. 计算中位数
+		function calculateMedian(scores) {
+			const mid = Math.floor(scores.length / 2);
+			if (scores.length % 2 === 0) {
+				return (scores[mid - 1] + scores[mid]) / 2;
+			} else {
+				return scores[mid];
+			}
+		}
+		
+		// 4. 更新统计元素
+		function updateStatsElements(stats) {
+			document.getElementById('maxScore').textContent = stats.maxScore;
+			document.getElementById('minScore').textContent = stats.minScore;
+			document.getElementById('avgScore').textContent = stats.avgScore;
+			document.getElementById('stdDevScore').textContent = stats.scoreStdDev.toFixed(2);
+			document.getElementById('medianScore').textContent = stats.medianScore.toFixed(1);
+		}
+		
+		// 5. 计算平均误差
+		function calculateAverageError(game) {
 			let totalError = 0, validErrorCount = 0;
+			
 			game.items.forEach(item => {
 				const error = calculateError(item);
 				if (error !== Infinity) {
@@ -4951,111 +5458,411 @@
 					validErrorCount++;
 				}
 			});
+			
 			const avgError = validErrorCount > 0 ? (totalError / validErrorCount).toFixed(2) : 0;
 			document.getElementById('avgError').textContent = avgError;
-
-			// 渲染分數分布圖
-			renderScoreDistributionChart(game);
-
+		}
+		
+		// 6. 渲染排行榜列表
+		function renderRankingList(game, stats) {
 			const sortBy = document.getElementById('sortBy').value;
-			let sortedItems = [...game.items];
 			
+			// 检查项目是否存在
+			if (!game.items || game.items.length === 0) {
+				const rankingList = document.getElementById('rankingList');
+				rankingList.innerHTML = '<div class="no-history-data">此遊戲目前沒有項目</div>';
+				document.getElementById('rankingTitle').textContent = '排行榜 (0/0)';
+				return;
+			}
+			
+			let sortedItems = [...game.items];
 			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
+			
+			// 应用心情筛选
 			if (statsMoodFilters.length > 0) {
 				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
 			}
-            
-            const allItemsRanked = sortItemsByRank(game.items);
-            const rankMap = new Map();
-            allItemsRanked.forEach((item, index) => {
-                rankMap.set(item.id, index + 1);
-            });
-
-            switch(sortBy) {
-                case 'rank':
-                case 'score':
-                    sortedItems = sortItemsByRank(sortedItems);
-                    break;
-                case 'winRate': 
-                    sortedItems.sort((a, b) => {
-                        const winRateA = calculateWinRate(a);
-                        const winRateB = calculateWinRate(b);
-                        return winRateB - winRateA;
-                    }); 
-                    break;
-                case 'votes': sortedItems.sort((a, b) => b.votes - a.votes); break;
-                case 'time': sortedItems.sort((a, b) => (b.addedTime || 0) - (a.addedTime || 0)); break;
-                case 'error':
-                    sortedItems.sort((a, b) => {
-                        const errorA = calculateError(a);
-                        const errorB = calculateError(b);
-                        if (errorA === Infinity && errorB !== Infinity) return -1;
-                        if (errorA !== Infinity && errorB === Infinity) return 1;
-                        return errorB - errorA;
-                    });
-                    break;
-            }
-            
-            const rankingList = document.getElementById('rankingList');
+			
+			// 排序
+			sortedItems = sortRankingItems(sortedItems, sortBy, game);
+			
+			// 只在"依名次"或"依分數"排序時顯示分隔線
+			const showSeparators = sortBy === 'rank' || sortBy === 'score';
+			
+			// 渲染列表，傳入統計數據和顯示分隔線的標誌
+			renderRankingItems(sortedItems, game, stats, showSeparators);
+			
+			// 更新标题
+			updateRankingTitle(sortedItems, game);
+		}
+		
+		// 7. 排序排行榜项目
+		function sortRankingItems(items, sortBy, game) {
+			switch(sortBy) {
+				case 'rank':
+					return sortItemsByRank(items);
+				case 'score':
+					return items.sort((a, b) => b.score - a.score);
+				case 'winRate':
+					return items.sort((a, b) => {
+						const winRateA = calculateWinRate(a);
+						const winRateB = calculateWinRate(b);
+						return winRateB - winRateA;
+					});
+				case 'votes': 
+					return items.sort((a, b) => b.votes - a.votes);
+				case 'time': 
+					return items.sort((a, b) => (b.addedTime || 0) - (a.addedTime || 0));
+				case 'error':
+					return items.sort((a, b) => {
+						const errorA = calculateError(a);
+						const errorB = calculateError(b);
+						if (errorA === Infinity && errorB !== Infinity) return -1;
+						if (errorA !== Infinity && errorB === Infinity) return 1;
+						return errorB - errorA;
+					});
+				case 'volatility':
+					return items.sort((a, b) => {
+						const volatilityA = calculateRecentVolatility(a);
+						const volatilityB = calculateRecentVolatility(b);
+						return volatilityB - volatilityA;
+					});
+				case 'trend':  // 趋势排序
+					return items.sort((a, b) => {
+						const trendA = calculateTrendValue(a);
+						const trendB = calculateTrendValue(b);
+						return trendB - trendA; // 从大到小排序
+					});
+				default:
+					return items;
+			}
+		}
+		
+		// 计算趋势值的函数
+		function calculateTrendValue(item) {
+			if (!item.scoreHistory || item.scoreHistory.length < 3) {
+				return 0;
+			}
+			
+			const now = Date.now();
+			const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+			
+			// 过滤最近30天的分数记录
+			const recentScores = item.scoreHistory
+				.filter(record => record.timestamp >= thirtyDaysAgo)
+				.map(record => record.score);
+			
+			if (recentScores.length < 3) {
+				return 0;
+			}
+			
+			const volatility = Math.max(...recentScores) - Math.min(...recentScores);
+			const firstScore = recentScores[0];
+			const lastScore = recentScores[recentScores.length - 1];
+			const scoreDiff = lastScore - firstScore;
+			
+			if (volatility === 0) {
+				return 0;
+			}
+			
+			// 返回趋势强度：分数变化/波动值
+			return scoreDiff / volatility;
+		}
+		
+		// 8. 渲染排行榜项目
+		function renderRankingItems(sortedItems, game, stats, showSeparators) {
+			const rankingList = document.getElementById('rankingList');
 			rankingList.innerHTML = '';
-			sortedItems.forEach((item, index) => {
-				const winRate = ( calculateWinRate(item) * 100 ).toFixed(1) ;
-				let error = calculateError(item);
-				error = error === Infinity ? '∞' : Math.round(error) ;
-				const rankingItem = document.createElement('div');
-				rankingItem.className = 'list-item ranking-item';
-				rankingItem.id = `ranking-item-${item.id}`;
-				if (item.frozen) {
-					rankingItem.classList.add('frozen');
-				}
-				const displayRank = rankMap.get(item.id);
-
-				let moodDisplay = '';
-				if (item.moods && item.moods.length > 0) {
-					moodDisplay = `<div class="mood-display">${item.moods.join('')}</div>`;
-				}
-
-				rankingItem.innerHTML = `
-					<div style="display: flex; flex-direction: column; width: 100%;">
-						<div style="display: flex; align-items: center; width: 100%; height: 0px;">
-							<span style="font-size: 1.2em; font-weight: bold; color: var(--primary); width: 3em; margin-right: 20px;">
-								#${displayRank}
-							</span>
-							<span class="item-name" style="flex: 1; font-size: 1.0em; font-weight: bold;">${item.name}</span>
-							<div style="display: flex; align-items: center;">
-								${moodDisplay}
-								<span style="font-size: 1.0em; color: var(--success);">分數: ${item.score}±${error} | 加權勝率: ${winRate}% | 票次: ${item.votes}</span>
-							</div>
-						</div>
-						<div class="score-chart-container" style="display: none;"></div>
-					</div>`;
-
-				rankingItem.onclick = function() {
-					toggleScoreChart(item.id);
-				};
-
-				rankingList.appendChild(rankingItem);
+			
+			const allItemsRanked = sortItemsByRank(game.items);
+			const rankMap = new Map();
+			allItemsRanked.forEach((item, index) => {
+				rankMap.set(item.id, index + 1);
 			});
-
-            expandedItemIds.forEach(itemId => {
-                const rankingItem = document.getElementById(`ranking-item-${itemId}`);
-                if (rankingItem) {
-                    const chartContainer = rankingItem.querySelector('.score-chart-container');
-                    if (chartContainer) {
-                        rankingItem.classList.add('expanded');
-                        chartContainer.style.display = 'block';
-                        renderScoreChart(itemId, chartContainer);
-                    }
-                }
-            });
-
-            document.getElementById('rankingSearch').value = searchText;
-            
-            const titleText = `排行榜 (${sortedItems.length}/${game.items.length})`;
-            document.getElementById('rankingTitle').textContent = titleText;
-            
-            if (searchText) searchRanking();
-        }
+			
+			// 只在需要时计算分隔线位置
+			const separatorPositions = showSeparators ? calculateSeparatorPositions(sortedItems, stats) : null;
+			
+			// 渲染项目和分隔线，传入 showSeparators 参数
+			renderItemsWithSeparators(sortedItems, rankMap, separatorPositions, rankingList, game, showSeparators);
+			
+			// 恢复展开的图表
+			restoreExpandedCharts();
+		}
+		
+		// 9. 计算分隔线位置
+		function calculateSeparatorPositions(sortedItems, stats) {
+			const { upperThreshold2, upperThreshold, lowerThreshold, lowerThreshold2 } = stats;
+			const avgScore = stats.avgScore; // 平均值
+			
+			// 找出分隔線應該插入的位置
+			let upperSeparator2Index = -1;
+			let upperSeparatorIndex = -1;
+			let avgSeparatorIndex = -1;
+			let lowerSeparatorIndex = -1;
+			let lowerSeparator2Index = -1;
+			
+			// 找出上分隔線應該插入的位置（第一個分數 <= upperThreshold2 的項目之前）
+			for (let i = 0; i < sortedItems.length; i++) {
+				if (sortedItems[i].score <= upperThreshold2) {
+					upperSeparator2Index = i;
+					break;
+				}
+			}
+			if (upperSeparator2Index === -1) {
+				upperSeparator2Index = sortedItems.length;
+			}
+			
+			// 找出上分隔線應該插入的位置（第一個分數 <= upperThreshold 的項目之前）
+			for (let i = 0; i < sortedItems.length; i++) {
+				if (sortedItems[i].score <= upperThreshold) {
+					upperSeparatorIndex = i;
+					break;
+				}
+			}
+			if (upperSeparatorIndex === -1) {
+				upperSeparatorIndex = sortedItems.length;
+			}
+			
+			// 新增：找出 μ 分隔線應該插入的位置（第一個分數 < avgScore 的項目之前）
+			for (let i = 0; i < sortedItems.length; i++) {
+				if (sortedItems[i].score < avgScore) {
+					avgSeparatorIndex = i;
+					break;
+				}
+			}
+			if (avgSeparatorIndex === -1) {
+				avgSeparatorIndex = sortedItems.length;
+			}
+			
+			// 找出下分隔線應該插入的位置（第一個分數 < lowerThreshold 的項目之前）
+			for (let i = 0; i < sortedItems.length; i++) {
+				if (sortedItems[i].score < lowerThreshold) {
+					lowerSeparatorIndex = i;
+					break;
+				}
+			}
+			if (lowerSeparatorIndex === -1) {
+				lowerSeparatorIndex = sortedItems.length;
+			}
+			
+			// 找出下分隔線應該插入的位置（第一個分數 < lowerThreshold2 的項目之前）
+			for (let i = 0; i < sortedItems.length; i++) {
+				if (sortedItems[i].score < lowerThreshold2) {
+					lowerSeparator2Index = i;
+					break;
+				}
+			}
+			if (lowerSeparator2Index === -1) {
+				lowerSeparator2Index = sortedItems.length;
+			}
+			
+			return {
+				upperSeparator2Index,
+				upperSeparatorIndex,
+				avgSeparatorIndex,
+				lowerSeparatorIndex,
+				lowerSeparator2Index,
+				upperThreshold2,
+				upperThreshold,
+				avgScore,
+				lowerThreshold,
+				lowerThreshold2
+			};
+		}
+		
+		// 10. 渲染带分隔线的项目
+		function renderItemsWithSeparators(sortedItems, rankMap, separatorPositions, container, game, showSeparators) {
+			let upperSeparator2Added = false;
+			let upperSeparatorAdded = false;
+			let avgSeparatorAdded = false;  // 新增：μ 分隔线标记
+			let lowerSeparatorAdded = false;
+			let lowerSeparator2Added = false;
+			
+			sortedItems.forEach((item, index) => {
+				// 只在显示分隔线时插入分隔線
+				if (showSeparators && separatorPositions) {
+					// 在插入項目前檢查是否需要插入分隔線（按從上到下的順序）
+					if (!upperSeparator2Added && index === separatorPositions.upperSeparator2Index) {
+						const separator = createSeparator(`μ + 2σ = ${separatorPositions.upperThreshold2.toFixed(2)}`, 'separator-upper-2');
+						container.appendChild(separator);
+						upperSeparator2Added = true;
+					}
+					
+					if (!upperSeparatorAdded && index === separatorPositions.upperSeparatorIndex) {
+						const separator = createSeparator(`μ + σ = ${separatorPositions.upperThreshold.toFixed(2)}`, 'separator-upper');
+						container.appendChild(separator);
+						upperSeparatorAdded = true;
+					}
+					
+					if (!avgSeparatorAdded && index === separatorPositions.avgSeparatorIndex) {
+						const separator = createSeparator(`μ = ${separatorPositions.avgScore.toFixed(2)}`, 'separator-avg');
+						container.appendChild(separator);
+						avgSeparatorAdded = true;
+					}
+					
+					if (!lowerSeparatorAdded && index === separatorPositions.lowerSeparatorIndex) {
+						const separator = createSeparator(`μ - σ = ${separatorPositions.lowerThreshold.toFixed(2)}`, 'separator-lower');
+						container.appendChild(separator);
+						lowerSeparatorAdded = true;
+					}
+					
+					if (!lowerSeparator2Added && index === separatorPositions.lowerSeparator2Index) {
+						const separator = createSeparator(`μ - 2σ = ${separatorPositions.lowerThreshold2.toFixed(2)}`, 'separator-lower-2');
+						container.appendChild(separator);
+						lowerSeparator2Added = true;
+					}
+				}
+				
+				// 渲染单个项目，傳入 game 參數
+				renderRankingItem(item, rankMap.get(item.id), container, game);
+			});
+			
+			// 只在显示分隔线时确保所有分隔線都被插入
+			if (showSeparators && separatorPositions) {
+				ensureAllSeparators(container, {
+					upperSeparator2Added,
+					upperSeparatorAdded,
+					avgSeparatorAdded,
+					lowerSeparatorAdded,
+					lowerSeparator2Added,
+					upperThreshold2: separatorPositions.upperThreshold2,
+					upperThreshold: separatorPositions.upperThreshold,
+					avgScore: separatorPositions.avgScore,
+					lowerThreshold: separatorPositions.lowerThreshold,
+					lowerThreshold2: separatorPositions.lowerThreshold2
+				});
+			}
+		}
+		
+		// 11. 渲染单个排行榜项目
+		function renderRankingItem(item, displayRank, container, game) {
+			const winRate = (calculateWinRate(item) * 100).toFixed(1);
+			const recentVolatility = calculateRecentVolatility(item);
+			const volatilitySymbol = getRecentVolatilitySymbol(item);
+			let error = calculateError(item);
+			error = error === Infinity ? '∞' : Math.round(error);
+			
+			const rankingItem = document.createElement('div');
+			rankingItem.className = 'list-item ranking-item';
+			rankingItem.id = `ranking-item-${item.id}`;
+			
+			if (item.frozen) {
+				rankingItem.classList.add('frozen');
+			}
+			
+			let moodDisplay = '';
+			if (item.moods && item.moods.length > 0) {
+				moodDisplay = `<div class="mood-display">${item.moods.join('')}</div>`;
+			}
+			
+			rankingItem.innerHTML = `
+				<div style="display: flex; flex-direction: column; width: 100%;">
+					<div style="display: flex; align-items: center; width: 100%; height: 0px;">
+						<span style="font-size: 1.2em; font-weight: bold; color: var(--primary); width: 3em; margin-right: 20px;">
+							#${displayRank}
+						</span>
+						<span class="item-name" style="flex: 1; font-size: 1.0em; font-weight: bold;">${item.name}</span>
+						<div style="display: flex; align-items: center;">
+							${moodDisplay}
+							<span style="font-size: 1.0em; color: var(--success);">分數: ${item.score}±${error} | 加權勝率: ${winRate}% | 月度波動: ${recentVolatility}${volatilitySymbol} | 票次: ${item.votes}</span>
+						</div>
+					</div>
+					<div class="score-chart-container" style="display: none;"></div>
+				</div>`;
+			
+			rankingItem.onclick = function() {
+				toggleScoreChart(item.id);
+			};
+			
+			rankingItem.addEventListener('contextmenu', function(e) {
+				e.preventDefault();
+				showItemContextMenu(e, item.id, game.id);
+			});
+			
+			container.appendChild(rankingItem);
+		}
+		
+		// 12. 恢复搜索状态
+		function restoreSearchState() {
+			const searchText = document.getElementById('rankingSearch').value;
+			if (searchText) {
+				searchRanking();
+			}
+		}
+		
+		// 13. 恢复展开的图表
+		function restoreExpandedCharts() {
+			expandedItemIds.forEach(itemId => {
+				const rankingItem = document.getElementById(`ranking-item-${itemId}`);
+				if (rankingItem) {
+					const chartContainer = rankingItem.querySelector('.score-chart-container');
+					if (chartContainer) {
+						rankingItem.classList.add('expanded');
+						chartContainer.style.display = 'block';
+						renderScoreChart(itemId, chartContainer);
+					}
+				}
+			});
+		}
+		
+		// 14. 更新排行榜标题
+		function updateRankingTitle(sortedItems, game) {
+			const titleText = `排行榜 (${sortedItems.length}/${game.items.length})`;
+			document.getElementById('rankingTitle').textContent = titleText;
+		}
+		
+		function ensureAllSeparators(container, separatorPositions) {
+			const { 
+				upperSeparator2Added, 
+				upperSeparatorAdded, 
+				avgSeparatorAdded,  // 新增
+				lowerSeparatorAdded, 
+				lowerSeparator2Added 
+			} = separatorPositions;
+			
+			// 如果分隔線還沒有插入，在最後插入
+			if (!upperSeparator2Added) {
+				const separator = createSeparator(`μ + 2σ = ${separatorPositions.upperThreshold2.toFixed(2)}`, 'separator-upper-2');
+				container.appendChild(separator);
+			}
+			
+			if (!upperSeparatorAdded) {
+				const separator = createSeparator(`μ + σ = ${separatorPositions.upperThreshold.toFixed(2)}`, 'separator-upper');
+				container.appendChild(separator);
+			}
+			
+			if (!avgSeparatorAdded) {
+				const separator = createSeparator(`μ = ${separatorPositions.avgScore.toFixed(2)}`, 'separator-avg');
+				container.appendChild(separator);
+			}
+			
+			if (!lowerSeparatorAdded) {
+				const separator = createSeparator(`μ - σ = ${separatorPositions.lowerThreshold.toFixed(2)}`, 'separator-lower');
+				container.appendChild(separator);
+			}
+			
+			if (!lowerSeparator2Added) {
+				const separator = createSeparator(`μ - 2σ = ${separatorPositions.lowerThreshold2.toFixed(2)}`, 'separator-lower-2');
+				container.appendChild(separator);
+			}
+		}
+		
+		// 創建分隔線元素的輔助函數
+		function createSeparator(text, id, color = 'var(--danger)') {
+			const separator = document.createElement('div');
+			separator.className = 'list-item ranking-separator';
+			separator.id = id;
+			separator.innerHTML = `
+				<div style="text-align: center; width: 100%; color: ${color}; font-weight: bold;">
+					${text}
+				</div>`;
+			separator.addEventListener('contextmenu', function(e) {
+				e.preventDefault();
+				showSeparatorContextMenu(e, text);
+			});
+			return separator;
+		}
 
         function refreshStats() {
             games = JSON.parse(localStorage.getItem('games')) || {};
@@ -5080,6 +5887,850 @@
                 loadStats(); alert('統計數據已清除');
             }
         }
+		
+		// 一般项目右键菜单函数
+		function showItemContextMenu(event, itemId, gameId) {
+			const contextMenu = document.getElementById('contextMenu');
+			const contextMenuList = document.getElementById('contextMenuList');
+			contextMenuList.innerHTML = '';
+			
+			const game = games[gameId];
+			const item = game.items.find(i => i.id === itemId);
+			if (!item) return;
+			
+			// 复制标题文字按钮
+			const copyTitleBtn = document.createElement('li');
+			copyTitleBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">複製標題文字</button>`;
+			copyTitleBtn.onclick = function() {
+				navigator.clipboard.writeText(item.name);
+				hideContextMenu();
+			};
+			
+			// 复制全行文字按钮
+			const copyFullLineBtn = document.createElement('li');
+			copyFullLineBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">複製全行文字</button>`;
+			copyFullLineBtn.onclick = function() {
+				const rankingItem = document.getElementById(`ranking-item-${item.id}`);
+				let fullText = rankingItem ? rankingItem.innerText.replaceAll('\n','  ') : '[missing item]' ;
+				navigator.clipboard.writeText(fullText);
+				hideContextMenu();
+			};
+			
+			// 复制整个排行榜按钮
+			const copyFullRankingBtn = document.createElement('li');
+			copyFullRankingBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">複製全部可見項目</button>`;
+			copyFullRankingBtn.onclick = function() {
+				copyFullRanking(gameId);
+				hideContextMenu();
+			};
+			
+			// 點算以上項目(包括本行)按钮
+			const countAboveBtn = document.createElement('li');
+			countAboveBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算本行及以上項目</button>`;
+			countAboveBtn.onclick = function() {
+				countItemsAboveItem(itemId, gameId);
+				hideContextMenu();
+			};
+			
+			// 點算以下項目(包括本行)按钮
+			const countBelowBtn = document.createElement('li');
+			countBelowBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算本行及以下項目</button>`;
+			countBelowBtn.onclick = function() {
+				countItemsBelowItem(itemId, gameId);
+				hideContextMenu();
+			};
+			
+			// 冻结按钮
+			const toggleFreezeBtn = document.createElement('li');
+			toggleFreezeBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">${item.frozen ? '解除凍結' : '凍結'}</button>`;
+			toggleFreezeBtn.onclick = function() {
+				item.frozen = !item.frozen;
+				localStorage.setItem('games', JSON.stringify(games));
+				syncData();
+				const rankingItem = document.getElementById(`ranking-item-${itemId}`);
+				if (rankingItem) {
+					if (item.frozen) {
+						rankingItem.classList.add('frozen');
+					} else {
+						rankingItem.classList.remove('frozen');
+					}
+				}
+				hideContextMenu();
+			};
+			
+			// 冻结以上全部项目按钮
+			const freezeAboveBtn = document.createElement('li');
+			freezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以上全部項目</button>`;
+			freezeAboveBtn.onclick = function() {
+				freezeItemsAboveItem(itemId, gameId, true);
+				hideContextMenu();
+			};
+			
+			// 解除冻结以上全部项目按钮
+			const unfreezeAboveBtn = document.createElement('li');
+			unfreezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以上全部項目</button>`;
+			unfreezeAboveBtn.onclick = function() {
+				freezeItemsAboveItem(itemId, gameId, false);
+				hideContextMenu();
+			};
+			
+			// 冻结以下全部项目按钮
+			const freezeBelowBtn = document.createElement('li');
+			freezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以下全部項目</button>`;
+			freezeBelowBtn.onclick = function() {
+				freezeItemsBelowItem(itemId, gameId, true);
+				hideContextMenu();
+			};
+			
+			// 解除冻结以下全部项目按钮
+			const unfreezeBelowBtn = document.createElement('li');
+			unfreezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以下全部項目</button>`;
+			unfreezeBelowBtn.onclick = function() {
+				freezeItemsBelowItem(itemId, gameId, false);
+				hideContextMenu();
+			};
+			
+			contextMenuList.appendChild(copyTitleBtn);
+			contextMenuList.appendChild(copyFullLineBtn);
+			contextMenuList.appendChild(copyFullRankingBtn);
+			contextMenuList.appendChild(countAboveBtn);
+			contextMenuList.appendChild(countBelowBtn);
+			contextMenuList.appendChild(toggleFreezeBtn);
+			contextMenuList.appendChild(freezeAboveBtn);
+			contextMenuList.appendChild(unfreezeAboveBtn);
+			contextMenuList.appendChild(freezeBelowBtn);
+			contextMenuList.appendChild(unfreezeBelowBtn);
+			
+			contextMenu.style.display = 'block';
+			contextMenu.style.left = `${event.pageX}px`;
+			contextMenu.style.top = `${event.pageY}px`;
+			document.addEventListener('click', hideContextMenuOnClick);
+		}
+		
+		// 分隔線右键菜單函數
+		function showSeparatorContextMenu(event, separatorText) {
+			const contextMenu = document.getElementById('contextMenu');
+			const contextMenuList = document.getElementById('contextMenuList');
+			contextMenuList.innerHTML = '';
+			
+			const gameId = document.getElementById('statsGameSelect').value;
+			if (!gameId) return;
+			
+			// 复制文字按钮
+			const copyTextBtn = document.createElement('li');
+			copyTextBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">複製文字</button>`;
+			copyTextBtn.onclick = function() {
+				navigator.clipboard.writeText(separatorText);
+				hideContextMenu();
+			};
+			
+			// 复制整个排行榜按钮
+			const copyFullRankingBtn = document.createElement('li');
+			copyFullRankingBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">複製全部可見項目</button>`;
+			copyFullRankingBtn.onclick = function() {
+				copyFullRanking(gameId);
+				hideContextMenu();
+			};
+			
+			// 點算以上項目(包括本行)按钮
+			const countAboveBtn = document.createElement('li');
+			countAboveBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算以上項目</button>`;
+			countAboveBtn.onclick = function() {
+				countItemsAboveSeparator(separatorText);
+				hideContextMenu();
+			};
+			
+			// 點算以下項目(包括本行)按钮
+			const countBelowBtn = document.createElement('li');
+			countBelowBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算以下項目</button>`;
+			countBelowBtn.onclick = function() {
+				countItemsBelowSeparator(separatorText);
+				hideContextMenu();
+			};
+			
+			// 冻结以上全部项目按钮
+			const freezeAboveBtn = document.createElement('li');
+			freezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以上全部項目</button>`;
+			freezeAboveBtn.onclick = function() {
+				freezeItemsAboveSeparator(separatorText, true);
+				hideContextMenu();
+			};
+			
+			// 解除冻结以上全部项目按钮
+			const unfreezeAboveBtn = document.createElement('li');
+			unfreezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以上全部項目</button>`;
+			unfreezeAboveBtn.onclick = function() {
+				freezeItemsAboveSeparator(separatorText, false);
+				hideContextMenu();
+			};
+			
+			// 冻结以下全部项目按钮
+			const freezeBelowBtn = document.createElement('li');
+			freezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以下全部項目</button>`;
+			freezeBelowBtn.onclick = function() {
+				freezeItemsBelowSeparator(separatorText, true);
+				hideContextMenu();
+			};
+			
+			// 解除冻结以下全部项目按钮
+			const unfreezeBelowBtn = document.createElement('li');
+			unfreezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以下全部項目</button>`;
+			unfreezeBelowBtn.onclick = function() {
+				freezeItemsBelowSeparator(separatorText, false);
+				hideContextMenu();
+			};
+			
+			contextMenuList.appendChild(copyTextBtn);
+			contextMenuList.appendChild(copyFullRankingBtn);
+			contextMenuList.appendChild(countAboveBtn);
+			contextMenuList.appendChild(countBelowBtn);
+			contextMenuList.appendChild(freezeAboveBtn);
+			contextMenuList.appendChild(unfreezeAboveBtn);
+			contextMenuList.appendChild(freezeBelowBtn);
+			contextMenuList.appendChild(unfreezeBelowBtn);
+			
+			contextMenu.style.display = 'block';
+			contextMenu.style.left = `${event.pageX}px`;
+			contextMenu.style.top = `${event.pageY}px`;
+			document.addEventListener('click', hideContextMenuOnClick);
+		}
+		
+		// 點算項目以上項目的函數
+		function countItemsAboveItem(itemId, gameId) {
+			const rankingList = document.getElementById('rankingList');
+			const children = Array.from(rankingList.children);
+			
+			let itemFound = false;
+			let count = 0;
+			
+			for (let i = 0; i < children.length; i++) {
+				const child = children[i];
+				
+				// 跳过隐藏的项目
+				if (child.style.display === 'none') {
+					continue;
+				}
+				
+				// 检查是否为一般项目（不是分隔线）
+				if (child.classList.contains('ranking-item') && !child.classList.contains('ranking-separator')) {
+					// 检查是否找到目标项目
+					if (child.id === `ranking-item-${itemId}`) {
+						itemFound = true;
+						count++; // 包括自己
+					} else if (!itemFound) {
+						count++;
+					}
+				}
+			}
+			
+			if (itemFound) {
+				alert(`本行及以上項目共有 ${count} 個。`);
+			} else {
+				alert('項目未在當前顯示的排行榜中。');
+			}
+		}
+
+		// 點算項目以下項目的函數
+		function countItemsBelowItem(itemId, gameId) {
+			const rankingList = document.getElementById('rankingList');
+			const children = Array.from(rankingList.children);
+			
+			let itemFound = false;
+			let count = 0;
+			
+			for (let i = 0; i < children.length; i++) {
+				const child = children[i];
+				
+				// 跳过隐藏的项目
+				if (child.style.display === 'none') {
+					continue;
+				}
+				
+				// 检查是否为一般项目（不是分隔线）
+				if (child.classList.contains('ranking-item') && !child.classList.contains('ranking-separator')) {
+					// 检查是否找到目标项目
+					if (child.id === `ranking-item-${itemId}`) {
+						itemFound = true;
+					}
+					
+					if (itemFound) {
+						count++;
+					}
+				}
+			}
+			
+			if (itemFound) {
+				alert(`本行及以下項目共有 ${count} 個。`);
+			} else {
+				alert('項目未在當前顯示的排行榜中。');
+			}
+		}
+
+		// 點算分隔線以上項目的函數
+		function countItemsAboveSeparator(separatorText) {
+			const rankingList = document.getElementById('rankingList');
+			const children = Array.from(rankingList.children);
+			
+			let separatorFound = false;
+			let count = 0;
+			
+			for (let i = 0; i < children.length; i++) {
+				const child = children[i];
+				
+				// 跳过隐藏的项目
+				if (child.style.display === 'none') {
+					continue;
+				}
+				
+				// 检查是否为分隔线
+				if (child.classList.contains('ranking-separator')) {
+					const separatorContent = child.querySelector('div').textContent;
+					if (separatorContent.trim() === separatorText.trim()) {
+						separatorFound = true;
+						// 找到目标分隔线后继续循环，但不停止，跳过这条分隔线
+						continue;
+					}
+				}
+				
+				// 如果是项目（不是分隔线），且分隔线还未找到
+				if (!separatorFound && child.classList.contains('ranking-item')) {
+					count++;
+				}
+			}
+			
+			if (separatorFound) {
+				alert(`以上項目共有 ${count} 個。`);
+			} else {
+				alert('分隔線未在當前顯示的排行榜中。');
+			}
+		}
+
+		// 點算分隔線以下項目的函數
+		function countItemsBelowSeparator(separatorText) {
+			const rankingList = document.getElementById('rankingList');
+			const children = Array.from(rankingList.children);
+			
+			let separatorFound = false;
+			let count = 0;
+			
+			for (let i = 0; i < children.length; i++) {
+				const child = children[i];
+				
+				// 跳过隐藏的项目
+				if (child.style.display === 'none') {
+					continue;
+				}
+				
+				// 检查是否为分隔线
+				if (child.classList.contains('ranking-separator')) {
+					const separatorContent = child.querySelector('div').textContent;
+					if (separatorContent.trim() === separatorText.trim()) {
+						separatorFound = true;
+						// 找到目标分隔线后继续循环
+						continue;
+					}
+				}
+				
+				// 如果是项目（不是分隔线），且分隔线已找到
+				if (separatorFound && child.classList.contains('ranking-item')) {
+					count++;
+				}
+			}
+			
+			if (separatorFound) {
+				alert(`以下項目共有 ${count} 個。`);
+			} else {
+				alert('分隔線未在當前顯示的排行榜中。');
+			}
+		}
+		
+		// 冻结/解冻 项目以上所有项目的函数
+		function freezeItemsAboveItem(itemId, gameId, freeze) {
+			const game = games[gameId];
+			const sortBy = document.getElementById('sortBy').value;
+			let sortedItems = [...game.items];
+			
+			// 应用当前排序
+			sortedItems = sortRankingItems(sortedItems, sortBy, game);
+			
+			// 应用当前的心情筛选
+			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
+			if (statsMoodFilters.length > 0) {
+				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
+			}
+			
+			// 应用当前的搜索筛选
+			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+			if (searchText) {
+				sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
+			}
+			
+			// 找到当前项目在筛选后的排序列表中的位置
+			let itemIndex = -1;
+			for (let i = 0; i < sortedItems.length; i++) {
+				if (sortedItems[i].id === itemId) {
+					itemIndex = i;
+					break;
+				}
+			}
+			
+			if (itemIndex === -1) return;
+			
+			// 冻结/解冻当前项目以上的所有项目(包括自己)，但只针对筛选后显示的项目
+			for (let i = 0; i <= itemIndex; i++) {
+				const item = game.items.find(it => it.id === sortedItems[i].id);
+				if (item) {
+					item.frozen = freeze;
+				}
+			}
+			
+			localStorage.setItem('games', JSON.stringify(games));
+			syncData();
+			loadStats(); // 刷新统计页面以显示更新后的状态
+		}
+		
+		// 冻结/解冻 项目以下所有项目(包括自己)
+		function freezeItemsBelowItem(itemId, gameId, freeze) {
+			const game = games[gameId];
+			const sortBy = document.getElementById('sortBy').value;
+			let sortedItems = [...game.items];
+			
+			// 应用当前排序
+			sortedItems = sortRankingItems(sortedItems, sortBy, game);
+			
+			// 应用当前的心情筛选
+			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
+			if (statsMoodFilters.length > 0) {
+				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
+			}
+			
+			// 应用当前的搜索筛选
+			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+			if (searchText) {
+				sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
+			}
+			
+			// 找到当前项目在筛选后的排序列表中的位置
+			let itemIndex = -1;
+			for (let i = 0; i < sortedItems.length; i++) {
+				if (sortedItems[i].id === itemId) {
+					itemIndex = i;
+					break;
+				}
+			}
+			
+			if (itemIndex === -1) return;
+			
+			// 冻结/解冻当前项目以下的所有项目(包括自己)，但只针对筛选后显示的项目
+			for (let i = itemIndex; i < sortedItems.length; i++) {
+				const item = game.items.find(it => it.id === sortedItems[i].id);
+				if (item) {
+					item.frozen = freeze;
+				}
+			}
+			
+			localStorage.setItem('games', JSON.stringify(games));
+			syncData();
+			loadStats(); // 刷新统计页面以显示更新后的状态
+		}
+		
+		// 冻结/解冻 分隔线以上项目的函数
+		function freezeItemsAboveSeparator(separatorText, freeze) {
+			const gameId = document.getElementById('statsGameSelect').value;
+			if (!gameId) return;
+			
+			const game = games[gameId];
+			const sortBy = document.getElementById('sortBy').value;
+			let sortedItems = [...game.items];
+			
+			// 应用当前的心情筛选
+			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
+			if (statsMoodFilters.length > 0) {
+				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
+			}
+			
+			// 应用当前的搜索筛选
+			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+			if (searchText) {
+				sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
+			}
+			
+			// 应用当前排序
+			sortedItems = sortRankingItems(sortedItems, sortBy, game);
+			
+			// 找到分隔线在当前显示列表中的位置
+			let separatorIndex = -1;
+			
+			// 计算统计信息用于确定分隔线位置
+			const stats = calculateBasicStats(game);
+			
+			if (separatorText.includes('μ + 2σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score <= stats.upperThreshold2) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			} else if (separatorText.includes('μ + σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score <= stats.upperThreshold) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			} else if (separatorText.includes('μ - σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score < stats.lowerThreshold) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			} else if (separatorText.includes('μ - 2σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score < stats.lowerThreshold2) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			}
+			
+			if (separatorIndex === -1) {
+				separatorIndex = sortedItems.length;
+			}
+			
+			// 冻结/解冻当前显示列表中分隔线以上的所有项目(不包括分隔线本身)
+			for (let i = 0; i < separatorIndex; i++) {
+				const item = game.items.find(it => it.id === sortedItems[i].id);
+				if (item) {
+					item.frozen = freeze;
+				}
+			}
+			
+			localStorage.setItem('games', JSON.stringify(games));
+			syncData();
+			loadStats(); // 刷新统计页面以显示更新后的状态
+		}
+
+		// 冻结/解冻 分隔线以下项目的函数
+		function freezeItemsBelowSeparator(separatorText, freeze) {
+			const gameId = document.getElementById('statsGameSelect').value;
+			if (!gameId) return;
+			
+			const game = games[gameId];
+			const sortBy = document.getElementById('sortBy').value;
+			let sortedItems = [...game.items];
+			
+			// 应用当前的心情筛选
+			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
+			if (statsMoodFilters.length > 0) {
+				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
+			}
+			
+			// 应用当前的搜索筛选
+			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+			if (searchText) {
+				sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
+			}
+			
+			// 应用当前排序
+			sortedItems = sortRankingItems(sortedItems, sortBy, game);
+			
+			// 找到分隔线在当前显示列表中的位置
+			let separatorIndex = -1;
+			
+			// 计算统计信息用于确定分隔线位置
+			const stats = calculateBasicStats(game);
+			
+			if (separatorText.includes('μ + 2σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score <= stats.upperThreshold2) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			} else if (separatorText.includes('μ + σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score <= stats.upperThreshold) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			} else if (separatorText.includes('μ - σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score < stats.lowerThreshold) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			} else if (separatorText.includes('μ - 2σ')) {
+				for (let j = 0; j < sortedItems.length; j++) {
+					if (sortedItems[j].score < stats.lowerThreshold2) {
+						separatorIndex = j;
+						break;
+					}
+				}
+			}
+			
+			if (separatorIndex === -1) {
+				separatorIndex = sortedItems.length;
+			}
+			
+			// 冻结/解冻当前显示列表中分隔线以下的所有项目
+			for (let i = separatorIndex; i < sortedItems.length; i++) {
+				const item = game.items.find(it => it.id === sortedItems[i].id);
+				if (item) {
+					item.frozen = freeze;
+				}
+			}
+			
+			localStorage.setItem('games', JSON.stringify(games));
+			syncData();
+			loadStats(); // 刷新统计页面以显示更新后的状态
+		}
+		
+		// 獲取排序方式的名稱
+		function getSortByName(sortBy) {
+			const sortNames = {
+				'rank': '依名次',
+				'score': '依分數',
+				'error': '依誤差',
+				'winRate': '依勝率',
+				'volatility': '依波動',
+				'votes': '依票次',
+				'time': '依新加'
+			};
+			return sortNames[sortBy] || sortBy;
+		}
+		
+		// 复制整个排行榜的函数
+		function copyFullRanking(gameId) {
+			const game = games[gameId];
+			const rankingList = document.getElementById('rankingList');
+			const rankingTitle = document.getElementById('rankingTitle') ;
+			
+			let rankingText = `${game.name} ${rankingTitle.innerText} | ${getSortByName(document.getElementById('sortBy').value)} 排序\n`;
+			
+			// 直接从页面提取当前显示的排行榜文字，确保换行正确
+			// rankingText += [...rankingList.childNodes].map(x=>x.innerText.replaceAll('\n','  ')).join('\n') ;
+			rankingText += [...rankingList.childNodes].map(x=>x.innerText).filter(x=>!x.includes('\n\t')).map(x=>x.replaceAll('\n','  ')).join('\n') ;
+			navigator.clipboard.writeText(rankingText);
+		}
+
+		function hideContextMenu() {
+			const contextMenu = document.getElementById('contextMenu');
+			contextMenu.style.display = 'none';
+			document.removeEventListener('click', hideContextMenuOnClick);
+		}
+
+		function hideContextMenuOnClick(event) {
+			const contextMenu = document.getElementById('contextMenu');
+			if (!contextMenu.contains(event.target)) {
+				hideContextMenu();
+			}
+		}
+		
+		// 年度热门相关函数
+		function showAnnualHot(amount=-1) {
+			// 收集所有游戏中最近366天的投票数据
+			const annualHotData = collectAnnualHotData();
+			
+			if (annualHotData.length === 0) {
+				alert('最近366日內沒有投票數據');
+				return;
+			}
+			
+			
+			// annualHotData.sort((a, b) => b.voteCount - a.voteCount); // 按照投票次数排序，取前幾名
+			
+			annualHotData.sort((a, b) => {
+			
+				// 先按 分数变动 大至少 排
+				const A_scoreChange = a.scoreChange ;
+				const B_scoreChange = b.scoreChange ;
+				if ( A_scoreChange != B_scoreChange ) return B_scoreChange - A_scoreChange ;
+
+				// 再按 投票 多至少 排
+				return b.voteCount - a.voteCount ;
+			});
+
+
+			// const top = annualHotData.slice(0, amount);
+			const top = amount > 0 ?
+				annualHotData.slice(0, amount) : // 指定顯示多少項
+				
+				// 如無指定多少項, 則只顯示 正分数变动 ∧ 票次至少有10 的項目
+				annualHotData.filter( x => x.scoreChange > 0 && x.voteCount >= 10 ) ;
+			
+			// 显示弹窗
+			displayAnnualHotTable(top);
+		}
+
+		function collectAnnualHotData() {
+			const annualData = [];
+			const now = Date.now();
+			const oneYearAgo = now - (366 * 24 * 60 * 60 * 1000);
+			
+			// 遍历所有游戏
+			Object.values(games).forEach(game => {
+				// 过滤出最近366天的投票记录
+				const recentVotes = game.votes.filter(vote => vote.timestamp >= oneYearAgo);
+				
+				if (recentVotes.length === 0) return;
+				
+				// 统计每个项目的投票次数
+				const itemVoteCount = {};
+				
+				recentVotes.forEach(vote => {
+					// 统计项目1的投票
+					itemVoteCount[vote.item1] = (itemVoteCount[vote.item1] || 0) + 1;
+					// 统计项目2的投票
+					itemVoteCount[vote.item2] = (itemVoteCount[vote.item2] || 0) + 1;
+				});
+				
+				// 计算每个项目的分数变动
+				game.items.forEach(item => {
+					const voteCount = itemVoteCount[item.id] || 0;
+					
+					if (voteCount > 0 && item.scoreHistory && item.scoreHistory.length >= 2) {
+						// 找到最近366天内的第一次分数记录
+						const recentHistory = item.scoreHistory.filter(record => 
+							record.timestamp >= oneYearAgo
+						);
+						
+						if (recentHistory.length >= 2) {
+							const oldestScore = recentHistory[0].score;
+							const latestScore = recentHistory[recentHistory.length - 1].score;
+							const scoreChange = latestScore - oldestScore;
+							
+							annualData.push({
+								itemId: item.id,
+								itemName: item.name,
+								gameId: game.id,
+								gameName: game.name,
+								voteCount: voteCount,
+								scoreChange: scoreChange,
+								currentScore: item.score,
+								oldestScore: oldestScore,
+								latestScore: latestScore
+							});
+						} else if (item.scoreHistory.length >= 2) {
+							// 如果最近366天内没有足够的记录，使用最早和最近的记录
+							const oldestRecord = item.scoreHistory[0];
+							const latestRecord = item.scoreHistory[item.scoreHistory.length - 1];
+							
+							// 检查最早的记录是否在366天内
+							if (oldestRecord.timestamp >= oneYearAgo) {
+								const scoreChange = latestRecord.score - oldestRecord.score;
+								
+								annualData.push({
+									itemId: item.id,
+									itemName: item.name,
+									gameId: game.id,
+									gameName: game.name,
+									voteCount: voteCount,
+									scoreChange: scoreChange,
+									currentScore: item.score,
+									oldestScore: oldestRecord.score,
+									latestScore: latestRecord.score
+								});
+							}
+						}
+					}
+				});
+			});
+			
+			return annualData;
+		}
+
+		function displayAnnualHotTable(data) {
+			const tbody = document.getElementById('annualHotBody');
+			tbody.innerHTML = '';
+			
+			data.forEach((item, index) => {
+				const row = document.createElement('tr');
+				
+				// 确定分数变化的样式
+				let scoreChangeClass = 'score-no-change';
+				let scoreChangeText = '±0';
+				
+				if (item.scoreChange > 0) {
+					scoreChangeClass = 'score-increase';
+					scoreChangeText = `+${item.scoreChange}`;
+				} else if (item.scoreChange < 0) {
+					scoreChangeClass = 'score-decrease';
+					scoreChangeText = `${item.scoreChange}`;
+				}
+				
+				row.innerHTML = `
+					<td style="font-weight: bold; color: var(--primary);">${index + 1}</td>
+					<td>${item.itemName}</td>
+					<td>${item.gameName}</td>
+					<td class="${scoreChangeClass}">${scoreChangeText}</td>
+					<td style="font-weight: bold; color: var(--info);">${item.voteCount}</td>
+					<td>${item.currentScore}</td>
+				`;
+				
+				// 添加点击行跳转到对应游戏统计的功能
+				row.style.cursor = 'pointer';
+				row.onclick = function() {
+					closeAnnualHotModal();
+					
+					// 切换到统计页面并选择对应的游戏
+					showPage('stats');
+					document.getElementById('statsGameSelect').value = item.gameId;
+					loadStats(); // 加载统计數據
+					collapseAllCharts() ; // 收起圖
+					
+					// 打开&滚动 图表
+					const rankingItem = document.getElementById(`ranking-item-${item.itemId}`);
+					if (rankingItem) {
+						// 先展开图表
+						const chartContainer = rankingItem.querySelector('.score-chart-container');
+						if (chartContainer) {
+							// 展开图表
+							rankingItem.classList.add('expanded');
+							expandedItemIds.push(item.itemId);
+							localStorage.setItem('expandedItemIds', JSON.stringify(expandedItemIds));
+							
+							chartContainer.style.display = 'block';
+							renderScoreChart(item.itemId, chartContainer);
+							
+							// 滚动到图表区域
+							chartContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+							
+						} else {
+							// 如果没有图表容器，直接滚动到项目并显示高亮
+							rankingItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+							setTimeout(() => {
+								// 清除现有动画
+								rankingItem.style.animation = 'none';
+								// 强制重绘
+								void rankingItem.offsetWidth;
+								// 应用高亮动画
+								rankingItem.style.animation = 'highlightPulse 3s ease-in-out';
+							}, 300);
+						}
+					}
+				};
+				
+				tbody.appendChild(row);
+			});
+			
+			// 显示弹窗
+			document.getElementById('annualHotModal').classList.remove('hidden');
+		}
+
+		function closeAnnualHotModal() {
+			document.getElementById('annualHotModal').classList.add('hidden');
+		}
+
+		// 点击弹窗外部关闭的功能
+		document.getElementById('annualHotModal').addEventListener('click', function(e) {
+			if (e.target === this) {
+				closeAnnualHotModal();
+			}
+		});
 
         function getFormattedDate() {
             const now = new Date();
@@ -5230,12 +6881,12 @@
         }
 
         window.addEventListener('beforeunload', function (e) {
-            if (isEditing) {
-                e.preventDefault();
-                e.returnValue = '您正在編輯項目，確定要離開嗎？';
-                return e.returnValue;
-            }
-        });
+			if (isEditing || (document.getElementById('itemsInput') && document.getElementById('itemsInput').value.trim() !== '')) {
+				e.preventDefault();
+				e.returnValue = '您正在編輯項目，確定要離開嗎？';
+				return e.returnValue;
+			}
+		});
 
         function toggleItemsManagement() {
 			if (isEditing && editingItemId) {
@@ -5363,7 +7014,7 @@
 				localStorage.setItem('keywordFilter', e.target.value);
 			});
 			
-			// 新增：點擊放大圖表的模態框時關閉
+			// 點擊放大圖表的模態框時關閉
 			document.getElementById('scoreDistributionModal').addEventListener('click', function(e) {
 				if (e.target === this) {
 					toggleScoreDistributionChart(false);

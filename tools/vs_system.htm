@@ -822,7 +822,7 @@
 			height: 30px;
 			border-radius: 50%;
 			border: none;
-			background: var(--primary);
+			background: var(--success);
 			color: white;
 			font-size: 1em;
 			cursor: pointer;
@@ -871,19 +871,19 @@
 			/* 統計頁的一般項目的高度設為2倍，並分為3行 */
 			.list-item.ranking-item {
 				min-height: 100px !important;
-				padding: 15px !important;
+				padding: 8px !important;
 				height: auto !important;
 			}
 			
 			.list-item.ranking-item .item-name {
 				font-size: 1.1em !important;
-				margin-bottom: 2px !important;
+				margin-bottom: 0px !important;
 				display: block !important;
 				width: 100% !important;
 			}
 			
 			.list-item.ranking-item .mood-display {
-				margin: 2px 0 !important;
+				margin: 0px 0 !important;
 				display: block !important;
 				width: 100% !important;
 				text-align: left !important;
@@ -5466,7 +5466,7 @@
 			document.getElementById('minScore').textContent = '?';
 			document.getElementById('stdDevScore').textContent = '?';
 			document.getElementById('lastVoteDate').textContent = '?';
-			document.getElementById('lastVoteDate2').textContent = '?';
+			document.getElementById('lastVoteDate2').textContent = '( ? )';
 			document.getElementById('lastVoteDateCard').onclick = null;
 
 			// 清空排行榜
@@ -5603,7 +5603,7 @@
 				};
 			} else {
 				lastVoteDateElement.textContent = '?';
-				lastVoteDateElement.textContent2 = '?';
+				lastVoteDateElement2.textContent = '( ? )';
 				const lastVoteDateCard = document.getElementById('lastVoteDateCard');
 				lastVoteDateCard.onclick = null;
 			}
@@ -5650,11 +5650,10 @@
 			
 			
 			alert(`最後投票於 ${dateString} ${timeString}
-
 對決項目：
     ${item1Name}
     ${item2Name}
-勝利佔比：${voteL} : ${voteR}`);
+勝利佔比 = ${voteL} : ${voteR}`);
 		}
 		
 		// 6. 渲染排行榜列表
@@ -6008,18 +6007,42 @@
 		
 		// 滾動到頁頂
 		function scrollToTop() {
-			window.scrollTo({
-				top: 0 ,
-				behavior: 'smooth'
-			});
+			const rankingList = document.getElementById('rankingList');
+			const children = Array.from(rankingList.children);
+			
+			// 找到第一個可見的項目（不是分隔線，且不是隱藏的）
+			for (let i = 0; i < children.length; i++) {
+				const child = children[i];
+				if (child.style.display !== 'none' && 
+					child.classList.contains('ranking-item') && 
+					!child.classList.contains('ranking-separator')) {
+					child.scrollIntoView({
+						behavior: 'smooth',
+						block: 'center'
+					});
+					break;
+				}
+			}
 		}
-		
+
 		// 滾動到頁底
 		function scrollToBottom() {
-			window.scrollTo({
-				top: document.documentElement.scrollHeight ,
-				behavior: 'smooth'
-			});
+			const rankingList = document.getElementById('rankingList');
+			const children = Array.from(rankingList.children);
+			
+			// 找到最後一個可見的項目（不是分隔線，且不是隱藏的）
+			for (let i = children.length - 1; i >= 0; i--) {
+				const child = children[i];
+				if (child.style.display !== 'none' && 
+					child.classList.contains('ranking-item') && 
+					!child.classList.contains('ranking-separator')) {
+					child.scrollIntoView({
+						behavior: 'smooth',
+						block: 'center'
+					});
+					break;
+				}
+			}
 		}
 		
 		// 滾動到分隔線
@@ -6054,7 +6077,7 @@
 			
 			// 檢查是否存在分隔線，如果存在則添加對應按鈕
 			const separatorIds = ['separator-upper-2', 'separator-upper', 'separator-avg', 'separator-lower', 'separator-lower-2'];
-			const separatorLabels = ['2σ', 'σ', 'μ', '-σ', '-2σ'];
+			const separatorLabels = ['+2σ', '+σ', 'μ', '-σ', '-2σ'];
 			
 			// 檢查排序方式，只在依名次或分數排序時顯示分隔線按鈕
 			const sortBy = document.getElementById('sortBy').value;
@@ -7041,7 +7064,7 @@
 			
 			const diffDays = ~~( ( Date.now() - date ) / (1000*60*60*24) ) ;
 			
-			return [`${year}-${month}-${day}`,`${diffDays}日前`] ;
+			return [`${year}-${month}-${day}`,`( ${diffDays}日前 )`] ;
 		}
 
 		function exportSettings() {

@@ -916,7 +916,7 @@
 			
 			.float-buttons {
 				right: auto;
-				left: 20px;
+				left: 10px;
 			}
 
 			.float-btn.scroll-to-separator {
@@ -1177,7 +1177,7 @@
 					<div class="chart-modal-content" style="max-width: 1000px; max-height: 80vh;">
 						<h3 style="margin: 0px 0; text-align: center;">年度熱門項目</h3>
 						<div style="margin: 0px 0; text-align: center;">
-							<small>統計所有遊戲中，最近366日內投票次數最多的項目。</small>
+							<small>統計所有遊戲中，最近366日內標準分提升最多的項目。</small>
 						</div>
 						<div style="overflow-x: auto;">
 							<table id="annualHotTable" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
@@ -6840,27 +6840,28 @@
 				return;
 			}
 			
-			
-			// annualHotData.sort((a, b) => b.voteCount - a.voteCount); // 按照投票次数排序，取前幾名
-			
+			// 排序逻辑：先按增加的z-score从大到小排序，再按投票次数多至少排序，最后按目前z-score从大到小排序
 			annualHotData.sort((a, b) => {
-			
-				// 先按 分数变动 大至少 排
-				const A_scoreChange = a.scoreChange ;
-				const B_scoreChange = b.scoreChange ;
-				if ( A_scoreChange != B_scoreChange ) return B_scoreChange - A_scoreChange ;
-
-				// 再按 投票 多至少 排
-				return b.voteCount - a.voteCount ;
+				// 1. 先按增加的z-score从大到小排序
+				const A_zScoreChange = a.zScoreChange || 0;
+				const B_zScoreChange = b.zScoreChange || 0;
+				if (B_zScoreChange !== A_zScoreChange) return B_zScoreChange - A_zScoreChange;
+				
+				// 2. z-score变化相同，按投票次数从多到少排序
+				if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
+				
+				// 3. 投票次数相同，按目前z-score从大到小排序
+				const A_currentZScore = a.currentZScore || 0;
+				const B_currentZScore = b.currentZScore || 0;
+				return B_currentZScore - A_currentZScore;
 			});
 
-
-			// const top = annualHotData.slice(0, amount);
+			// 根据amount参数决定显示多少项
 			const top = amount > 0 ?
 				annualHotData.slice(0, amount) : // 指定顯示多少項
 				
-				// 如無指定多少項, 則只顯示 正分数变动 ∧ 票次至少有10 的項目
-				annualHotData.filter( x => x.scoreChange > 0 && x.voteCount >= 10 ) ;
+				// 如無指定多少項, 則只顯示 正z-score ∧ 票次至少有10 的項目
+				annualHotData.filter(x => (x.zScoreChange || 0) > 0 && x.voteCount >= 10);
 			
 			// 显示弹窗
 			displayAnnualHotTable(top);
@@ -6888,20 +6889,22 @@
 					itemVoteCount[vote.item2] = (itemVoteCount[vote.item2] || 0) + 1;
 				});
 				
-				// 计算每个项目的分数变动
+				// 计算每个项目的z-score分数变动
 				game.items.forEach(item => {
 					const voteCount = itemVoteCount[item.id] || 0;
 					
 					if (voteCount > 0 && item.scoreHistory && item.scoreHistory.length >= 2) {
-						// 找到最近366天内的第一次分数记录
+						// 找到最近366天内的所有分数记录
 						const recentHistory = item.scoreHistory.filter(record => 
 							record.timestamp >= oneYearAgo
 						);
 						
 						if (recentHistory.length >= 2) {
-							const oldestScore = recentHistory[0].score;
-							const latestScore = recentHistory[recentHistory.length - 1].score;
-							const scoreChange = latestScore - oldestScore;
+							// 计算分数变化的z-score
+							const zScoreChange = calculateZScoreChange(recentHistory);
+							
+							// 计算当前分数的z-score
+							const currentZScore = calculateCurrentZScore(item, game);
 							
 							annualData.push({
 								itemId: item.id,
@@ -6909,30 +6912,32 @@
 								gameId: game.id,
 								gameName: game.name,
 								voteCount: voteCount,
-								scoreChange: scoreChange,
+								zScoreChange: zScoreChange,
+								currentZScore: currentZScore,
 								currentScore: item.score,
-								oldestScore: oldestScore,
-								latestScore: latestScore
+								oldestScore: recentHistory[0].score,
+								latestScore: recentHistory[recentHistory.length - 1].score
 							});
 						} else if (item.scoreHistory.length >= 2) {
-							// 如果最近366天内没有足够的记录，使用最早和最近的记录
-							const oldestRecord = item.scoreHistory[0];
-							const latestRecord = item.scoreHistory[item.scoreHistory.length - 1];
+							// 如果最近366天内没有足够的记录，使用所有记录
+							const zScoreChange = calculateZScoreChange(item.scoreHistory);
+							
+							// 计算当前分数的z-score
+							const currentZScore = calculateCurrentZScore(item, game);
 							
 							// 检查最早的记录是否在366天内
-							if (oldestRecord.timestamp >= oneYearAgo) {
-								const scoreChange = latestRecord.score - oldestRecord.score;
-								
+							if (item.scoreHistory[0].timestamp >= oneYearAgo) {
 								annualData.push({
 									itemId: item.id,
 									itemName: item.name,
 									gameId: game.id,
 									gameName: game.name,
 									voteCount: voteCount,
-									scoreChange: scoreChange,
+									zScoreChange: zScoreChange,
+									currentZScore: currentZScore,
 									currentScore: item.score,
-									oldestScore: oldestRecord.score,
-									latestScore: latestRecord.score
+									oldestScore: item.scoreHistory[0].score,
+									latestScore: item.scoreHistory[item.scoreHistory.length - 1].score
 								});
 							}
 						}
@@ -6941,6 +6946,64 @@
 			});
 			
 			return annualData;
+		}
+		
+		// 计算分数变化的z-score函数
+		function calculateZScoreChange(scoreHistory) {
+			if (!scoreHistory || scoreHistory.length < 2) {
+				return 0;
+			}
+			
+			// 提取分数和时间戳
+			const scores = scoreHistory.map(record => record.score);
+			const timestamps = scoreHistory.map(record => record.timestamp);
+			
+			// 计算分数变化（最新分数 - 最早分数）
+			const scoreChange = scores[scores.length - 1] - scores[0];
+			
+			if (scoreChange === 0) {
+				return 0;
+			}
+			
+			// 计算分数的标准差
+			const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+			const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
+			const stdDev = Math.sqrt(variance);
+			
+			// 如果标准差为0，返回0
+			if (stdDev === 0) {
+				return 0;
+			}
+			
+			// 计算z-score = 分数变化 / 标准差
+			const zScore = scoreChange / stdDev;
+			
+			return zScore;
+		}
+		
+		// 计算当前分数的z-score函数
+		function calculateCurrentZScore(item, game) {
+			if (!game.items || game.items.length === 0) {
+				return 0;
+			}
+			
+			// 计算游戏内所有项目的分数
+			const scores = game.items.map(i => i.score);
+			
+			// 计算平均分和标准差
+			const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+			const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
+			const stdDev = Math.sqrt(variance);
+			
+			// 如果标准差为0，返回0
+			if (stdDev === 0) {
+				return 0;
+			}
+			
+			// 计算当前项目的z-score = (项目分数 - 平均分) / 标准差
+			const zScore = (item.score - mean) / stdDev;
+			
+			return zScore;
 		}
 
 		function displayAnnualHotTable(data) {
@@ -6952,14 +7015,31 @@
 				
 				// 确定分数变化的样式
 				let scoreChangeClass = 'score-no-change';
-				let scoreChangeText = '±0';
+				let scoreChangeText = '0.00σ';
 				
-				if (item.scoreChange > 0) {
+				// 使用z-score显示分数变动
+				const zScoreChange = item.zScoreChange || 0;
+				
+				if (zScoreChange > 0) {
 					scoreChangeClass = 'score-increase';
-					scoreChangeText = `+${item.scoreChange}`;
-				} else if (item.scoreChange < 0) {
+					scoreChangeText = `+${zScoreChange.toFixed(2)}σ`;
+				} else if (zScoreChange < 0) {
 					scoreChangeClass = 'score-decrease';
-					scoreChangeText = `${item.scoreChange}`;
+					scoreChangeText = `${zScoreChange.toFixed(2)}σ`;
+				}
+				
+				// 确定当前z-score的样式
+				let currentZScoreClass = 'score-no-change';
+				let currentZScoreText = '0.00σ';
+				
+				const currentZScore = item.currentZScore || 0;
+				
+				if (currentZScore > 0) {
+					currentZScoreClass = 'score-increase';
+					currentZScoreText = `+${currentZScore.toFixed(2)}σ`;
+				} else if (currentZScore < 0) {
+					currentZScoreClass = 'score-decrease';
+					currentZScoreText = `${currentZScore.toFixed(2)}σ`;
 				}
 				
 				row.innerHTML = `
@@ -6968,7 +7048,7 @@
 					<td>${item.gameName}</td>
 					<td class="${scoreChangeClass}">${scoreChangeText}</td>
 					<td style="font-weight: bold; color: var(--info);">${item.voteCount}</td>
-					<td>${item.currentScore}</td>
+					<td class="${currentZScoreClass}">${currentZScoreText}</td>
 				`;
 				
 				// 添加点击行跳转到对应游戏统计的功能

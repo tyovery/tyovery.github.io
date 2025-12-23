@@ -6832,6 +6832,8 @@
 		
 		// 年度热门相关函数
 		function showAnnualHot(amount=-1) {
+			document.getElementById('floatButtons').style.zIndex = -1 ;
+		
 			// 收集所有游戏中最近366天的投票数据
 			const annualHotData = collectAnnualHotData();
 			
@@ -7104,6 +7106,7 @@
 
 		function closeAnnualHotModal() {
 			document.getElementById('annualHotModal').classList.add('hidden');
+			document.getElementById('floatButtons').style.zIndex = 0 ;
 		}
 
 		// 点击弹窗外部关闭的功能

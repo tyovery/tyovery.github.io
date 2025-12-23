@@ -727,8 +727,8 @@
 		}
 		
 		#annualHotTable th:nth-child(1), #annualHotTable td:nth-child(1) { width: 7%; }
-		#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 55%; }
-		#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 10%; }
+		#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 53%; }
+		#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 12%; }
 		#annualHotTable th:nth-child(4), #annualHotTable td:nth-child(4) { width: 10%; }
 		#annualHotTable th:nth-child(5), #annualHotTable td:nth-child(5) { width: 8%; }
 		#annualHotTable th:nth-child(6), #annualHotTable td:nth-child(6) { width: 10%; }
@@ -806,6 +806,44 @@
 			animation: highlightPulse 3s ease-in-out;
 		}
 		
+		/* 浮動按鈕的樣式 */
+		.float-buttons {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			z-index: 1000;
+		}
+		
+		.float-btn {
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			border: none;
+			background: var(--primary);
+			color: white;
+			font-size: 1em;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+			transition: all 0.3s;
+		}
+		
+		.float-btn:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+		}
+		
+		.float-btn.scroll-to-separator {
+			background: var(--danger);
+			font-size: 0.1em;
+			font-weight: bold;
+		}
+		
 		/* 添加响应式处理，确保在小屏幕上也能正常显示 */
 		@media (max-width: 768px) {
 			.vote-slider-container {
@@ -839,13 +877,13 @@
 			
 			.list-item.ranking-item .item-name {
 				font-size: 1.1em !important;
-				margin-bottom: 8px !important;
+				margin-bottom: 4px !important;
 				display: block !important;
 				width: 100% !important;
 			}
 			
 			.list-item.ranking-item .mood-display {
-				margin: 8px 0 !important;
+				margin: 4px 0 !important;
 				display: block !important;
 				width: 100% !important;
 				text-align: left !important;
@@ -892,12 +930,12 @@
 				font-size: 14px;
 			}
 			
-			#annualHotTable th:nth-child(1), #annualHotTable td:nth-child(1) { width: 10%; }
-			#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 22%; }
-			#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 22%; }
-			#annualHotTable th:nth-child(4), #annualHotTable td:nth-child(4) { width: 15%; }
-			#annualHotTable th:nth-child(5), #annualHotTable td:nth-child(5) { width: 15%; }
-			#annualHotTable th:nth-child(6), #annualHotTable td:nth-child(6) { width: 16%; }
+			#annualHotTable th:nth-child(1), #annualHotTable td:nth-child(1) { width: 7%; }
+			#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 53%; }
+			#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 12%; }
+			#annualHotTable th:nth-child(4), #annualHotTable td:nth-child(4) { width: 10%; }
+			#annualHotTable th:nth-child(5), #annualHotTable td:nth-child(5) { width: 8%; }
+			#annualHotTable th:nth-child(6), #annualHotTable td:nth-child(6) { width: 10%; }
 		}
     </style>
 </head>
@@ -1201,6 +1239,11 @@
 							<div class="stat-value" id="stdDevScore">0</div>
 							<div>分數的標準差</div>
 						</div>
+						<div class="stat-card" id="lastVoteDateCard">
+							<div class="stat-value" id="lastVoteDate" style="font-size: 1.5em; margin-bottom: 5px;">?</div>
+							<div class="stat-value" id="lastVoteDate2" style="font-size: 1em; margin-bottom: 5px;">?</div>
+							<div>最後投票日期</div>
+						</div>
                     </div>
 
                     <div style="margin-top: 30px;">
@@ -1239,6 +1282,11 @@
                     </div>
                 </div>
             </div>
+			<!-- 浮動按鈕容器 -->
+			<div class="float-buttons" id="floatButtons" style="display: none;">
+				<button class="float-btn" onclick="scrollToTop()" title="滾動到頁頂">↑</button>
+				<!-- 分隔線按鈕將由JavaScript動態生成 -->
+			</div>
         </div>
     </div>
 	<center>
@@ -5360,29 +5408,35 @@
 			const game = games[gameId];
 			document.getElementById('statsContent').classList.remove('hidden');
 			
-			// 确保游戏对象存在，如果不存在则创建空结构
+			// 確保遊戲對象存在，如果不存在則創建空結構
 			if (!game) {
-				// 如果游戏不存在，显示空状态
+				// 如果遊戲不存在，顯示空狀態
 				showEmptyStats();
 				return;
 			}
 			
-			// 检查游戏是否有项目，如果没有则重置卡片数值
-			if (!game.items || game.items.length === 0) {
+			// 檢查遊戲是否有項目，如果沒有則重置卡片數值
+			if (!game.items || game.items.length == 0) {
 				showEmptyStats();
 				return;
 			}
 
-			// 计算基础统计数据並保存結果
+			// 計算基礎統計數據並保存結果
 			const stats = calculateBasicStats(game);
 			
-			// 渲染图表（需要处理空项目情况）
+			// 更新最後投票日期
+			updateLastVoteDate(game);
+			
+			// 渲染圖表（需要處理空項目情況）
 			renderScoreDistributionChart(game);
 			
 			// 渲染排行榜，傳入統計數據
 			renderRankingList(game, stats);
 			
-			// 恢复搜索状态
+			// 更新浮動按鈕
+			updateFloatButtons();
+			
+			// 恢復搜索狀態
 			restoreSearchState();
 			
 			// console.log(`載入耗時: ${Date.now()-startTime}`) ;
@@ -5390,7 +5444,7 @@
 		
 		// 显示空统计状态的函数
 		function showEmptyStats() {
-			// 更新基础统计数据显示为默认值
+			// 更新基礎統計數據顯示為默認值
 			document.getElementById('totalItems').textContent = '0';
 			document.getElementById('totalVotes').textContent = '0';
 			document.getElementById('expectedVotes').textContent = '0';
@@ -5400,23 +5454,28 @@
 			document.getElementById('maxScore').textContent = '?';
 			document.getElementById('minScore').textContent = '?';
 			document.getElementById('stdDevScore').textContent = '?';
-			
+			document.getElementById('lastVoteDate').textContent = '?';
+			document.getElementById('lastVoteDate2').textContent = '?';
+			document.getElementById('lastVoteDateCard').onclick = null;
+
 			// 清空排行榜
 			document.getElementById('rankingList').innerHTML = '<div class="no-history-data">此遊戲目前沒有項目</div>';
 			
-			// 更新排行榜标题
+			// 更新排行榜標題
 			document.getElementById('rankingTitle').textContent = '排行榜 (0/0)';
 			
-			// 销毁现有的分布图表（如果有）
+			// 銷毀現有的分布圖表（如果有）
 			if (scoreDistributionChart) {
 				scoreDistributionChart.destroy();
 				scoreDistributionChart = null;
 			}
 			
-			// 分数分布小图保持空白，不显示任何内容
+			// 分數分布小圖保持空白，不顯示任何內容
 			const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
 			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-			// 移除了显示提示信息的代码，保持完全空白
+			
+			// 隱藏浮動按鈕
+			document.getElementById('floatButtons').style.display = 'none';
 		}
 		
 		// 2. 计算基础统计数据
@@ -5514,6 +5573,77 @@
 			
 			const avgError = validErrorCount > 0 ? (totalError / validErrorCount).toFixed(2) : 0;
 			document.getElementById('avgError').textContent = avgError;
+		}
+		
+		// 更新最後投票日期顯示
+		function updateLastVoteDate(game) {
+			const lastVoteDateElement = document.getElementById('lastVoteDate');
+			const lastVoteDateElement2 = document.getElementById('lastVoteDate2');
+			const lastVoteDate = getLastVoteDate(game);
+			
+			if (lastVoteDate) {
+				lastVoteDateElement.textContent = lastVoteDate[0] ;
+				lastVoteDateElement2.textContent = lastVoteDate[1] ;
+
+				// 點擊時顯示更多信息
+				const lastVoteDateCard = document.getElementById('lastVoteDateCard');
+				lastVoteDateCard.onclick = function() {
+					showLastVoteDetails(game);
+				};
+			} else {
+				lastVoteDateElement.textContent = '?';
+				lastVoteDateElement.textContent2 = '?';
+				const lastVoteDateCard = document.getElementById('lastVoteDateCard');
+				lastVoteDateCard.onclick = null;
+			}
+		}
+		
+		// 顯示最後投票詳情
+		function showLastVoteDetails(game) {
+			if (!game.votes || game.votes.length === 0) {
+				alert('此遊戲目前沒有投票記錄');
+				return;
+			}
+			
+			// 找出最新的投票
+			let latestVote = null;
+			let latestTimestamp = 0;
+			
+			game.votes.forEach(vote => {
+				if (vote.timestamp > latestTimestamp) {
+					latestTimestamp = vote.timestamp;
+					latestVote = vote;
+				}
+			});
+			
+			if (!latestVote) {
+				alert('無法找到投票記錄');
+				return;
+			}
+			
+			// 獲取項目名稱
+			const item1 = game.items.find(item => item.id === latestVote.item1);
+			const item2 = game.items.find(item => item.id === latestVote.item2);
+			
+			const item1Name = item1 ? item1.name : '未知項目';
+			const item2Name = item2 ? item2.name : '未知項目';
+			
+			// 格式化時間
+			const date = new Date(latestVote.timestamp);
+			const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+			const timeString = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+			
+			// 勝利佔比
+			const voteR = latestVote.value ;
+			const voteL = 100 - voteR ;
+			
+			
+			alert(`最後投票於 ${dateString} ${timeString}
+
+對決項目：
+    ${item1Name}
+    ${item2Name}
+勝利佔比：${voteL} : ${voteR}`);
 		}
 		
 		// 6. 渲染排行榜列表
@@ -5864,6 +5994,90 @@
 			const titleText = `排行榜 (${sortedItems.length}/${game.items.length})`;
 			document.getElementById('rankingTitle').textContent = titleText;
 		}
+		
+		// 滾動到頁頂
+		function scrollToTop() {
+			window.scrollTo({
+				top: 0 ,
+				behavior: 'smooth'
+			});
+		}
+		
+		// 滾動到頁底
+		function scrollToBottom() {
+			window.scrollTo({
+				top: document.documentElement.scrollHeight ,
+				behavior: 'smooth'
+			});
+		}
+		
+		// 滾動到分隔線
+		function scrollToSeparator(separatorId) {
+			const separator = document.getElementById(separatorId);
+			if (separator) {
+				separator.scrollIntoView({
+					behavior: 'smooth',
+					block: 'center'
+				});
+				
+				// 添加高亮效果
+				separator.style.backgroundColor = 'rgba(245, 101, 101, 0.3)';
+				setTimeout(() => {
+					separator.style.backgroundColor = '';
+				}, 2000);
+			}
+		}
+		
+		// 更新浮動按鈕
+		function updateFloatButtons() {
+			const floatButtons = document.getElementById('floatButtons');
+			floatButtons.innerHTML = ''; // 清空現有按鈕
+			
+			// 滾動到頂部按鈕
+			const topBtn = document.createElement('button');
+			topBtn.className = 'float-btn';
+			topBtn.innerHTML = '↑';
+			topBtn.title = '滾動到頁頂';
+			topBtn.onclick = scrollToTop;
+			floatButtons.appendChild(topBtn);
+			
+			// 檢查是否存在分隔線，如果存在則添加對應按鈕
+			const separatorIds = ['separator-upper-2', 'separator-upper', 'separator-avg', 'separator-lower', 'separator-lower-2'];
+			const separatorLabels = ['2σ', 'σ', 'μ', '-σ', '-2σ'];
+			
+			// 檢查排序方式，只在依名次或分數排序時顯示分隔線按鈕
+			const sortBy = document.getElementById('sortBy').value;
+			const showSeparators = sortBy === 'rank' || sortBy === 'score';
+			
+			if (showSeparators) {
+				separatorIds.forEach((id, index) => {
+					const separator = document.getElementById(id);
+					if (separator && separator.style.display !== 'none') {
+						const separatorBtn = document.createElement('button');
+						separatorBtn.className = 'float-btn scroll-to-separator';
+						separatorBtn.innerHTML = separatorLabels[index];
+						separatorBtn.title = `滾動到該分隔線`;
+						separatorBtn.onclick = function() {
+							scrollToSeparator(id);
+						};
+						floatButtons.appendChild(separatorBtn);
+					}
+				});
+			}
+			
+			// 滾動到底部按鈕
+			const bottomBtn = document.createElement('button');
+			bottomBtn.className = 'float-btn';
+			bottomBtn.innerHTML = '↓';
+			bottomBtn.title = '滾動到頁底';
+			bottomBtn.onclick = scrollToBottom;
+			floatButtons.appendChild(bottomBtn);
+			
+			// 如果至少有1個按鈕（滾動到頂部按鈕總是存在），則顯示浮動按鈕容器
+			floatButtons.style.display = floatButtons.children.length > 0 ? 'flex' : 'none';
+		}
+		
+		
 		
 		function ensureAllSeparators(container, separatorPositions) {
 			const { 
@@ -6789,6 +7003,35 @@
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         }
+		
+		// 獲取最後投票日期
+		function getLastVoteDate(game) {
+			if (!game.votes || game.votes.length == 0) {
+				return null;
+			}
+			
+			// 找出最新的投票時間戳
+			let latestTimestamp = 0;
+			game.votes.forEach(vote => {
+				if (vote.timestamp > latestTimestamp) {
+					latestTimestamp = vote.timestamp;
+				}
+			});
+			
+			if (latestTimestamp === 0) {
+				return null;
+			}
+			
+			// 轉換為YYYY-MM-DD格式
+			const date = new Date(latestTimestamp);
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			
+			const diffDays = ~~( ( Date.now() - date ) / (1000*60*60*24) ) ;
+			
+			return [`${year}-${month}-${day}`,`${diffDays}日前`] ;
+		}
 
 		function exportSettings() {
             const settingsData = {};

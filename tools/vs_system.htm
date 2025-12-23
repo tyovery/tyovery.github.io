@@ -2140,13 +2140,7 @@
             const game = games[selectedGameForEdit];
             const lines = itemsInput.split('\n');
             let addedCount = 0;
-			
-			console.log(game.items);
-			
 			const scores = game.items.map( item => item.score ) ;
-			
-			console.log(scores);
-			
 			const avgScore = game.items.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 1500;
 			const scoreStdDev = calculateStandardDeviation(scores);
 			const defaultScore = Math.ceil( avgScore - scoreStdDev ); // 預設分數為 ceil( μ - σ )
@@ -6894,7 +6888,6 @@
 				// 计算每个项目的z-score分数变动
 				game.items.forEach(item => {
 					const voteCount = itemVoteCount[item.id] || 0;
-					
 					if (voteCount > 0 && item.scoreHistory && item.scoreHistory.length >= 2) {
 						// 找到最近366天内的所有分数记录
 						const recentHistory = item.scoreHistory.filter(record => 
@@ -6903,7 +6896,7 @@
 						
 						if (recentHistory.length >= 2) {
 							// 计算分数变化的z-score
-							const zScoreChange = calculateZScoreChange(recentHistory);
+							const zScoreChange = calculateZScoreChange(recentHistory, game);
 							
 							// 计算当前分数的z-score
 							const currentZScore = calculateCurrentZScore(item, game);
@@ -6922,7 +6915,7 @@
 							});
 						} else if (item.scoreHistory.length >= 2) {
 							// 如果最近366天内没有足够的记录，使用所有记录
-							const zScoreChange = calculateZScoreChange(item.scoreHistory);
+							const zScoreChange = calculateZScoreChange(item.scoreHistory, game);
 							
 							// 计算当前分数的z-score
 							const currentZScore = calculateCurrentZScore(item, game);
@@ -6951,7 +6944,7 @@
 		}
 		
 		// 计算分数变化的z-score函数
-		function calculateZScoreChange(scoreHistory) {
+		function calculateZScoreChange(scoreHistory, game) {
 			if (!scoreHistory || scoreHistory.length < 2) {
 				return 0;
 			}
@@ -6959,7 +6952,7 @@
 			// 提取分数和时间戳
 			const scores = scoreHistory.map(record => record.score);
 			const timestamps = scoreHistory.map(record => record.timestamp);
-			
+
 			// 计算分数变化（最新分数 - 最早分数）
 			const scoreChange = scores[scores.length - 1] - scores[0];
 			
@@ -6967,17 +6960,18 @@
 				return 0;
 			}
 			
-			// 计算分数的标准差
-			const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-			const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
+			// 使用游戏当前所有项目的标准差，而不是该项目历史分数的标准差
+			const currentScores = game.items.map(item => item.score);
+			const mean = currentScores.reduce((sum, score) => sum + score, 0) / currentScores.length;
+			const variance = currentScores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / currentScores.length;
 			const stdDev = Math.sqrt(variance);
-			
+
 			// 如果标准差为0，返回0
 			if (stdDev === 0) {
 				return 0;
 			}
 			
-			// 计算z-score = 分数变化 / 标准差
+			// 计算z-score = 分数变化 / 游戏当前的标准差
 			const zScore = scoreChange / stdDev;
 			
 			return zScore;

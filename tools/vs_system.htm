@@ -1166,6 +1166,106 @@
 				overflow-x: hidden;
 				max-width: 100vw;
 			}
+			
+			/* 1. 设置页按钮左移，防止超出右边界 */
+			#settings .filter-controls {
+				justify-content: flex-start;
+				margin-left: -5px;
+			}
+			
+			#settings .toggle-btn,
+			#settings .toggle-btn-frozen {
+				padding: 6px 12px;
+				font-size: 13px;
+				margin-right: 5px;
+			}
+			
+			/* 2. 统计页表情筛选分行显示 */
+			#stats .chart-controls,
+			#stats .mood-filter-container,
+			#stats .voting-keyword-filter {
+				width: 100%;
+				margin-bottom: 10px;
+			}
+			
+			#stats .mood-filter-container {
+				order: 2;
+				justify-content: flex-start;
+				margin-top: 5px;
+			}
+			
+			#stats .voting-keyword-filter {
+				order: 3;
+				margin-top: 5px;
+			}
+			
+			#stats .chart-controls {
+				order: 1;
+			}
+			
+			#stats > .card > div:nth-child(3) > div {
+				flex-wrap: wrap;
+			}
+			
+			/* 3. 缩小所有表情按钮 */
+			.mood-btn,
+			.mood-filter-btn,
+			.edit-mood-btn,
+			.item-mood-btn {
+				width: 30px !important;
+				height: 30px !important;
+				font-size: 1.2em !important;
+				min-height: 30px !important;
+			}
+			
+			/* 投票页的表情按钮 */
+			.mood-buttons .mood-btn {
+				width: 35px !important;
+				height: 35px !important;
+				font-size: 1.3em !important;
+			}
+			
+			/* 设置页的编辑表情按钮 */
+			.edit-mood-buttons .edit-mood-btn {
+				width: 28px !important;
+				height: 28px !important;
+				font-size: 1.1em !important;
+			}
+			
+			/* 项目列表的表情按钮 */
+			.item-mood-buttons .item-mood-btn {
+				width: 28px !important;
+				height: 28px !important;
+				font-size: 1.1em !important;
+			}
+			
+			/* 筛选器的表情按钮 */
+			.mood-filter-buttons .mood-filter-btn {
+				width: 32px !important;
+				height: 32px !important;
+				font-size: 1.2em !important;
+			}
+			
+			/* 投票页表情筛选按钮 */
+			#votingMoodFilter .mood-filter-btn {
+				width: 32px !important;
+				height: 32px !important;
+				font-size: 1.2em !important;
+			}
+			
+			/* 统计页表情筛选按钮 */
+			#statsMoodButtons .mood-filter-btn {
+				width: 32px !important;
+				height: 32px !important;
+				font-size: 1.2em !important;
+			}
+			
+			/* 设置页表情筛选按钮 */
+			#settingsMoodButtons .mood-filter-btn {
+				width: 32px !important;
+				height: 32px !important;
+				font-size: 1.2em !important;
+			}
 		}
 
 		/* 针对屏幕高度较小的设备 */

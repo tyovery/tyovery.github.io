@@ -844,7 +844,109 @@
 			font-weight: bold;
 		}
 		
-		
+		@media (max-width: 768px) {
+			.vote-slider-container {
+				max-width: 95%;
+				margin: 0px auto;
+				width: calc(100% - 200px);
+			}
+			
+			.vote-slider {
+				width: 100%;
+				max-width: 100%;
+				height: 50px;
+			}
+			
+			.vote-slider::-webkit-slider-thumb {
+				width: 40px;
+				height: 40px;
+			}
+			
+			.lock-btn, .freeze-btn {
+				width: 40px;
+				height: 40px;
+			}
+			
+			/* 統計頁的一般項目的高度設為2倍，並分為3行 */
+			.list-item.ranking-item {
+				min-height: 100px !important;
+				padding: 8px !important;
+				height: auto !important;
+			}
+			
+			.list-item.ranking-item .item-name {
+				font-size: 1.1em !important;
+				margin-bottom: 0px !important;
+				display: block !important;
+				width: 100% !important;
+			}
+			
+			.list-item.ranking-item .mood-display {
+				margin: 0px 0 !important;
+				display: block !important;
+				width: 100% !important;
+				text-align: left !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child {
+				flex-direction: column !important;
+				align-items: flex-start !important;
+				height: auto !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child > span:first-child {
+				width: 100% !important;
+				margin-bottom: 5px !important;
+				font-size: 1.3em !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child > div {
+				margin-top: 4px !important;
+				flex-direction: column !important;
+				align-items: flex-start !important;
+				width: 100% !important;
+			}
+			
+			.list-item.ranking-item > div > div:first-child > div > span {
+				margin-top: 5px !important;
+				font-size: 0.95em !important;
+				line-height: 1.4 !important;
+			}
+			
+			.float-buttons {
+				right: auto;
+				left: 10px;
+			}
+
+			.float-btn.scroll-to-separator {
+				background: var(--danger);
+				font-size: 1em;
+				font-weight: bold;
+			}
+			
+			/* 不限制 "gameSettings" 內的元素在同一行 */
+			#gameSettings {
+				flex-wrap: wrap !important;
+				gap: 10px !important;
+			}
+			
+			#annualHotModal .chart-modal-content {
+				max-width: 95vw;
+				padding: 15px;
+			}
+			
+			#annualHotTable th, #annualHotTable td {
+				padding: 8px;
+				font-size: 14px;
+			}
+			
+			#annualHotTable th:nth-child(1), #annualHotTable td:nth-child(1) { width: 7%; }
+			#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 53%; }
+			#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 12%; }
+			#annualHotTable th:nth-child(4), #annualHotTable td:nth-child(4) { width: 10%; }
+			#annualHotTable th:nth-child(5), #annualHotTable td:nth-child(5) { width: 8%; }
+			#annualHotTable th:nth-child(6), #annualHotTable td:nth-child(6) { width: 10%; }
+		}
 		
 		@media (max-width: 768px) and (orientation: portrait) {
 			/* 针对手机直屏的优化 */
@@ -1078,31 +1180,36 @@
 				margin-right: 5px;
 			}
 			
-			/* 2. 统计页表情筛选分行显示 */
-			#stats .chart-controls,
-			#stats .mood-filter-container,
-			#stats .voting-keyword-filter {
-				width: 100%;
-				margin-bottom: 10px;
-			}
-			
-			#stats .mood-filter-container {
-				order: 2;
-				justify-content: flex-start;
-				margin-top: 5px;
-			}
-			
-			#stats .voting-keyword-filter {
-				order: 3;
-				margin-top: 5px;
+			/* 2. 统计页表情筛选分行显示 - 修复版本 */
+			#statsContent > div:last-child > div:last-child {
+				flex-wrap: wrap;
+				gap: 10px;
 			}
 			
 			#stats .chart-controls {
+				width: 100%;
 				order: 1;
+				justify-content: flex-start;
+				margin-bottom: 5px;
 			}
 			
-			#stats > .card > div:nth-child(3) > div {
+			#stats .mood-filter-container {
+				width: 100%;
+				order: 2;
+				justify-content: flex-start;
+				margin-bottom: 5px;
 				flex-wrap: wrap;
+			}
+			
+			#stats .voting-keyword-filter {
+				width: 100%;
+				order: 3;
+				margin-bottom: 5px;
+			}
+			
+			#stats #sortBy {
+				order: 4;
+				margin-top: 5px;
 			}
 			
 			/* 3. 缩小所有表情按钮 */
@@ -1192,7 +1299,6 @@
     </style>
 </head>
 <body>
-	@
     <div class="container">
         <div class="header"><h1>🔥 無限對決 🔥</h1></div>
         <div class="nav-buttons">
@@ -7747,4 +7853,3 @@
     </script>
 </body>
 </html>
-

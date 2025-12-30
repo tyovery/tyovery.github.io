@@ -844,109 +844,7 @@
 			font-weight: bold;
 		}
 		
-		@media (max-width: 768px) {
-			.vote-slider-container {
-				max-width: 95%;
-				margin: 0px auto;
-				width: calc(100% - 200px);
-			}
-			
-			.vote-slider {
-				width: 100%;
-				max-width: 100%;
-				height: 50px;
-			}
-			
-			.vote-slider::-webkit-slider-thumb {
-				width: 40px;
-				height: 40px;
-			}
-			
-			.lock-btn, .freeze-btn {
-				width: 40px;
-				height: 40px;
-			}
-			
-			/* 統計頁的一般項目的高度設為2倍，並分為3行 */
-			.list-item.ranking-item {
-				min-height: 100px !important;
-				padding: 8px !important;
-				height: auto !important;
-			}
-			
-			.list-item.ranking-item .item-name {
-				font-size: 1.1em !important;
-				margin-bottom: 0px !important;
-				display: block !important;
-				width: 100% !important;
-			}
-			
-			.list-item.ranking-item .mood-display {
-				margin: 0px 0 !important;
-				display: block !important;
-				width: 100% !important;
-				text-align: left !important;
-			}
-			
-			.list-item.ranking-item > div > div:first-child {
-				flex-direction: column !important;
-				align-items: flex-start !important;
-				height: auto !important;
-			}
-			
-			.list-item.ranking-item > div > div:first-child > span:first-child {
-				width: 100% !important;
-				margin-bottom: 5px !important;
-				font-size: 1.3em !important;
-			}
-			
-			.list-item.ranking-item > div > div:first-child > div {
-				margin-top: 4px !important;
-				flex-direction: column !important;
-				align-items: flex-start !important;
-				width: 100% !important;
-			}
-			
-			.list-item.ranking-item > div > div:first-child > div > span {
-				margin-top: 5px !important;
-				font-size: 0.95em !important;
-				line-height: 1.4 !important;
-			}
-			
-			.float-buttons {
-				right: auto;
-				left: 10px;
-			}
-
-			.float-btn.scroll-to-separator {
-				background: var(--danger);
-				font-size: 1em;
-				font-weight: bold;
-			}
-			
-			/* 不限制 "gameSettings" 內的元素在同一行 */
-			#gameSettings {
-				flex-wrap: wrap !important;
-				gap: 10px !important;
-			}
-			
-			#annualHotModal .chart-modal-content {
-				max-width: 95vw;
-				padding: 15px;
-			}
-			
-			#annualHotTable th, #annualHotTable td {
-				padding: 8px;
-				font-size: 14px;
-			}
-			
-			#annualHotTable th:nth-child(1), #annualHotTable td:nth-child(1) { width: 7%; }
-			#annualHotTable th:nth-child(2), #annualHotTable td:nth-child(2) { width: 53%; }
-			#annualHotTable th:nth-child(3), #annualHotTable td:nth-child(3) { width: 12%; }
-			#annualHotTable th:nth-child(4), #annualHotTable td:nth-child(4) { width: 10%; }
-			#annualHotTable th:nth-child(5), #annualHotTable td:nth-child(5) { width: 8%; }
-			#annualHotTable th:nth-child(6), #annualHotTable td:nth-child(6) { width: 10%; }
-		}
+		
 		
 		@media (max-width: 768px) and (orientation: portrait) {
 			/* 针对手机直屏的优化 */
@@ -1294,6 +1192,7 @@
     </style>
 </head>
 <body>
+	@
     <div class="container">
         <div class="header"><h1>🔥 無限對決 🔥</h1></div>
         <div class="nav-buttons">
@@ -7848,3 +7747,4 @@
     </script>
 </body>
 </html>
+

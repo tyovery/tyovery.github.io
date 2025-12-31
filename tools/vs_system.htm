@@ -1181,35 +1181,39 @@
 			}
 			
 			/* 2. 统计页表情筛选分行显示 */
+			#stats > .card > div:nth-child(3) {
+				flex-direction: column;
+				align-items: stretch;
+			}
+			
 			#stats > .card > div:nth-child(3) > div {
 				flex-wrap: wrap;
+				gap: 10px;
 			}
 			
 			#stats .chart-controls {
 				order: 1;
 				width: 100%;
-				margin-bottom: 10px;
 				justify-content: flex-start;
+				margin-bottom: 10px;
 			}
 			
 			#stats .mood-filter-container {
-				order: 3;
+				order: 2;
 				width: 100%;
-				margin: 10px 0 5px 0;
-				justify-content: flex-start;
+				margin-bottom: 10px;
 			}
 			
 			#stats .voting-keyword-filter {
-				order: 2;
-				width: auto;
-				flex-grow: 1;
+				order: 3;
+				width: 100%;
 				margin-bottom: 10px;
 			}
 			
 			#stats #sortBy {
 				order: 4;
-				width: 100px;
-				margin-top: 5px;
+				width: 100%;
+				margin-bottom: 10px;
 			}
 			
 			/* 3. 缩小所有表情按钮 */

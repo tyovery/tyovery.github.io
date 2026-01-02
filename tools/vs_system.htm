@@ -1661,6 +1661,7 @@
         </div>
     </div>
 	<center>
+		ver 0.4&emsp;~tyovery~&emsp;2026-01<br />
 		ver 0.3&emsp;~tyovery~&emsp;2025-12<br />
 		ver 0.2&emsp;~tyovery~&emsp;2025-11<br />
 		ver 0.1&emsp;~tyovery~&emsp;2025-10<br /><br />
@@ -6664,11 +6665,29 @@
 				hideContextMenu();
 			};
 			
+			// 添加「設為左候選項」
+			const setAsLeftBtn = document.createElement('li');
+			setAsLeftBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">設為左候選項</button>`;
+			setAsLeftBtn.onclick = function() {
+				setCandidate(0,itemId);
+				hideContextMenu();
+			};
+			
+			// 添加「設為右候選項」
+			const setAsRightBtn = document.createElement('li');
+			setAsRightBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">設為右候選項</button>`;
+			setAsRightBtn.onclick = function() {
+				setCandidate(1,itemId);
+				hideContextMenu();
+			};
+			
 			contextMenuList.appendChild(copyTitleBtn);
 			contextMenuList.appendChild(copyFullLineBtn);
 			contextMenuList.appendChild(copyFullRankingBtn);
 			contextMenuList.appendChild(countAboveBtn);
 			contextMenuList.appendChild(countBelowBtn);
+			contextMenuList.appendChild(setAsLeftBtn);
+			contextMenuList.appendChild(setAsRightBtn);
 			contextMenuList.appendChild(toggleFreezeBtn);
 			contextMenuList.appendChild(freezeBelowBtn);
 			contextMenuList.appendChild(unfreezeBelowBtn);
@@ -6681,6 +6700,44 @@
 			document.addEventListener('click', hideContextMenuOnClick);
 		}
 		
+		function setCandidate(pos,itemId) {
+			// 檢查投票頁面是否正在進行相同的遊戲
+			const votingGameId = currentGame ? currentGame.id : null;
+			const statsGameId = document.getElementById('statsGameSelect').value;
+			if ( !(votingGameId && statsGameId && votingGameId === statsGameId && currentPair) ) {
+				alert('請先在投票頁開始相同的遊戲') ;
+				return ;
+			}
+
+			if ( !(currentGame && currentPair) ) return;
+			const game = games[currentGame.id];
+			const item = game.items.find(i => i.id === itemId);
+			if ( currentPair[pos] == item || currentPair[1-pos] == item ) {
+				alert('該項目已在候選項中') ;
+				return;
+			}
+			if (item) {
+				currentPair[pos] = item;
+				// 解除左/右側鎖定
+				pos ? lockedRight = false : lockedLeft = false ;
+				document.getElementById(`lockBtn${pos ? 'Right' : 'Left'}`).classList.remove('active');
+				// 重新載入左/右視頻
+				const link = getRandomValidLink(item);
+				currentVideoLinks[pos] = link;
+				loadVideo(`video${pos+1}Container`, link, pos+1);
+				// 更新標題
+				document.getElementById(`option${pos+1}Title`).textContent = item.name;
+				// 更新心情按鈕
+				createMoodButtons();
+				// 更新統計資訊
+				if (statsVisible) updateItemStats();
+				// 更新凍結按鈕狀態（根據新項目）
+				updateFreezeButtons();
+				// 切換到投票頁面
+				showPage('voting');
+			}
+		}
+
 		// 分隔線右键菜單函數
 		function showSeparatorContextMenu(event, separatorText) {
 			const contextMenu = document.getElementById('contextMenu');

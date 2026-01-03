@@ -1333,12 +1333,12 @@
                             <label for="extractMode">抽取模式：</label>
                             <select id="extractMode" class="form-control" style="width: auto; display: inline-block;">
 								<option value="quickConverge">快速收斂</option>
+								<option value="strongest">名次最高</option>
 								<option value="similarScore">分數相近</option>
 								<option value="leastVolatility">波動最小</option>
 								<option value="highestTrend">升率最高</option>
 								<option value="lowestTrend">降率最高</option>
 								<option value="uniform">均勻隨機</option>
-								<option value="strongest">名次最高</option>
 								<option value="middle">名次中段</option>
 								<option value="weakest">名次最低</option>
 								<option value="highestWinRate">勝率最高</option>
@@ -6689,10 +6689,10 @@
 			contextMenuList.appendChild(setAsLeftBtn);
 			contextMenuList.appendChild(setAsRightBtn);
 			contextMenuList.appendChild(toggleFreezeBtn);
-			contextMenuList.appendChild(freezeBelowBtn);
-			contextMenuList.appendChild(unfreezeBelowBtn);
 			contextMenuList.appendChild(freezeAboveBtn);
 			contextMenuList.appendChild(unfreezeAboveBtn);
+			contextMenuList.appendChild(freezeBelowBtn);
+			contextMenuList.appendChild(unfreezeBelowBtn);
 			
 			contextMenu.style.display = 'block';
 			contextMenu.style.left = `${event.pageX}px`;
@@ -6815,11 +6815,11 @@
 			contextMenuList.appendChild(copyFullRankingBtn);
 			contextMenuList.appendChild(countAboveBtn);
 			contextMenuList.appendChild(countBelowBtn);
-			contextMenuList.appendChild(freezeBelowBtn);
-			contextMenuList.appendChild(unfreezeBelowBtn);
 			contextMenuList.appendChild(freezeAboveBtn);
 			contextMenuList.appendChild(unfreezeAboveBtn);
-			
+			contextMenuList.appendChild(freezeBelowBtn);
+			contextMenuList.appendChild(unfreezeBelowBtn);
+
 			contextMenu.style.display = 'block';
 			contextMenu.style.left = `${event.pageX}px`;
 			contextMenu.style.top = `${event.pageY}px`;
@@ -7067,157 +7067,172 @@
 		
 		// 冻结/解冻 分隔线以上项目的函数
 		function freezeItemsAboveSeparator(separatorText, freeze) {
-			const gameId = document.getElementById('statsGameSelect').value;
-			if (!gameId) return;
-			
-			const game = games[gameId];
-			const sortBy = document.getElementById('sortBy').value;
-			let sortedItems = [...game.items];
-			
-			// 应用当前的心情筛选
-			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
-			if (statsMoodFilters.length > 0) {
-				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
-			}
-			
-			// 应用当前的搜索筛选
-			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
-			if (searchText) {
-				sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
-			}
-			
-			// 应用当前排序
-			sortedItems = sortRankingItems(sortedItems, sortBy, game);
-			
-			// 找到分隔线在当前显示列表中的位置
-			let separatorIndex = -1;
-			
-			// 计算统计信息用于确定分隔线位置
-			const stats = calculateBasicStats(game);
-			
-			if (separatorText.includes('μ + 2σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score <= stats.upperThreshold2) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			} else if (separatorText.includes('μ + σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score <= stats.upperThreshold) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			} else if (separatorText.includes('μ - σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score < stats.lowerThreshold) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			} else if (separatorText.includes('μ - 2σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score < stats.lowerThreshold2) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			}
-			
-			if (separatorIndex === -1) {
-				separatorIndex = sortedItems.length;
-			}
-			
-			// 冻结/解冻当前显示列表中分隔线以上的所有项目(不包括分隔线本身)
-			for (let i = 0; i < separatorIndex; i++) {
-				const item = game.items.find(it => it.id === sortedItems[i].id);
-				if (item) {
-					item.frozen = freeze;
-				}
-			}
-			
-			localStorage.setItem('games', JSON.stringify(games));
-			syncData();
-			loadStats(); // 刷新统计页面以显示更新后的状态
-		}
+            const gameId = document.getElementById('statsGameSelect').value;
+            if (!gameId) return;
+            
+            const game = games[gameId];
+            const sortBy = document.getElementById('sortBy').value;
+            let sortedItems = [...game.items];
+            
+            // 应用当前的心情筛选
+            const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
+            if (statsMoodFilters.length > 0) {
+                sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
+            }
+            
+            // 应用当前的搜索筛选
+            const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+            if (searchText) {
+                sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
+            }
+            
+            // 应用当前排序
+            sortedItems = sortRankingItems(sortedItems, sortBy, game);
+            
+            // 计算统计信息用于确定分隔线位置
+            const stats = calculateBasicStats(game);
+            
+            // 找到分隔线在当前显示列表中的位置
+            let separatorIndex = -1;
+            
+            // 修正：使用未筛选的项目来计算分隔线阈值，但使用筛选后的项目列表来找到分隔线位置
+            // 获取所有项目（未筛选）来计算分隔线阈值
+            const allItems = [...game.items];
+            const allItemsSortedByScore = allItems.sort((a, b) => b.score - a.score);
+            
+            // 确定分隔线阈值
+            let threshold;
+            let comparison;
+            
+            if (separatorText.includes('μ + 2σ')) {
+                threshold = stats.upperThreshold2;
+                comparison = '<=';
+            } else if (separatorText.includes('μ + σ')) {
+                threshold = stats.upperThreshold;
+                comparison = '<=';
+            } else if (separatorText.includes('μ =')) {
+                threshold = stats.avgScore;
+                comparison = '<';  // μ 分隔线使用 <
+            } else if (separatorText.includes('μ - σ')) {
+                threshold = stats.lowerThreshold;
+                comparison = '<';
+            } else if (separatorText.includes('μ - 2σ')) {
+                threshold = stats.lowerThreshold2;
+                comparison = '<';
+            } else {
+                return; // 未知的分隔线
+            }
+            
+            // 修正：在筛选后的排序列表中查找分隔线位置
+            // 使用与渲染分隔线时相同的逻辑
+            for (let j = 0; j < sortedItems.length; j++) {
+                if (comparison === '<=' && sortedItems[j].score <= threshold) {
+                    separatorIndex = j;
+                    break;
+                } else if (comparison === '<' && sortedItems[j].score < threshold) {
+                    separatorIndex = j;
+                    break;
+                }
+            }
+            
+            if (separatorIndex === -1) {
+                separatorIndex = sortedItems.length;
+            }
+            
+            // 冻结/解冻当前显示列表中分隔线以上的所有项目(不包括分隔线本身)
+            for (let i = 0; i < separatorIndex; i++) {
+                const item = game.items.find(it => it.id === sortedItems[i].id);
+                if (item) {
+                    item.frozen = freeze;
+                }
+            }
+            
+            localStorage.setItem('games', JSON.stringify(games));
+            syncData();
+            loadStats(); // 刷新统计页面以显示更新后的状态
+        }
 
 		// 冻结/解冻 分隔线以下项目的函数
 		function freezeItemsBelowSeparator(separatorText, freeze) {
-			const gameId = document.getElementById('statsGameSelect').value;
-			if (!gameId) return;
-			
-			const game = games[gameId];
-			const sortBy = document.getElementById('sortBy').value;
-			let sortedItems = [...game.items];
-			
-			// 应用当前的心情筛选
-			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
-			if (statsMoodFilters.length > 0) {
-				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
-			}
-			
-			// 应用当前的搜索筛选
-			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
-			if (searchText) {
-				sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
-			}
-			
-			// 应用当前排序
-			sortedItems = sortRankingItems(sortedItems, sortBy, game);
-			
-			// 找到分隔线在当前显示列表中的位置
-			let separatorIndex = -1;
-			
-			// 计算统计信息用于确定分隔线位置
-			const stats = calculateBasicStats(game);
-			
-			if (separatorText.includes('μ + 2σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score <= stats.upperThreshold2) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			} else if (separatorText.includes('μ + σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score <= stats.upperThreshold) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			} else if (separatorText.includes('μ - σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score < stats.lowerThreshold) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			} else if (separatorText.includes('μ - 2σ')) {
-				for (let j = 0; j < sortedItems.length; j++) {
-					if (sortedItems[j].score < stats.lowerThreshold2) {
-						separatorIndex = j;
-						break;
-					}
-				}
-			}
-			
-			if (separatorIndex === -1) {
-				separatorIndex = sortedItems.length;
-			}
-			
-			// 冻结/解冻当前显示列表中分隔线以下的所有项目
-			for (let i = separatorIndex; i < sortedItems.length; i++) {
-				const item = game.items.find(it => it.id === sortedItems[i].id);
-				if (item) {
-					item.frozen = freeze;
-				}
-			}
-			
-			localStorage.setItem('games', JSON.stringify(games));
-			syncData();
-			loadStats(); // 刷新统计页面以显示更新后的状态
-		}
+            const gameId = document.getElementById('statsGameSelect').value;
+            if (!gameId) return;
+            
+            const game = games[gameId];
+            const sortBy = document.getElementById('sortBy').value;
+            let sortedItems = [...game.items];
+            
+            // 应用当前的心情筛选
+            const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
+            if (statsMoodFilters.length > 0) {
+                sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
+            }
+            
+            // 应用当前的搜索筛选
+            const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+            if (searchText) {
+                sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
+            }
+            
+            // 应用当前排序
+            sortedItems = sortRankingItems(sortedItems, sortBy, game);
+            
+            // 计算统计信息用于确定分隔线位置
+            const stats = calculateBasicStats(game);
+            
+            // 找到分隔线在当前显示列表中的位置
+            let separatorIndex = -1;
+            
+            // 确定分隔线阈值
+            let threshold;
+            let comparison;
+            
+            if (separatorText.includes('μ + 2σ')) {
+                threshold = stats.upperThreshold2;
+                comparison = '<=';
+            } else if (separatorText.includes('μ + σ')) {
+                threshold = stats.upperThreshold;
+                comparison = '<=';
+            } else if (separatorText.includes('μ =')) {
+                threshold = stats.avgScore;
+                comparison = '<';  // μ 分隔线使用 <
+            } else if (separatorText.includes('μ - σ')) {
+                threshold = stats.lowerThreshold;
+                comparison = '<';
+            } else if (separatorText.includes('μ - 2σ')) {
+                threshold = stats.lowerThreshold2;
+                comparison = '<';
+            } else {
+                return; // 未知的分隔线
+            }
+            
+            // 修正：在筛选后的排序列表中查找分隔线位置
+            // 使用与渲染分隔线时相同的逻辑
+            for (let j = 0; j < sortedItems.length; j++) {
+                if (comparison === '<=' && sortedItems[j].score <= threshold) {
+                    separatorIndex = j;
+                    break;
+                } else if (comparison === '<' && sortedItems[j].score < threshold) {
+                    separatorIndex = j;
+                    break;
+                }
+            }
+            
+            if (separatorIndex === -1) {
+                separatorIndex = sortedItems.length;
+            }
+            
+            // 冻结/解冻当前显示列表中分隔线以下的所有项目
+            for (let i = separatorIndex; i < sortedItems.length; i++) {
+                const item = game.items.find(it => it.id === sortedItems[i].id);
+                if (item) {
+                    item.frozen = freeze;
+                }
+            }
+            
+            localStorage.setItem('games', JSON.stringify(games));
+            syncData();
+            loadStats(); // 刷新统计页面以显示更新后的状态
+        }
 		
 		// 獲取排序方式的名稱
 		function getSortByName(sortBy) {
@@ -7492,6 +7507,7 @@
 					showPage('stats');
 					document.getElementById('statsGameSelect').value = item.gameId;
 					loadStats(); // 加载统计數據
+					clearStatsFilters() ; // 清除過濾選項
 					collapseAllCharts() ; // 收起圖
 					
 					// 打开&滚动 图表

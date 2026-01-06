@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機率開寶箱</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            75% { transform: translateX(5px) rotate(5deg); }
+        }
+        @keyframes success {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px gold; }
+            50% { box-shadow: 0 0 20px gold, 0 0 30px orange; }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        @keyframes item-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        @keyframes auto-click {
+            0%, 100% { transform: scale(1); background-color: rgba(59, 130, 246, 0); }
+            50% { transform: scale(1.05); background-color: rgba(59, 130, 246, 0.3); }
+        }
+        .shake { animation: shake 0.5s ease-in-out; }
+        .success-anim { animation: success 0.5s ease-in-out, glow 1s ease-in-out; }
+        .chest-btn:active { transform: scale(0.95); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .item-pulse { animation: item-pulse 0.5s ease-in-out; }
+        .auto-click-active { animation: pulse 2s infinite; }
+        .auto-click-animation { animation: auto-click 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-6 max-w-lg md:max-w-7xl">
+        <!-- 標題 -->
+        <h1 class="text-2xl font-bold text-center mb-4 text-yellow-400">🎁 機率開寶箱 🎁</h1>
+        
+        <!-- 遊戲信息面板 -->
+        <div class="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-gray-300 text-sm">總分數</p>
+                    <p id="score" class="text-3xl font-bold text-yellow-400">0</p>
+                </div>
+                <div>
+                    <p class="text-gray-300 text-sm">成功開啟</p>
+                    <p id="opened" class="text-3xl font-bold text-green-400">0</p>
+                </div>
+                <div>
+                    <p class="text-gray-300 text-sm">總體幸運度</p>
+                    <p id="overallLuck" class="text-3xl font-bold text-cyan-400">1.000</p>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-white/20 text-center">
+                <p class="text-gray-300 text-sm">開始時間</p>
+                <p id="startTime" class="text-sm text-cyan-300">-</p>
+            </div>
+        </div>
+
+        <!-- 技能區域 -->
+        <div class="bg-white/10 backdrop-blur rounded-xl p-3 mb-4">
+            <h3 class="text-sm font-semibold mb-2 text-center">⚡ 當前技能</h3>
+            <div class="grid grid-cols-3 gap-2">
+                <div id="autoClickSkill" class="bg-gradient-to-r from-purple-600/30 to-blue-600/30 rounded-lg p-2 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <span class="text-lg">🤖</span>
+                        <div class="text-center mt-1">
+                            <p class="text-xs font-bold">自動點擊</p>
+                            <p id="autoClickRate" class="text-xs text-yellow-300">0 次/秒</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="multiClickSkill" class="bg-gradient-to-r from-green-600/30 to-emerald-600/30 rounded-lg p-2 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <span class="text-lg">⚡</span>
+                        <div class="text-center mt-1">
+                            <p class="text-xs font-bold">手動連擊</p>
+                            <p id="multiClickLevel" class="text-xs text-green-300">連擊1下</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="openMultiplierSkill" class="bg-gradient-to-r from-pink-600/30 to-rose-600/30 rounded-lg p-2 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <span class="text-lg">✨</span>
+                        <div class="text-center mt-1">
+                            <p class="text-xs font-bold">開箱倍率</p>
+                            <p id="openMultiplierValue" class="text-xs text-pink-300">1倍</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 寶箱區域 -->
+        <div class="bg-white/5 backdrop-blur rounded-xl p-4 mb-4">
+            <h2 class="text-lg font-semibold mb-3 text-center">點擊寶箱嘗試開啟</h2>
+            <div id="chestGrid" class="grid grid-cols-4 md:grid-cols-10 gap-2 md:gap-3">
+                <!-- 寶箱將在這裡生成 -->
+            </div>
+        </div>
+
+        <!-- 幸運度顯示 -->
+        <div class="bg-white/5 backdrop-blur rounded-xl p-4 mb-4">
+            <h2 class="text-lg font-semibold mb-3 text-center">🍀 寶箱幸運度</h2>
+            <div class="mb-4">
+                <p class="text-sm text-gray-300 mb-2">幸運度公式：n / 嘗試次數 (越高越好)</p>
+                <div id="luckList" class="space-y-1 max-h-32 overflow-y-auto scrollbar-hide text-sm">
+                    <!-- 幸運度列表將在這裡生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 長條圖區域 -->
+        <div class="bg-white/5 backdrop-blur rounded-xl p-4 mb-4">
+            <h2 class="text-lg font-semibold mb-3 text-center">📊 寶箱嘗試次數分佈圖</h2>
+            <div class="relative h-64">
+                <canvas id="attemptsChart"></canvas>
+            </div>
+            <p class="text-center text-xs text-gray-300 mt-2">已開啟：<span class="text-green-400">綠色</span>，未開啟：<span class="text-orange-400">橙色</span></p>
+        </div>
+
+        <!-- 最近結果提示 -->
+        <div id="resultBanner" class="hidden bg-white/10 backdrop-blur rounded-xl p-3 mb-4 text-center transition-all">
+            <p id="resultText" class="text-lg font-semibold"></p>
+        </div>
+
+        <!-- 歷史記錄 -->
+        <div class="bg-white/10 backdrop-blur rounded-xl p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-lg font-semibold">📜 開啟記錄</h2>
+                <button onclick="toggleHistory()" class="text-sm bg-white/20 px-3 py-1 rounded-lg hover:bg-white/30">
+                    展開/收起
+                </button>
+            </div>
+            <div id="historyContainer" class="max-h-48 overflow-y-auto scrollbar-hide">
+                <div id="historyList" class="space-y-1 text-sm">
+                    <p class="text-gray-400 text-center">尚無記錄</p>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-white/20 flex gap-2">
+                <button onclick="clearHistory()" class="flex-1 bg-red-600/50 hover:bg-red-600 px-3 py-2 rounded-lg text-sm transition">
+                    清除記錄
+                </button>
+                <button onclick="resetGame()" class="flex-1 bg-orange-600/50 hover:bg-orange-600 px-3 py-2 rounded-lg text-sm transition">
+                    重置遊戲
+                </button>
+            </div>
+        </div>
+
+        <!-- 統計 -->
+        <div class="bg-white/10 backdrop-blur rounded-xl p-4 mt-4">
+            <h2 class="text-lg font-semibold mb-3">📊 統計數據</h2>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="bg-white/10 rounded-lg p-2 text-center">
+                    <p class="text-gray-300">總嘗試次數</p>
+                    <p id="totalAttempts" class="text-xl font-bold text-blue-300">0</p>
+                </div>
+                <div class="bg-white/10 rounded-lg p-2 text-center">
+                    <p class="text-gray-300">成功率</p>
+                    <p id="successRate" class="text-xl font-bold text-green-300">0%</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm mt-3">
+                <div class="bg-white/10 rounded-lg p-2 text-center">
+                    <p class="text-gray-300">總體幸運度</p>
+                    <p id="overallLuckValue" class="text-xl font-bold text-cyan-300">1.000</p>
+                </div>
+                <div class="bg-white/10 rounded-lg p-2 text-center">
+                    <p class="text-gray-300">最高幸運度</p>
+                    <p id="maxLuck" class="text-xl font-bold text-yellow-300">1.000</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 遊戲狀態
+        let gameState = {
+            score: 0,
+            openedCount: 0,
+            totalAttempts: 0,
+            totalChests: 20,
+            openedChests: new Set(),
+            chestAttempts: {},
+            history: [],
+            startTime: null,
+            // 技能系統
+            autoClickRate: 0, // 次/秒
+            multiClickLevel: 1, // 連擊等級 (預設為1)
+            openMultiplier: 1, // 開箱倍率 (m) 初始值為1
+            autoClickInterval: null, // 自動點擊定時器
+            lastAutoClickTime: null // 最後自動點擊時間
+        };
+
+        // 圖表實例
+        let attemptsChart = null;
+
+        // 格式化時間函數
+        function formatTime(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 將分數格式轉換為百分比
+        function formatProbability(probStr) {
+            if (!probStr || typeof probStr !== 'string') return '0%';
+            
+            const parts = probStr.split('/');
+            if (parts.length !== 2) return '0%';
+            
+            const numerator = parseFloat(parts[0]);
+            const denominator = parseFloat(parts[1]);
+            
+            if (isNaN(numerator) || isNaN(denominator) || denominator === 0) return '0%';
+            
+            const percentage = (numerator / denominator) * 100;
+            return percentage.toFixed(2) + '%';
+        }
+
+        // 初始化遊戲
+        function initGame() {
+            loadGame();
+            renderChests();
+            updateDisplay();
+            updateLuckDisplay();
+            initChart();
+            updateSkillsDisplay();
+            startAutoClick(); // 啟動自動點擊
+        }
+
+        // 渲染寶箱
+        function renderChests() {
+            const grid = document.getElementById('chestGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= gameState.totalChests; i++) {
+                const isOpened = gameState.openedChests.has(i);
+                const attempts = gameState.chestAttempts[i] || 0;
+                
+                // 計算幸運度：如果沒有嘗試次數，預設值為1.00
+                const luck = attempts > 0 ? (i / attempts).toFixed(2) : "1.00";
+                const openProbability = gameState.openMultiplier / i;
+                
+                const chestDiv = document.createElement('div');
+                chestDiv.className = 'relative';
+                chestDiv.innerHTML = `
+                    <button 
+                        id="chest-${i}"
+                        onclick="tryOpenChest(${i})"
+                        class="chest-btn w-full aspect-square rounded-xl flex flex-col items-center justify-center transition-all ${
+                            isOpened 
+                                ? 'bg-green-600/50 cursor-not-allowed' 
+                                : 'bg-gradient-to-br from-yellow-600 to-amber-800 hover:from-yellow-500 hover:to-amber-700 active:scale-95'
+                        }"
+                        ${isOpened ? 'disabled' : ''}
+                    >
+                        <span class="text-2xl">${isOpened ? '✅' : '🎁'}</span>
+                        <span class="text-xs font-bold mt-1">#${i}</span>
+                        
+                        <!-- 嘗試次數顯示在右上角 -->
+                        ${attempts > 0 ? `
+                            <div class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                                ${attempts}
+                            </div>
+                        ` : ''}
+                        
+                        <!-- 幸運度顯示在頂部中央 -->
+                        <div class="absolute top-0 left-0 right-0 text-center -mt+30">
+                            <span class="text-[12px] ${getLuckColor(luck)}">幸運度: ${luck}</span>
+                        </div>
+                        
+                        <!-- 機率顯示在底部中央 -->
+                        <div class="absolute bottom-0 left-0 right-0 text-center mb-1">
+                            <span class="text-[12px] ${isOpened ? 'text-green-300' : 'text-yellow-300'}">打開機率: ${(openProbability*100).toFixed(2)}%</span>
+                        </div>
+                    </button>
+                `;
+                grid.appendChild(chestDiv);
+            }
+        }
+
+        // 根據幸運度獲取顏色
+        function getLuckColor(luck) {
+            const luckNum = parseFloat(luck);
+            if (luckNum >= 1) {
+                return 'text-green-400';
+            } else {
+                return 'text-yellow-400';
+            }
+        }
+
+        // 嘗試開啟寶箱
+        function tryOpenChest(chestNumber) {
+            if (gameState.openedChests.has(chestNumber)) return;
+            
+            // 檢查連擊技能
+            let clickMultiplier = 1;
+            if (gameState.multiClickLevel > 0) {
+                clickMultiplier = gameState.multiClickLevel;
+            }
+            
+            // 修改：使用開箱倍率計算機率，機率為 m/n，但不能超過1
+            const probability = Math.min(1, gameState.openMultiplier / chestNumber);
+            let success = false;
+            let attemptsThisTime = 0;
+            
+            // 執行多次點擊（如果有連擊效果）
+            for (let i = 0; i < clickMultiplier; i++) {
+                gameState.totalAttempts++;
+                attemptsThisTime++;
+                
+                // 更新寶箱嘗試次數
+                gameState.chestAttempts[chestNumber] = (gameState.chestAttempts[chestNumber] || 0) + 1;
+                
+                const random = Math.random();
+                if (random < probability) {
+                    success = true;
+                    break;
+                }
+            }
+            
+            // 即時更新嘗試次數顯示
+            updateChestAttemptDisplay(chestNumber);
+            
+            const now = new Date();
+            const timeStr = formatTime(now);
+            
+            // 記錄歷史（無論成功或失敗）
+            const record = {
+                chest: chestNumber,
+                success: success,
+                time: timeStr,
+                probability: `${gameState.openMultiplier}/${chestNumber}`,
+                attempts: gameState.chestAttempts[chestNumber],
+                clickMultiplier: clickMultiplier,
+                gotItem: false,
+                itemType: null
+            };
+            
+            if (success) {
+                // 成功
+                gameState.score += chestNumber;
+                gameState.openedCount++;
+                gameState.openedChests.add(chestNumber);
+                
+                // 有機會提升自動點擊技能
+                const autoClickImproved = tryImproveAutoClick(chestNumber);
+                
+                // 有機會獲得連擊技能
+                const multiClickGot = tryGetMultiClick(chestNumber);
+                
+                // 有機會提升開箱倍率
+                const multiplierImproved = tryImproveMultiplier(chestNumber);
+                
+                // 檢查是否獲得道具
+                const gotItem = tryGetItem(chestNumber);
+                record.gotItem = gotItem;
+                
+                // 使用 let 而不是 const
+                let message = clickMultiplier > 1 
+                    ? `🎉 成功開啟 #${chestNumber}！獲得 ${chestNumber} 分！（連擊x${clickMultiplier}）`
+                    : `🎉 成功開啟 #${chestNumber}！獲得 ${chestNumber} 分！`;
+                
+                if (gotItem) {
+                    record.itemType = 'item';
+                    message += ' 🎁 獲得道具！';
+                }
+                
+                if (autoClickImproved) {
+                    message += ' ⚡ 自動點擊技能提升！';
+                }
+                
+                if (multiClickGot) {
+                    message += ' ⚡ 自動連擊技能提升！';
+                }
+                
+                if (multiplierImproved) {
+                    message += ' ✨ 開箱倍率提升！';
+                }
+                
+                const chestBtn = document.getElementById(`chest-${chestNumber}`);
+                chestBtn.classList.add('success-anim');
+                
+                showResult(true, message);
+                
+                // 檢查是否需要生成新寶箱
+                checkAndGenerateChests();
+                
+                setTimeout(() => {
+                    renderChests(); // 重新渲染所有寶箱
+                }, 500);
+            } else {
+                // 失敗
+                const chestBtn = document.getElementById(`chest-${chestNumber}`);
+                chestBtn.classList.add('shake');
+                const openProbability = gameState.openMultiplier / chestNumber;
+                const openProbabilityDisplay = (openProbability*100).toFixed(2) + '%';
+                const message = clickMultiplier > 1
+                    ? `💔 開啟 #${chestNumber} 失敗... (${openProbabilityDisplay} 機率，連擊 ${clickMultiplier} 次)`
+                    : `💔 開啟 #${chestNumber} 失敗... (${openProbabilityDisplay} 機率)`;
+                showResult(false, message);
+                
+                setTimeout(() => {
+                    chestBtn.classList.remove('shake');
+                }, 500);
+            }
+            
+            // 添加到歷史記錄
+            gameState.history.unshift(record);
+            
+            updateDisplay();
+            updateLuckDisplay();
+            updateChart();
+            updateSkillsDisplay();
+            saveGame();
+        }
+
+        // 更新單個寶箱的嘗試次數顯示
+        function updateChestAttemptDisplay(chestNumber) {
+            const attempts = gameState.chestAttempts[chestNumber] || 0;
+            const chestBtn = document.getElementById(`chest-${chestNumber}`);
+            
+            if (chestBtn) {
+                // 更新嘗試次數顯示
+                const attemptBadge = chestBtn.querySelector('.absolute.-top-1.-right-1');
+                if (attempts > 0) {
+                    if (attemptBadge) {
+                        attemptBadge.textContent = attempts;
+                    } else {
+                        // 如果不存在則創建
+                        const badge = document.createElement('div');
+                        badge.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold';
+                        badge.textContent = attempts;
+                        chestBtn.appendChild(badge);
+                    }
+                }
+                
+                // 更新幸運度顯示
+                const luck = attempts > 0 ? (chestNumber / attempts).toFixed(2) : "1.00";
+                const luckSpan = chestBtn.querySelector('.absolute.top-0 span');
+                if (luckSpan) {
+                    luckSpan.textContent = `幸運度: ${luck}`;
+                    luckSpan.className = `text-[12px] ${getLuckColor(luck)}`;
+                }
+                
+                // 更新機率顯示
+                const probabilitySpan = chestBtn.querySelector('.absolute.bottom-0 span');
+                if (probabilitySpan) {
+                    const openProbability = gameState.openMultiplier / chestNumber;
+                    probabilitySpan.textContent = `打開機率: ${(openProbability*100).toFixed(2)}%`;
+                }
+            }
+        }
+
+        // 嘗試獲得道具
+        function tryGetItem(chestNumber) {
+            // 道具獲得機率 = chestNumber / 100（1號寶箱1%，20號寶箱20%）
+            const baseChance = chestNumber / 100;
+            const random = Math.random();
+            
+            return random < baseChance;
+        }
+
+        // 嘗試提升自動點擊技能
+        function tryImproveAutoClick(chestNumber) {
+            // 提升機率
+            const improveChance = ( 1 - 1.01**(-chestNumber) ) / 2 ; // 1/2 ( 1 - b^-x ) , b = 1.01
+            const random = Math.random();
+            
+            if (random < improveChance) {
+                gameState.autoClickRate += 0.1; // 增加0.1次/秒
+                
+                // 重新啟動自動點擊以應用新的速率
+                startAutoClick();
+                
+                // 顯示提升提示
+                showSkillImprovement('autoClick', gameState.autoClickRate.toFixed(1));
+                return true;
+            }
+            return false;
+        }
+
+        // 嘗試獲得連擊技能
+        function tryGetMultiClick(chestNumber) {
+            // 獲得機率
+            const getChance = ( 1 - 1.01**(-chestNumber) ) / 2 ; // 1/2 ( 1 - b^-x ) , b = 1.01
+            const random = Math.random();
+            
+            if (random < getChance) {
+                ++gameState.multiClickLevel; // 增加連擊次數
+                
+                // 顯示獲得提示
+                showSkillImprovement('multiClick', gameState.multiClickLevel);
+                return true;
+            }
+            
+            return false;
+        }
+
+        // 嘗試提升開箱倍率
+        function tryImproveMultiplier(chestNumber) {
+            // 提升機率
+            // const improveChance = chestNumber / 400;
+			const improveChance = ( 1 - 1.01**(-chestNumber) ) / 2 ; // 1/2 ( 1 - b^-x ) , b = 1.01
+            
+            if ( Math.random() < improveChance) {
+                gameState.openMultiplier += 0.01; // 增加倍率
+                
+                // 顯示提升提示
+                showSkillImprovement('openMultiplier', gameState.openMultiplier.toFixed(2));
+                return true;
+            }
+            return false;
+        }
+
+        // 顯示技能提升提示
+        function showSkillImprovement(skillType, value) {
+            const banner = document.getElementById('resultBanner');
+            const text = document.getElementById('resultText');
+            
+            let message = '';
+            if (skillType === 'autoClick') {
+                message = `⚡ 自動點擊提升至 ${value} 次/秒！`;
+            } else if (skillType === 'multiClick') {
+                message = `⚡ 自動連擊提升至 連擊${value}下！`;
+            } else {
+                message = `✨ 開箱倍率提升至 ${value} 倍！`;
+            }
+            
+            banner.classList.remove('hidden');
+            banner.className = 'bg-gradient-to-r from-purple-600/50 to-blue-600/50 backdrop-blur rounded-xl p-3 mb-4 text-center transition-all';
+            text.textContent = message;
+            
+            // 高亮對應技能
+            const skillElement = document.getElementById(skillType + 'Skill');
+            if (skillElement) {
+                skillElement.classList.add('item-pulse');
+                setTimeout(() => {
+                    skillElement.classList.remove('item-pulse');
+                }, 1000);
+            }
+            
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 啟動自動點擊
+        function startAutoClick() {
+            // 清除現有的定時器
+            if (gameState.autoClickInterval) {
+                clearInterval(gameState.autoClickInterval);
+                gameState.autoClickInterval = null;
+            }
+            
+            // 如果自動點擊速率大於0，則啟動定時器
+            if (gameState.autoClickRate > 0) {
+                const interval = 1000 / gameState.autoClickRate; // 計算點擊間隔（毫秒）
+                gameState.lastAutoClickTime = Date.now();
+                
+                gameState.autoClickInterval = setInterval(() => {
+                    // 隨機選擇一個未開啟的寶箱點擊
+                    const unopenedChests = [];
+                    for (let i = 1; i <= gameState.totalChests; i++) {
+                        if (!gameState.openedChests.has(i)) {
+                            unopenedChests.push(i);
+                        }
+                    }
+                    
+                    if (unopenedChests.length > 0) {
+                        // 隨機選擇一個寶箱
+                        const randomIndex = Math.floor(Math.random() * unopenedChests.length);
+                        const chestNumber = unopenedChests[randomIndex];
+                        
+                        // 模擬自動點擊（不觸發技能提升）
+                        simulateAutoClick(chestNumber);
+                    }
+                    
+                    updateSkillsDisplay();
+                }, Math.max(100, interval)); // 最小間隔100毫秒
+            }
+        }
+
+        // 模擬自動點擊
+        function simulateAutoClick(chestNumber) {
+            if (gameState.openedChests.has(chestNumber)) return;
+            
+            // 添加自動點擊動畫
+            const chestBtn = document.getElementById(`chest-${chestNumber}`);
+            if (chestBtn) {
+                chestBtn.classList.add('auto-click-animation');
+                setTimeout(() => {
+                    chestBtn.classList.remove('auto-click-animation');
+                }, 300);
+            }
+            
+            // 使用開箱倍率計算機率
+            const probability = Math.min(1, gameState.openMultiplier / chestNumber);
+            const random = Math.random();
+            
+            gameState.totalAttempts++;
+            gameState.chestAttempts[chestNumber] = (gameState.chestAttempts[chestNumber] || 0) + 1;
+            
+            // 更新嘗試次數顯示
+            updateChestAttemptDisplay(chestNumber);
+            
+            if (random < probability) {
+                // 自動點擊成功開啟寶箱
+                gameState.chestSuccesses = gameState.chestSuccesses || {};
+                gameState.chestSuccesses[chestNumber] = (gameState.chestSuccesses[chestNumber] || 0) + 1;
+                gameState.score += chestNumber;
+                gameState.openedCount++;
+                gameState.openedChests.add(chestNumber);
+                
+                // 添加成功動畫
+                if (chestBtn) {
+                    chestBtn.classList.add('success-anim');
+                    setTimeout(() => {
+                        chestBtn.classList.remove('success-anim');
+                    }, 500);
+                }
+                
+                // 記錄自動點擊歷史
+                const now = new Date();
+                const timeStr = formatTime(now);
+                const record = {
+                    chest: chestNumber,
+                    success: true,
+                    time: timeStr,
+                    probability: `${gameState.openMultiplier}/${chestNumber}`,
+                    attempts: gameState.chestAttempts[chestNumber],
+                    clickMultiplier: 1,
+                    gotItem: false,
+                    itemType: 'auto',
+                    source: '自動點擊'
+                };
+                gameState.history.unshift(record);
+                
+                // 檢查是否需要生成新寶箱
+                checkAndGenerateChests();
+                
+                // 重新渲染寶箱
+                setTimeout(() => {
+                    renderChests();
+                }, 100);
+            } else {
+                // 自動點擊失敗
+                // 添加失敗動畫
+                if (chestBtn) {
+                    chestBtn.classList.add('shake');
+                    setTimeout(() => {
+                        chestBtn.classList.remove('shake');
+                    }, 500);
+                }
+                
+                const now = new Date();
+                const timeStr = formatTime(now);
+                const record = {
+                    chest: chestNumber,
+                    success: false,
+                    time: timeStr,
+                    probability: `${gameState.openMultiplier}/${chestNumber}`,
+                    attempts: gameState.chestAttempts[chestNumber],
+                    clickMultiplier: 1,
+                    gotItem: false,
+                    itemType: 'auto',
+                    source: '自動點擊'
+                };
+                gameState.history.unshift(record);
+            }
+            
+            updateDisplay();
+            updateLuckDisplay();
+            updateChart();
+            saveGame();
+        }
+
+        // 檢查並生成新寶箱
+        function checkAndGenerateChests() {
+            const openedInRange = Math.floor(gameState.openedCount / 10);
+            const expectedTotal = 20 + (openedInRange * 10);
+            
+            if (gameState.totalChests < expectedTotal) {
+                gameState.totalChests = expectedTotal;
+                renderChests();
+                updateChart();
+            }
+        }
+
+        // 更新幸運度顯示
+        function updateLuckDisplay() {
+            const container = document.getElementById('luckList');
+            let html = '';
+            let maxLuck = 0;
+            
+            // 計算總體幸運度：n(n+1)/(2*總嘗試次數)
+            const n = gameState.totalChests;
+            const totalChestValue = n * (n + 1) / 2;
+            const overallLuck = gameState.totalAttempts > 0 
+                ? (totalChestValue / gameState.totalAttempts).toFixed(3)
+                : "1.000"; // 預設值為1.000
+            
+            // 更新總體幸運度顯示
+            document.getElementById('overallLuck').textContent = overallLuck;
+            document.getElementById('overallLuckValue').textContent = overallLuck;
+            
+            for (let i = 1; i <= gameState.totalChests; i++) {
+                const attempts = gameState.chestAttempts[i] || 0;
+                const isOpened = gameState.openedChests.has(i);
+                
+                // 幸運度：如果沒有嘗試次數，預設值為1.000
+                const luck = attempts > 0 ? (i / attempts).toFixed(3) : "1.000";
+                const luckNum = parseFloat(luck);
+                if (luckNum > maxLuck) maxLuck = luckNum;
+                
+                const colorClass = getLuckColor(luck);
+                
+                html += `
+                    <div class="flex items-center justify-between p-1 ${isOpened ? 'bg-green-900/20' : 'bg-gray-900/20'} rounded">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs">🎁 #${i}</span>
+                            <span class="text-xs ${colorClass}">${luck}</span>
+                        </div>
+                        <span class="text-xs text-gray-400">${attempts}次</span>
+                    </div>
+                `;
+            }
+            
+            // 更新最高幸運度
+            document.getElementById('maxLuck').textContent = maxLuck.toFixed(3) || "1.000";
+            
+            container.innerHTML = html || '<p class="text-gray-400 text-center text-sm">尚無幸運度數據</p>';
+        }
+
+        // 更新技能顯示
+        function updateSkillsDisplay() {
+            // 更新自動點擊技能
+            document.getElementById('autoClickRate').textContent = `${gameState.autoClickRate.toFixed(1)} 次/秒`;
+            
+            // 更新自動連擊技能
+            document.getElementById('multiClickLevel').textContent = `連擊${gameState.multiClickLevel}下`;
+            
+            // 更新開箱倍率技能
+            document.getElementById('openMultiplierValue').textContent = `${gameState.openMultiplier.toFixed(2)} 倍`;
+            
+            // 高亮自動點擊技能如果正在運行
+            const autoClickSkill = document.getElementById('autoClickSkill');
+            if (gameState.autoClickRate > 0) {
+                autoClickSkill.classList.add('auto-click-active');
+            } else {
+                autoClickSkill.classList.remove('auto-click-active');
+            }
+        }
+
+        // 初始化長條圖
+        function initChart() {
+            const ctx = document.getElementById('attemptsChart').getContext('2d');
+            
+            attemptsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '嘗試次數',
+                        data: [],
+                        backgroundColor: [],
+                        borderWidth: 0, // 移除外框
+                        borderRadius: 2, // 添加圓角
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                display: false // 隱藏X軸網格線
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                maxRotation: 0,
+                                font: {
+                                    size: 10 // 減少字體大小以容納更多寶箱
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                    animation: {
+                        duration: 0 // 禁用動畫以提高性能
+                    }
+                }
+            });
+            
+            updateChart();
+        }
+
+        // 更新長條圖
+        function updateChart() {
+            if (!attemptsChart) return;
+            
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+            
+            for (let i = 1; i <= gameState.totalChests; i++) {
+                labels.push(`#${i}`);
+                data.push(gameState.chestAttempts[i] || 0);
+                
+                // 使用更鮮明的顏色
+                if (gameState.openedChests.has(i)) {
+                    // 已開啟 - 更鮮豔的綠色
+                    backgroundColors.push('rgba(34, 197, 94, 0.9)');
+                } else {
+                    // 未開啟 - 更鮮豔的橙色
+                    backgroundColors.push('rgba(249, 115, 22, 0.9)');
+                }
+            }
+            
+            // 如果寶箱數量很多，減少標籤密度
+            if (gameState.totalChests > 30) {
+                attemptsChart.options.scales.x.ticks.callback = function(value, index) {
+                    // 每5個顯示一個標籤
+                    return index % 5 === 0 ? this.getLabelForValue(value) : '';
+                };
+            } else {
+                attemptsChart.options.scales.x.ticks.callback = undefined;
+            }
+            
+            attemptsChart.data.labels = labels;
+            attemptsChart.data.datasets[0].data = data;
+            attemptsChart.data.datasets[0].backgroundColor = backgroundColors;
+            attemptsChart.update('none'); // 不使用動畫更新
+        }
+
+        // 顯示結果提示
+        function showResult(success, message) {
+            const banner = document.getElementById('resultBanner');
+            const text = document.getElementById('resultText');
+            
+            banner.classList.remove('hidden');
+            banner.className = `backdrop-blur rounded-xl p-3 mb-4 text-center transition-all ${
+                success ? 'bg-green-600/50' : 'bg-red-600/50'
+            }`;
+            text.textContent = message;
+            
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 更新顯示
+        function updateDisplay() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('opened').textContent = gameState.openedCount;
+            document.getElementById('totalAttempts').textContent = gameState.totalAttempts;
+            
+            const rate = gameState.totalAttempts > 0 
+                ? ((gameState.openedCount / gameState.totalAttempts) * 100).toFixed(1) 
+                : 0;
+            document.getElementById('successRate').textContent = rate + '%';
+            
+            if (gameState.startTime) {
+                const date = new Date(gameState.startTime);
+                document.getElementById('startTime').textContent = formatTime(date);
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        // 更新歷史記錄顯示
+        function updateHistoryDisplay() {
+            const list = document.getElementById('historyList');
+            
+            if (gameState.history.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-center">尚無記錄</p>';
+                return;
+            }
+            
+            list.innerHTML = gameState.history.slice(0, 100).map((record, index) => {
+                let sourceBadge = '';
+                if (record.source === '自動點擊') {
+                    sourceBadge = '<span class="text-xs text-purple-300">[自動]</span>';
+                }
+                
+                let itemBadge = '';
+                if (record.gotItem) {
+                    itemBadge = '<span class="text-xs text-yellow-300">🎁</span>';
+                }
+                
+                // 主要修改這裡：將 record.probability 轉換為百分比
+                const probabilityPercent = formatProbability(record.probability);
+                
+                return `
+                    <div class="flex items-center gap-2 p-2 rounded ${record.success ? 'bg-green-600/20' : 'bg-red-600/20'}">
+                        <span>${record.success ? '✅' : '❌'}</span>
+                        <span class="flex-1">
+                            寶箱 #${record.chest} (${probabilityPercent})
+                            ${sourceBadge}
+                            ${itemBadge}
+                        </span>
+                        ${record.clickMultiplier > 1 ? `<span class="text-xs text-yellow-300">x${record.clickMultiplier}</span>` : ''}
+                        <span class="text-gray-400 text-xs">${record.time.split(' ')[1]}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 切換歷史記錄顯示
+        function toggleHistory() {
+            const container = document.getElementById('historyContainer');
+            if (container.style.maxHeight === '0px' || !container.style.maxHeight) {
+                container.style.maxHeight = '12rem';
+            } else {
+                container.style.maxHeight = '0px';
+            }
+        }
+
+        // 保存遊戲
+        function saveGame() {
+            const saveData = {
+                ...gameState,
+                openedChests: Array.from(gameState.openedChests),
+                chestAttempts: gameState.chestAttempts,
+                autoClickRate: gameState.autoClickRate,
+                multiClickLevel: gameState.multiClickLevel,
+                openMultiplier: gameState.openMultiplier
+            };
+            localStorage.setItem('treasureBoxGame', JSON.stringify(saveData));
+        }
+
+        // 載入遊戲
+        function loadGame() {
+            const saved = localStorage.getItem('treasureBoxGame');
+            if (saved) {
+                const data = JSON.parse(saved);
+                gameState = {
+                    ...data,
+                    openedChests: new Set(data.openedChests || []),
+                    chestAttempts: data.chestAttempts || {},
+                    autoClickRate: data.autoClickRate || 0,
+                    multiClickLevel: data.multiClickLevel || 1,
+                    openMultiplier: data.openMultiplier || 1,
+                    autoClickInterval: null, // 重新創建定時器
+                    lastAutoClickTime: null
+                };
+            } else {
+                // 新遊戲
+                gameState.startTime = new Date().toISOString();
+                gameState.chestAttempts = {};
+                gameState.autoClickRate = 0;
+                gameState.multiClickLevel = 1; // 預設值為1
+                gameState.openMultiplier = 1; // 預設值為1
+            }
+        }
+
+        // 清除記錄
+        function clearHistory() {
+            if (confirm('確定要清除所有開啟記錄嗎？')) {
+                gameState.history = [];
+                updateHistoryDisplay();
+                saveGame();
+            }
+        }
+
+        // 重置遊戲
+        function resetGame() {
+            if (confirm('確定要重置遊戲嗎？所有進度將會丟失！')) {
+                // 清除自動點擊定時器
+                if (gameState.autoClickInterval) {
+                    clearInterval(gameState.autoClickInterval);
+                    gameState.autoClickInterval = null;
+                }
+                
+                localStorage.removeItem('treasureBoxGame');
+                gameState = {
+                    score: 0,
+                    openedCount: 0,
+                    totalAttempts: 0,
+                    totalChests: 20,
+                    openedChests: new Set(),
+                    chestAttempts: {},
+                    history: [],
+                    startTime: new Date().toISOString(),
+                    autoClickRate: 0,
+                    multiClickLevel: 1, // 預設值為1
+                    openMultiplier: 1, // 預設值為1
+                    autoClickInterval: null,
+                    lastAutoClickTime: null
+                };
+                saveGame();
+                renderChests();
+                updateDisplay();
+                updateLuckDisplay();
+                updateChart();
+                updateSkillsDisplay();
+                startAutoClick();
+            }
+        }
+
+        // 啟動遊戲
+        initGame();
+    </script>
+</body>
+</html>

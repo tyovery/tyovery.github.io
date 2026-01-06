@@ -212,7 +212,15 @@
         }
         .list-item.editing { background: #e6fffa; border: 2px solid var(--info); }
         .list-item.frozen { border: 2px solid var(--frozen); }
-        .item-info { flex: 1; display: flex; gap: 15px; align-items: center; }
+		.item-info { flex: 1; display: flex; gap: 15px; align-items: center; }
+		.item-link-container {
+			word-break: break-all; /* 允许在任意字符处换行 */
+			word-wrap: break-word; /* 允许长单词或URL换行 */
+			overflow-wrap: break-word; /* 更现代的换行属性 */
+			white-space: normal; /* 允许换行 */
+			max-width: 100%; /* 确保不超过容器宽度 */
+			margin: 0px 0; /* 上下边距 */
+		}
         .item-preview { width: 160px; height: 90px; background: #000; border-radius: 5px; overflow: hidden; position: relative; flex-shrink: 0; }
         .item-preview iframe { width: 100%; height: 100%; border: none; }
         .pagination { display: flex; gap: 5px; align-items: center; justify-content: center; }
@@ -842,6 +850,67 @@
 			background: var(--danger);
 			font-size: 0.1em;
 			font-weight: bold;
+		}
+		
+		/* 圖片放大模態框樣式 */
+		.image-modal {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0,0,0,0.9);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 2000;
+		}
+
+		.image-modal-content {
+			position: relative;
+			max-width: 90%;
+			max-height: 90%;
+			background: transparent;
+		}
+
+		.enlarged-image {
+			max-width: 100%;
+			max-height: 90vh;
+			object-fit: contain;
+			border-radius: 10px;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+		}
+
+		.close-btn {
+			position: absolute;
+			top: -40px;
+			right: 0;
+			background: rgba(0,0,0,0.7);
+			color: white;
+			border: none;
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			font-size: 24px;
+			cursor: pointer;
+			z-index: 2001;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.3s;
+		}
+
+		.close-btn:hover {
+			background: rgba(0,0,0,0.9);
+			transform: scale(1.1);
+		}
+
+		.preview-image {
+			transition: transform 0.3s;
+		}
+
+		.preview-image:hover {
+			transform: scale(1.02);
 		}
 		
 		@media (max-width: 768px) {
@@ -1476,7 +1545,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="itemsInput">批次新增項目</label>
-                            <textarea id="itemsInput" class="form-control" style="min-height: 150px;" placeholder="每行輸入一個項目，格式：項目名稱,影片連結"></textarea>
+                            <textarea id="itemsInput" class="form-control" style="min-height: 150px;" placeholder="每行輸入一個項目，格式：項目名稱,圖片或影片連結"></textarea>
                         </div>
                         <button class="btn btn-primary" onclick="addItems()">批次新增</button>
                     </div>
@@ -1582,8 +1651,11 @@
                             <div class="stat-value" id="totalVotes">0</div>
                             <div>總投票數</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="expectedVotes">0</div>
+                        <div class="stat-card" id="expectedVotesCard">
+							<div class="stat-value" id="expectedVotes1" style="font-size: 1.0em; margin-bottom: 5px; display: none;">0</div>
+							<div class="stat-value" id="expectedVotes2" style="font-size: 1.0em; margin-bottom: 5px;">0</div>
+							<div class="stat-value" id="expectedVotes3" style="font-size: 1.0em; margin-bottom: 5px;">0</div>
+							<div class="stat-value" id="expectedVotes4" style="font-size: 1.0em; margin-bottom: 5px;">0</div>
                             <div>期望票數</div>
                         </div>
                         <div class="stat-card">
@@ -1716,6 +1788,7 @@
 		let currentGameExtractMode = '';
         let currentPage = 1, itemsPerPage = 10, statsVisible = localStorage.getItem('statsVisible') === 'true', filteredItems = [];
         let currentVideoLinks = [null, null], visibleItemObserver = null;
+		let currentImageModal = null; // 新增圖片放大功能相關函數（使用全局模态框）
         let showInvalidOnly = false;
         let showFrozenOnly = false;
         let cooldownActive = false;
@@ -2629,79 +2702,82 @@
         function changePage(page) { currentPage = page; updateItemsListWithPagination(); }
 
         function updateItemsList(items) {
-            const itemsList = document.getElementById('itemsList');
-            itemsList.innerHTML = '';
-            items.forEach(item => {
-                const itemCard = document.createElement('div');
-                itemCard.className = 'list-item';
-                if (item.frozen) {
-                    itemCard.classList.add('frozen');
-                }
-                if (editingItemId === item.id) {
-                    itemCard.classList.add('editing');
-                    const savedData = editingItemData[item.id];
-                    const nameValue = savedData?.name || item.name;
-                    const linksText = savedData?.links || (() => {
-                        const allLinks = [...(item.links || [])];
-                        item.invalidLinks?.forEach(link => {
-                            if (!allLinks.includes(link)) {
-                                allLinks.push(link);
-                            }
-                        });
-                        return allLinks.map(link => 
-                            item.invalidLinks?.includes(link) ? `[無效] ${link}` : link).join('\n') || '';
-                    })();
-                    
-                    itemCard.innerHTML = `
-                        <div class="item-info">
-                            <div style="flex: 1;">
-                                <div class="edit-mood-buttons" id="edit-mood-buttons-${item.id}"></div>
-                                <input type="text" class="form-control" id="edit-name-${item.id}" value="${nameValue}" style="margin-bottom: 10px;">
-                                <textarea class="form-control" id="edit-links-${item.id}" placeholder="每行一個影片連結" style="min-height: 80px;">${linksText}</textarea>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-primary" onclick="saveItem('${item.id}')">儲存</button>
-                            <button class="btn btn-gray" onclick="cancelEdit()">取消</button>
-                        </div>`;
-                    
-                    setTimeout(() => {
-                        createEditMoodButtons(item.id, savedData?.moods || item.moods || []);
-                    }, 0);
-                } else {
-                    const firstLink = item.links?.[0] || '';
-                    const uniqueLinks = [...new Set(item.links || [])];
-                    const linkCount = uniqueLinks.length;
-                    const uniqueInvalidLinks = [...new Set(item.invalidLinks || [])];
-                    const invalidCount = uniqueInvalidLinks.length;
-                    const isFirstLinkInvalid = item.invalidLinks?.includes(firstLink);
-                    
-                    itemCard.innerHTML = `
-                        <div class="item-info">
-                            <div class="item-preview" id="preview-${item.id}"></div>
-                            <div style="flex: 1;">
-                                <div class="item-mood-buttons" id="item-mood-buttons-${item.id}"></div>
-                                <div style="font-weight: bold;">${item.name}</div>
-                                <div class="${isFirstLinkInvalid ? 'invalid-link' : ''}" style="color: var(--primary); font-size: 0.9em;">${firstLink}</div>
-                                <div style="color: var(--gray); font-size: 0.85em;">共 ${linkCount+invalidCount} 個影片連結</div>
-                                ${invalidCount > 0 ? `<div style="color: var(--danger); font-size: 0.85em;">⚠️ ${invalidCount} 個無效連結</div>` : ''}
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-							<button class="btn btn-primary" onclick="searchOnWeb('${item.id}','youtube')">YT搜尋</button>
-							<button class="btn btn-primary" onclick="searchOnWeb('${item.id}','bilibili')">B站搜尋</button>
-                            <button class="btn btn-info" onclick="startEditItem('${item.id}')">編輯</button>
-                            <button class="btn ${item.frozen ? 'btn-frozen' : 'btn-gray'}" onclick="toggleFrozen('${item.id}')">${item.frozen ? '解除凍結' : '凍結'}</button>
-                            <button class="btn btn-danger" onclick="confirmRemoveItem('${item.id}')">移除</button>
-                        </div>`;
-                    
-                    setTimeout(() => {
-                        createItemMoodButtons(item.id, item.moods || []);
-                    }, 0);
-                }
-                itemsList.appendChild(itemCard);
-            });
-        }
+			const itemsList = document.getElementById('itemsList');
+			itemsList.innerHTML = '';
+			items.forEach(item => {
+				const itemCard = document.createElement('div');
+				itemCard.className = 'list-item';
+				if (item.frozen) {
+					itemCard.classList.add('frozen');
+				}
+				if (editingItemId === item.id) {
+					itemCard.classList.add('editing');
+					const savedData = editingItemData[item.id];
+					const nameValue = savedData?.name || item.name;
+					const linksText = savedData?.links || (() => {
+						const allLinks = [...(item.links || [])];
+						item.invalidLinks?.forEach(link => {
+							if (!allLinks.includes(link)) {
+								allLinks.push(link);
+							}
+						});
+						return allLinks.map(link => 
+							item.invalidLinks?.includes(link) ? `[無效] ${link}` : link).join('\n') || '';
+					})();
+					
+					itemCard.innerHTML = `
+						<div class="item-info">
+							<div style="flex: 1;">
+								<div class="edit-mood-buttons" id="edit-mood-buttons-${item.id}"></div>
+								<input type="text" class="form-control" id="edit-name-${item.id}" value="${nameValue}" style="margin-bottom: 10px;">
+								<textarea class="form-control" id="edit-links-${item.id}" placeholder="每行一個連結" style="min-height: 80px;">${linksText}</textarea>
+							</div>
+						</div>
+						<div style="display: flex; gap: 10px;">
+							<button class="btn btn-primary" onclick="saveItem('${item.id}')">儲存</button>
+							<button class="btn btn-gray" onclick="cancelEdit()">取消</button>
+						</div>`;
+					
+					setTimeout(() => {
+						createEditMoodButtons(item.id, savedData?.moods || item.moods || []);
+					}, 0);
+				} else {
+					const firstLink = item.links?.[0] ?? '';
+					const uniqueLinks = [...new Set(item.links || [])];
+					const linkCount = uniqueLinks.length;
+					const uniqueInvalidLinks = [...new Set(item.invalidLinks || [])];
+					const invalidCount = uniqueInvalidLinks.length;
+					const isFirstLinkInvalid = item.invalidLinks?.includes(firstLink);
+					
+					itemCard.innerHTML = `
+						<div class="item-info">
+							<div class="item-preview" id="preview-${item.id}"></div>
+							<div style="flex: 1; min-width: 0;">
+								<div class="item-mood-buttons" id="item-mood-buttons-${item.id}"></div>
+								<div style="font-weight: bold;">${item.name}</div>
+								<div class="${isFirstLinkInvalid ? 'invalid-link' : ''} item-link-container" style="color: var(--primary); font-size: 0.9em;">
+									${firstLink}
+								</div>
+								<div style="color: var(--gray); font-size: 0.85em;">共 ${linkCount+invalidCount} 個連結</div>
+								${invalidCount > 0 ? `<div style="color: var(--danger); font-size: 0.85em;">⚠️ ${invalidCount} 個無效連結</div>` : ''}
+							</div>
+						</div>
+						<div style="display: flex; gap: 10px; flex-shrink: 0;">
+							<button class="btn btn-primary" onclick="searchOnWeb('${item.id}','youtube')">YT</button>
+							<button class="btn btn-primary" onclick="searchOnWeb('${item.id}','bilibili')">B站</button>
+							<button class="btn btn-primary" onclick="searchOnWeb('${item.id}','google')">G圖</button>
+							<button class="btn btn-info" onclick="startEditItem('${item.id}')">編輯</button>
+							<button class="btn ${item.frozen ? 'btn-frozen' : 'btn-gray'}" onclick="toggleFrozen('${item.id}')">${item.frozen ? '解凍' : '凍結'}</button>
+							<button class="btn btn-danger" onclick="confirmRemoveItem('${item.id}')">移除</button>
+						</div>`;
+					
+					setTimeout(() => {
+						createItemMoodButtons(item.id, item.moods || []);
+					}, 0);
+				}
+				itemsList.appendChild(itemCard);
+			});
+		}
 
         function toggleFrozen(itemId) {
             const item = games[selectedGameForEdit].items.find(i => i.id === itemId);
@@ -2799,26 +2875,98 @@
         }
 
         function loadPreviewVideo(containerId, link) {
-            const container = document.getElementById(containerId);
-            if (!container || !link) return;
-            if (link.includes('youtube.com') || link.includes('youtu.be')) {
-                let videoId = '';
-                if (link.includes('youtu.be/')) videoId = link.split('youtu.be/')[1].split(/[?&#]/)[0];
-                else if (link.includes('youtube.com/watch')) {
-                    const match = link.match(/[?&]v=([^&#]+)/);
-                    if (match) videoId = match[1];
-                } else if (link.includes('youtube.com/embed/')) videoId = link.split('embed/')[1].split(/[?&#]/)[0];
-                else if (link.includes('youtube.com/shorts/')) videoId = link.split('shorts/')[1].split(/[?&#]/)[0];
-                if (videoId) container.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?controls=1&modestbranding=1&rel=0" frameborder="0" allowfullscreen></iframe>`;
-            } else if (link.includes('bilibili.com')) {
-                let bvMatch = link.match(/BV[\w]+/);
-                if (bvMatch) container.innerHTML = `<iframe src="https://player.bilibili.com/player.html?bvid=${bvMatch[0]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
-                else {
-                    const avMatch = link.match(/av(\d+)/);
-                    if (avMatch) container.innerHTML = `<iframe src="https://player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
-                }
-            }
-        }
+			const container = document.getElementById(containerId);
+			if (!container || !link) return;
+			
+			if (link.includes('youtube.com') || link.includes('youtu.be')) {
+				let videoId = '';
+				if (link.includes('youtu.be/')) videoId = link.split('youtu.be/')[1].split(/[?&#]/)[0];
+				else if (link.includes('youtube.com/watch')) {
+					const match = link.match(/[?&]v=([^&#]+)/);
+					if (match) videoId = match[1];
+				} else if (link.includes('youtube.com/embed/')) videoId = link.split('embed/')[1].split(/[?&#]/)[0];
+				else if (link.includes('youtube.com/shorts/')) videoId = link.split('shorts/')[1].split(/[?&#]/)[0];
+				if (videoId) container.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?controls=1&modestbranding=1&rel=0" frameborder="0" allowfullscreen></iframe>`;
+			} else if (link.includes('bilibili.com')) {
+				let bvMatch = link.match(/BV[\w]+/);
+				if (bvMatch) container.innerHTML = `<iframe src="https://player.bilibili.com/player.html?bvid=${bvMatch[0]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				else {
+					const avMatch = link.match(/av(\d+)/);
+					if (avMatch) container.innerHTML = `<iframe src="https://player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				}
+			} else if (isImageLink(link)) {
+				// 圖片連結 - 添加點擊放大功能（使用全局模态框）
+				// 修改圖片樣式：高度與外框一致，寬度按比例自動調整
+				const encodedLink = encodeURI(link).replace(/'/g, "\\'");
+				container.innerHTML = `
+					<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; overflow:hidden; background-color:#000; position:relative;">
+						<img src="${link}" onclick="openImageModal('${encodedLink}')" 
+							 style="height:100%; width:auto; max-width:none; cursor:zoom-in; position:absolute;" 
+							 alt="圖片預覽"
+							 onload="this.style.opacity='1'"
+							 onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' fill=\'%23ccc\'/><text x=\'50\' y=\'50\' font-size=\'10\' text-anchor=\'middle\' dy=\'.3em\'>圖片加載失敗</text></svg>';">
+					</div>`;
+			} else if (isVideoFile(link)) {
+				// 影片連結
+				container.innerHTML = `<video src="${link}" style="width:100%; height:100%;" controls></video>`;
+			} else {
+				// 其他連結，嘗試使用iframe嵌入（預覽版本）
+				container.innerHTML = `<iframe src="${link}" style="width:100%; height:100%;" frameborder="0" allowfullscreen></iframe>`;
+			}
+		}
+
+		// 圖片放大 (打開)
+		function openImageModal(encodedImageSrc) {
+			// 解码图片链接
+			const imageSrc = decodeURI(encodedImageSrc);
+			
+			// 如果已经有模态框，先移除
+			if (currentImageModal) {
+				document.body.removeChild(currentImageModal);
+			}
+			
+			// 创建全局模态框
+			currentImageModal = document.createElement('div');
+			currentImageModal.className = 'image-modal';
+			currentImageModal.innerHTML = `
+				<div class="image-modal-content">
+					<button class="close-btn" onclick="closeImageModal()">×</button>
+					<img src="${imageSrc}" class="enlarged-image" alt="放大圖片" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' fill=\'%23ccc\'/><text x=\'50\' y=\'50\' font-size=\'10\' text-anchor=\'middle\' dy=\'.3em\'>圖片加載失敗</text></svg>';">
+				</div>
+			`;
+			
+			// 点击模态框背景关闭
+			currentImageModal.onclick = function(e) {
+				if (e.target === currentImageModal) {
+					closeImageModal();
+				}
+			};
+			
+			document.body.appendChild(currentImageModal);
+		}
+
+		// 圖片放大 (關閉)
+		function closeImageModal() {
+			if (currentImageModal) {
+				document.body.removeChild(currentImageModal);
+				currentImageModal = null;
+			}
+		}
+		
+		// 點擊模態框外部關閉 (圖片放大)
+		document.addEventListener('click', function(event) {
+			if (event.target.classList.contains('image-modal')) {
+				event.target.classList.add('hidden');
+			}
+		});
+		
+		// ESC键关闭模态框 (圖片放大)
+		document.addEventListener('keydown', function(e) {
+			if (currentImageModal && (e.key === 'Escape' || e.key === ' ')) {
+				e.preventDefault(); // 阻止空格键的默认滚动行为
+				closeImageModal();
+			}
+		});
 		
 		function searchOnWeb(itemId,site) {
 			const item = games[selectedGameForEdit].items.find(i => i.id === itemId);
@@ -2826,6 +2974,9 @@
 				let link = '' ;
 				switch(site)
 				{
+					case 'google' :
+						link = `https://www.google.com/search?udm=2&q=${item.name}` ;
+					break ;
 					case 'bilibili' :
 						link = `https://search.bilibili.com/?keyword=${item.name}` ;
 					break ;
@@ -3699,11 +3850,26 @@
 			const item = currentGame.items.find(i => i.id === currentPair[playerNum - 1].id);
 			const isInvalid = item?.invalidLinks?.includes(link);
 			
-			// 处理没有链接或链接为null的情况
+			// 處理沒有連結或連結為null的情況 - 移動到最前面
 			if (!link) {
-				container.innerHTML = '<div style="color: var(--danger); background: #fff; padding: 20px; text-align: center; border-radius: 10px;">無符合篩選條件的影片連結</div>';
+				container.innerHTML = '<div style="color: var(--danger); background: #fff; padding: 20px; text-align: center; border-radius: 10px;">無符合篩選條件的連結</div>';
 				return;
 			}
+
+			// 輸出連結類型到控制台 - 使用輔助函數
+			let linkType = '未知連結';
+			if (link.includes('bilibili.com')) {
+				linkType = 'Bilibili影片';
+			} else if (link.includes('youtube.com') || link.includes('youtu.be')) {
+				linkType = 'YouTube影片';
+			} else if (isVideoFile(link)) {
+				linkType = '影片檔案';
+			} else {
+				linkType = '圖片連結'; // 如果都不是則一律判定為圖片連結
+			}
+			
+			// console.log(`選項${playerNum} (${playerNum === 1 ? '左側' : '右側'}) 連結類型: ${linkType}`);
+			// console.log(`選項${playerNum} 連結: ${link}`);
 
 			// 原有的视频加载逻辑保持不变
 			if (playerNum === 1 && player1) { try { player1.destroy(); } catch(e) {} player1 = null; }
@@ -3715,8 +3881,15 @@
 					<svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
 				</button>`;
 
-			// 原有的视频嵌入逻辑保持不变
-			if (link.includes('youtube.com') || link.includes('youtu.be')) {
+			// 判断链接类型并相应处理
+			if (link.includes('bilibili.com')) {
+				let bvMatch = link.match(/BV[\w]+/);
+				if (bvMatch) container.innerHTML = `${buttons}<iframe src="https://player.bilibili.com/player.html?bvid=${bvMatch[0]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				else {
+					const avMatch = link.match(/av(\d+)/);
+					if (avMatch) container.innerHTML = `${buttons}<iframe src="https://player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				}
+			} else if (link.includes('youtube.com') || link.includes('youtu.be')) {
 				let videoId = '';
 				if (link.includes('youtu.be/')) videoId = link.split('youtu.be/')[1].split(/[?&#]/)[0];
 				else if (link.includes('youtube.com/watch')) {
@@ -3740,16 +3913,65 @@
 						container.innerHTML = `${buttons}<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1&mute=1" frameborder="0" allowfullscreen></iframe>`;
 					}
 				}
-			} else if (link.includes('bilibili.com')) {
-				let bvMatch = link.match(/BV[\w]+/);
-				if (bvMatch) container.innerHTML = `${buttons}<iframe src="https://player.bilibili.com/player.html?bvid=${bvMatch[0]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
-				else {
-					const avMatch = link.match(/av(\d+)/);
-					if (avMatch) container.innerHTML = `${buttons}<iframe src="https://player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
-				}
+			} else if (isVideoFile(link)) {
+				// 影片連結
+				container.innerHTML = `${buttons}<video src="${link}" style="width:100%; height:100%; border-radius:10px;" controls></video>`;
+			} else {
+				// 圖片連結 - 添加點擊放大功能（使用全局模态框）
+				// 修改圖片樣式：高度與外框一致，寬度按比例自動調整
+				const encodedLink = encodeURI(link).replace(/'/g, "\\'");
+				container.innerHTML = `
+					${buttons}
+					<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; overflow:hidden; border-radius:10px; background-color:#000; position:relative;">
+						<img src="${link}" onclick="openImageModal('${encodedLink}')" 
+							 style="height:100%; width:auto; max-width:none; cursor:zoom-in; position:absolute;" 
+							 alt="圖片預覽"
+							 onload="this.style.opacity='1'"
+							 onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' fill=\'%23ccc\'/><text x=\'50\' y=\'50\' font-size=\'10\' text-anchor=\'middle\' dy=\'.3em\'>圖片加載失敗</text></svg>';">
+					</div>`;
+				/* 註解掉 其他連結 當作後備
+				// 其他連結，嘗試使用iframe嵌入
+				// 為了安全，使用sandbox限制
+				container.innerHTML = `${buttons}<iframe src="${link}" style="width:100%; height:100%; border-radius:10px;" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" frameborder="0" allowfullscreen></iframe>`;
+				*/
 			}
 			
 			if (statsVisible) updateItemStats();
+		}
+		
+		// 判断链接类型是否圖片
+		function isImageLink(link) {
+			if (!link) return false;
+			
+			// 解析URL获取路径部分
+			const url = new URL(link);
+			const pathname = url.pathname.toLowerCase();
+			
+			// 查找路径中 ? 或 / 之前的扩展名
+			// const fileNames = pathname.replaceAll('?','/').split('/') ;
+
+			// 检查常见图片扩展名
+			const allowedEnds = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', 'image', 'images', 'proxy'];
+			
+			return allowedEnds.some( x => pathname.includes(x) );
+			
+			// return fileNames.some( fileName => allowedEnds.some( end => fileName.endsWith(end) ) );
+		}
+		
+		// 判断链接类型是否影片
+		function isVideoFile(link) {
+			if (!link) return false;
+			
+			try {
+				const url = new URL(link);
+				const pathname = url.pathname.toLowerCase();
+				
+				const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
+				return videoExtensions.some(ext => pathname.endsWith(ext));
+			} catch (e) {
+				const lowerLink = link.toLowerCase();
+				return /\.(mp4|webm|ogg|mov|avi|mkv)(\?|$)/.test(lowerLink);
+			}
 		}
 
         function voteExtreme(value) { 
@@ -5830,7 +6052,10 @@
 			// 更新基礎統計數據顯示為默認值
 			document.getElementById('totalItems').textContent = '0';
 			document.getElementById('totalVotes').textContent = '0';
-			document.getElementById('expectedVotes').textContent = '0';
+			document.getElementById('expectedVotes1').textContent = '0';
+			document.getElementById('expectedVotes2').textContent = '0';
+			document.getElementById('expectedVotes3').textContent = '0';
+			document.getElementById('expectedVotes4').textContent = '0';
 			document.getElementById('avgError').textContent = '?';
 			document.getElementById('avgScore').textContent = '?';
 			document.getElementById('medianScore').textContent = '?';
@@ -5863,8 +6088,10 @@
 		
 		// 2. 计算基础统计数据
 		function calculateBasicStats(game) {
+			const n = game.items.length ;
+
 			// 检查游戏项目是否存在且不为空
-			if (!game.items || game.items.length === 0) {
+			if (!game.items || n == 0) {
 				return {
 					maxScore: 1500, 
 					minScore: 1500, 
@@ -5878,11 +6105,38 @@
 				};
 			}
 			
-			document.getElementById('totalItems').textContent = game.items.length;
+			document.getElementById('totalItems').textContent = n;
 			document.getElementById('totalVotes').textContent = game.votes.length;
 			
-			let expectedValue = 25 * game.items.length;
-			document.getElementById('expectedVotes').textContent = expectedValue;
+			// 手動 容錯 前10
+			// let expectedValue1 = Math.round( 5 * n * Math.log2(10) );
+			// let expectedValue1 = 10/2 * 50 * Math.round( Math.log2(n) - Math.log2(10) + 1 ) ;
+			
+			// 零容錯 全排
+			const treeHeight = Math.ceil( Math.log2(n) ) ;
+			let expectedValue2 = n * treeHeight - 2**treeHeight + 1 ;
+			
+			// 容錯 全穩定 ( 每項目50票次 )
+			let expectedValue3 = 25 * n ; 
+
+			// 隨機 全排
+            let H = 0 ;
+            for(let k = 1; k < n; ++k) H += 1/k;
+			let expectedValue4 = Math.round(n*(n-1)/2*H) ;
+
+			// document.getElementById('expectedVotes1').textContent = `${expectedValue1} (手動 容錯 前10)`;
+			document.getElementById('expectedVotes2').textContent = `${expectedValue2} (零容錯 全排)`;
+			document.getElementById('expectedVotes3').textContent = `${expectedValue3} (容錯 全穩定)` ;
+			document.getElementById('expectedVotes4').textContent = `${expectedValue4} (隨機 全排)` ;
+			
+			// 點擊時顯示更多信息 ////
+			const expectedVotesCard = document.getElementById('expectedVotesCard');
+			expectedVotesCard.onclick = function() {
+				alert(`公式如下.
+零容錯 全排 : kn - ( 2^k - 1 ) , 2^k ≥ n
+容錯 全穩定 : n/2 ∙ 50 , 每個項目 50 票次
+隨機 全排 : nCr(n,2) ∙ H_(n-1) , H 為調和級數`);
+			};
 			
 			let minScore = Infinity, maxScore = -Infinity, totalScore = 0;
 			let scores = [];
@@ -5896,7 +6150,7 @@
 			
 			scores.sort((a, b) => a - b);
 			const medianScore = calculateMedian(scores);
-			const avgScore = game.items.length > 0 ? (totalScore / game.items.length).toFixed(2) : 1500;
+			const avgScore = n > 0 ? (totalScore / n).toFixed(2) : 1500;
 			const scoreStdDev = calculateStandardDeviation(scores);
 			
 			// 计算分隔线阈值

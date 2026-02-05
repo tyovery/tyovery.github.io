@@ -101,6 +101,26 @@
         .invalid-btn.active { background: var(--danger); color: white; }
         .vs-text { font-size: 3em; font-weight: bold; color: #e53e3e; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
         .item-stats { background: rgba(255,255,255,0.95); border-radius: 10px; padding: 10px; margin-top: 10px; font-size: 0.9em; }
+		.jump-btn {
+			width: 50px;
+			height: 50px;
+			background: rgba(255,255,255,0.95);
+			border-radius: 50%;
+			cursor: pointer;
+			z-index: 30;
+			transition: all 0.3s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 16px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+			border: 2px solid var(--success);
+		}
+		.jump-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+			background: white;
+		}
         .score-change {
 			margin-top: 10px; font-size: 1.5em; font-weight: bold; opacity: 0;
 			animation: scoreFloat 2s ease-out;
@@ -124,7 +144,7 @@
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-		}	
+		}
         .vote-slider {
 			flex: 1;
 			width: 600px;
@@ -207,6 +227,7 @@
 		}
         .stat-value { font-size: 2.5em; font-weight: bold; margin-bottom: 10px; }
         .list-item {
+			position: relative;
             background: #f7fafc; border-radius: 10px; padding: 15px; margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center;
         }
@@ -913,6 +934,19 @@
 			transform: scale(1.02);
 		}
 		
+		.item-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+		
+		.item-checkbox-container {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 10;
+        }
+
 		@media (max-width: 768px) {
 			.vote-slider-container {
 				max-width: 95%;
@@ -931,7 +965,7 @@
 				height: 40px;
 			}
 			
-			.lock-btn, .freeze-btn {
+			.lock-btn, .freeze-btn, .jump-btn {
 				width: 40px;
 				height: 40px;
 			}
@@ -1405,6 +1439,7 @@
 								<option value="strongest">名次最高</option>
 								<option value="similarScore">分數相近</option>
 								<option value="leastVolatility">波動最小</option>
+								<option value="monthlyHot">月度熱門</option>
 								<option value="highestTrend">升率最高</option>
 								<option value="lowestTrend">降率最高</option>
 								<option value="uniform">均勻隨機</option>
@@ -1457,7 +1492,7 @@
                             <div class="score-change" id="scoreChange1"></div>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0px;">
-							<button class="btn btn-info" onclick="reloadBothVideos()" title="重新載入影片"><span>🔄</span></button>
+							<button class="btn btn-info" onclick="reloadBothTerms()" title="重新載入項目"><span>🔄</span></button>
 							<div class="platform-filter-buttons" style="display: flex; justify-content: center; width: 100%;">
 								<button id="youtubeFilterBtn" class="platform-filter-btn" title="禁用YouTube連結" onclick="togglePlatformFilter('youtube')">
 									<div class="youtube-logo"></div>
@@ -1485,8 +1520,9 @@
                     </div>
 
 					<div class="vote-controls-container" style="display: flex; align-items: center; justify-content: center; max-width: 700px; margin: 30px auto; position: relative;">
-						<div class="lock-btn-container" style="margin-right: 60px;">
+						<div class="lock-btn-container" style="margin-right: 70px;">
 							<div style="display: flex; flex-direction: row; gap: 10px;">
+								<button class="jump-btn" id="jumpBtnLeft" title="跳轉到統計頁的該項目" onclick="jumpToStats(0)">📈</button>
 								<button class="freeze-btn" id="freezeBtnLeft" title="凍結左面的項目" onclick="toggleFreeze('left')">❄️</button>
 								<button class="lock-btn" id="lockBtnLeft" title="鎖定左面的項目" onclick="toggleLock('left')">🔒</button>
 							</div>
@@ -1498,10 +1534,11 @@
 							<input type="range" class="vote-slider" id="voteSlider" min="0" max="100" value="50" title="滑動進行投票">
 						</div>
 						
-						<div class="lock-btn-container" style="margin-left: 60px;">
+						<div class="lock-btn-container" style="margin-left: 70px;">
 							<div style="display: flex; flex-direction: row; gap: 10px;">
 								<button class="lock-btn" id="lockBtnRight" title="鎖定右面的項目" onclick="toggleLock('right')">🔒</button>
 								<button class="freeze-btn" id="freezeBtnRight" title="凍結右面的項目" onclick="toggleFreeze('right')">❄️</button>
+								<button class="jump-btn" id="jumpBtnRight" title="跳轉到統計頁的該項目" onclick="jumpToStats(1)">📈</button>
 							</div>
 						</div>
 					</div>
@@ -1733,6 +1770,7 @@
         </div>
     </div>
 	<center>
+		ver 0.5&emsp;~tyovery~&emsp;2026-02<br />
 		ver 0.4&emsp;~tyovery~&emsp;2026-01<br />
 		ver 0.3&emsp;~tyovery~&emsp;2025-12<br />
 		ver 0.2&emsp;~tyovery~&emsp;2025-11<br />
@@ -1823,7 +1861,7 @@
         let scoreDistributionChartLarge = null;
         
         // 平台篩選狀態
-		let platformFilters = JSON.parse(localStorage.getItem('platformFilters')) || { youtube: true, bilibili: true };
+		let platformFilters = JSON.parse(localStorage.getItem('platformFilters')) || {};
 
         // 排名動畫相關變量
         let rankingAnimationData = [];
@@ -2058,94 +2096,150 @@
             localStorage.setItem('games', JSON.stringify(games));
             syncData();
         }
-        
-        // 新增平台篩選功能
-        function togglePlatformFilter(platform) {
-			platformFilters[platform] = !platformFilters[platform];
-			localStorage.setItem('platformFilters', JSON.stringify(platformFilters));
+		
+		function jumpToStats(position) {
+			if (!currentPair || !currentPair[position]) return;
+			const itemId = currentPair[position].id;
+			const gameId = currentGame.id;
 			
-			// 更新按钮样式
-			updatePlatformFilterButtons();
+			// 切换到统计页
+			showPage('stats');
+			// 选择当前游戏
+			document.getElementById('statsGameSelect').value = gameId;
+			// 加载统计
+			loadStats();
+			// 清除过滤选项
+			clearStatsFilters();
+			// 收起所有图表
+			collapseAllCharts();
 			
-			// 立即重新加载当前影片以应用筛选
-			/*
-			if (currentPair) {
-				reloadBothVideos();
-			}*/
+			// 找到对应的项目并滚动
+			const rankingItem = document.getElementById(`ranking-item-${itemId}`);
+			if (rankingItem) {
+				// 先展开图表
+				const chartContainer = rankingItem.querySelector('.score-chart-container');
+				if (chartContainer) {
+					rankingItem.classList.add('expanded');
+					expandedItemIds.push(itemId);
+					localStorage.setItem('expandedItemIds', JSON.stringify(expandedItemIds));
+					
+					chartContainer.style.display = 'block';
+					renderScoreChart(itemId, chartContainer);
+					
+					// 滚动到图表区域
+					chartContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					
+				} else {
+					// 如果没有图表容器，直接滚动到项目并显示高亮
+					rankingItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+					setTimeout(() => {
+						// 清除现有动画
+						rankingItem.style.animation = 'none';
+						// 强制重绘
+						void rankingItem.offsetWidth;
+						// 应用高亮动画
+						rankingItem.style.animation = 'highlightPulse 3s ease-in-out';
+					}, 300);
+				}
+			}
 		}
+        
+        // 平台篩選功能
+        function togglePlatformFilter(platform) {
+            const gameId = document.getElementById('gameSelect').value;
+            if (!gameId) return;
+            
+            const gameFilters = getPlatformFiltersForGame(gameId);
+            gameFilters[platform] = !gameFilters[platform];
+            
+            // 更新全局存儲
+            platformFilters[gameId] = gameFilters;
+            savePlatformFilters();
+            
+            // 更新按钮样式
+            updatePlatformFilterButtons();
+        }
 		
 		function updatePlatformFilterButtons() {
-			const youtubeBtn = document.getElementById('youtubeFilterBtn');
-			const bilibiliBtn = document.getElementById('bilibiliFilterBtn');
-			
-			if (youtubeBtn) {
-				if (platformFilters.youtube) {
-					youtubeBtn.classList.add('active');
-				} else {
-					youtubeBtn.classList.remove('active');
-				}
-			}
-			
-			if (bilibiliBtn) {
-				if (platformFilters.bilibili) {
-					bilibiliBtn.classList.add('active');
-				} else {
-					bilibiliBtn.classList.remove('active');
-				}
-			}
-		}
+            const gameId = document.getElementById('gameSelect').value;
+            const gameFilters = getPlatformFiltersForGame(gameId);
+            
+            const youtubeBtn = document.getElementById('youtubeFilterBtn');
+            const bilibiliBtn = document.getElementById('bilibiliFilterBtn');
+            
+            if (youtubeBtn) {
+                if (gameFilters.youtube) {
+                    youtubeBtn.classList.add('active');
+                } else {
+                    youtubeBtn.classList.remove('active');
+                }
+            }
+            
+            if (bilibiliBtn) {
+                if (gameFilters.bilibili) {
+                    bilibiliBtn.classList.add('active');
+                } else {
+                    bilibiliBtn.classList.remove('active');
+                }
+            }
+        }
         
-        // 修改getRandomValidLink函數以支持平台篩選
+        // 支持平台篩選
         function getRandomValidLink(item) {
-			if (!item?.links?.length) return null;
-			
-			// 先获取所有有效链接（排除无效链接）
-			let validLinks = item.links.filter(link => !item.invalidLinks?.includes(link));
-			
-			if (validLinks.length === 0) {
-				validLinks = [...item.links];
-			}
-			
-			// 根据平台筛选条件过滤链接
-			let filteredLinks = validLinks.filter(link => {
-				const isYoutube = link.includes('youtube.com') || link.includes('youtu.be');
-				const isBilibili = link.includes('bilibili.com');
-				
-				// 只有当平台筛选开启时才包含对应平台的链接
-				if (isYoutube && !platformFilters.youtube) return false;
-				if (isBilibili && !platformFilters.bilibili) return false;
-				
-				// 如果链接不是YouTube也不是Bilibili，则保留（允许其他平台）
-				return true;
-			});
-			
-			// 如果筛选后没有链接，返回null
-			if (filteredLinks.length === 0) {
-				return null;
-			}
-			
-			// 如果有当前链接且在当前可用链接中，优先排除当前链接
-			let availableLinks = [...filteredLinks];
-			const currentLink1 = currentVideoLinks[0];
-			const currentLink2 = currentVideoLinks[1];
-			
-			if (availableLinks.length > 1) {
-				if (currentLink1 && availableLinks.includes(currentLink1)) {
-					availableLinks = availableLinks.filter(link => link !== currentLink1);
-				}
-				if (currentLink2 && availableLinks.includes(currentLink2)) {
-					availableLinks = availableLinks.filter(link => link !== currentLink2);
-				}
-			}
-			
-			// 如果排除当前链接后还有可选链接，从其中随机选择
-			if (availableLinks.length > 0) {
-				return availableLinks[Math.floor(Math.random() * availableLinks.length)];
-			}
-			
-			// 否则从所有筛选后的链接中随机选择
-			return filteredLinks[Math.floor(Math.random() * filteredLinks.length)];
-		}
+            if (!item?.links?.length) return null;
+            
+            // 先获取所有有效链接（排除无效链接）
+            let validLinks = item.links.filter(link => !item.invalidLinks?.includes(link));
+            
+            if (validLinks.length === 0) {
+                validLinks = [...item.links];
+            }
+            
+            // 获取当前游戏的平台筛选条件
+            const gameId = currentGame ? currentGame.id : document.getElementById('gameSelect').value;
+            const gameFilters = getPlatformFiltersForGame(gameId);
+            
+            // 根据平台筛选条件过滤链接
+            let filteredLinks = validLinks.filter(link => {
+                const isYoutube = link.includes('youtube.com') || link.includes('youtu.be');
+                const isBilibili = link.includes('bilibili.com');
+                
+                // 只有当平台筛选开启时才包含对应平台的链接
+                if (isYoutube && !gameFilters.youtube) return false;
+                if (isBilibili && !gameFilters.bilibili) return false;
+                
+                // 如果链接不是YouTube也不是Bilibili，则保留（允许其他平台）
+                return true;
+            });
+            
+            // 如果筛选后没有链接，返回null
+            if (filteredLinks.length === 0) {
+                return null;
+            }
+            
+            // 如果有当前链接且在当前可用链接中，优先排除当前链接
+            let availableLinks = [...filteredLinks];
+            const currentLink1 = currentVideoLinks[0];
+            const currentLink2 = currentVideoLinks[1];
+            
+            if (availableLinks.length > 1) {
+                if (currentLink1 && availableLinks.includes(currentLink1)) {
+                    availableLinks = availableLinks.filter(link => link !== currentLink1);
+                }
+                if (currentLink2 && availableLinks.includes(currentLink2)) {
+                    availableLinks = availableLinks.filter(link => link !== currentLink2);
+                }
+            }
+            
+            // 如果排除当前链接后还有可选链接，从其中随机选择
+            if (availableLinks.length > 0) {
+                return availableLinks[Math.floor(Math.random() * availableLinks.length)];
+            }
+            
+            // 否则从所有筛选后的链接中随机选择
+            return filteredLinks[Math.floor(Math.random() * filteredLinks.length)];
+        }
 
         function toggleStats() {
 			statsVisible = !statsVisible;
@@ -2166,6 +2260,8 @@
 				stats1.classList.add('hidden');
 				stats2.classList.add('hidden');
 			}
+			
+			updateExpectedWinrateLine() ;
 		}
 
         function sortItemsByRank(items) {
@@ -2194,6 +2290,11 @@
 				const winRateB = calculateWinRate(b).toFixed(3) ;
 				if (winRateB !== winRateA) return winRateB - winRateA;
 				
+				// 勝率也相同時，按30日上升趨勢降序排列
+				const trendA = getRecentScoreIncrease(a) ;
+				const trendB = getRecentScoreIncrease(b) ;
+				if (trendB !== trendA) return trendB - trendA;
+
 				// 最後按票次降序排列
 				return b.votes - a.votes;
 			});
@@ -2260,17 +2361,20 @@
         function setMaxItems() {
 			const gameId = document.getElementById('gameSelect').value;
 			if (gameId) {
-				const keyword = document.getElementById('keywordFilter').value.toLowerCase().trim();
 				let items = games[gameId].items;
 			   
-				if (keyword) {
-					items = items.filter(item => item.name.toLowerCase().includes(keyword));
-				}
+				// 1. 關鍵字篩選
+				const keyword = document.getElementById('keywordFilter').value;
+				const logic = document.getElementById('votingMoodLogic').value;
+				items = applyKeywordFilter(items, keyword, logic);
 			   
+				// 2. 心情篩選
+				const currentVotingMoodLogic = logic;
 				if (selectedMoodFilters.length > 0) {
-					items = applyMoodFilter(items, selectedMoodFilters, votingMoodLogic);
+					items = applyMoodFilter(items, selectedMoodFilters, currentVotingMoodLogic);
 				}
 			   
+				// 3. 排除凍結項目
 				items = items.filter(item => !item.frozen);
 			   
 				const maxCount = items.length;
@@ -2323,6 +2427,12 @@
 				}
 			});
 			if (statsVisible) updateItemStats();
+			updateExpectedWinrateLine();
+		}
+		
+		function reloadBothTerms() {
+			reloadTerm(0,currentPair[0]);
+			reloadTerm(1,currentPair[1]);
 		}
 
         function showPage(pageName) {
@@ -2332,8 +2442,24 @@
 			
 			document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
 			document.getElementById(pageName).classList.add('active');
+			
+			// 修复：无论是通过点击还是代码调用，都要正确设置导航按钮的active状态
 			document.querySelectorAll('.btn-nav').forEach(btn => btn.classList.remove('active'));
-			event.target.classList.add('active');
+			
+			// 根据页面名称找到对应的导航按钮并添加active类
+			const navButtons = document.querySelectorAll('.btn-nav');
+			navButtons.forEach(btn => {
+				// 检查按钮的onclick属性是否包含对应的页面名称
+				const onclickAttr = btn.getAttribute('onclick');
+				if (onclickAttr && onclickAttr.includes(`'${pageName}'`)) {
+					btn.classList.add('active');
+				}
+			});
+			
+			// 原有的事件处理代码保持，以便兼容点击事件
+			if (event && event.target) {
+				event.target.classList.add('active');
+			}
 
 			if (pageName === 'voting') {
 				clearScoreAnimations();
@@ -2347,15 +2473,6 @@
 				} else {
 					toggleStatsBtn.classList.remove('active');
 				}
-				
-				// 从localStorage加载平台筛选状态
-				const savedPlatformFilters = localStorage.getItem('platformFilters');
-				if (savedPlatformFilters) {
-					platformFilters = JSON.parse(savedPlatformFilters);
-				}
-				
-				// 更新平台筛选按钮状态
-				updatePlatformFilterButtons();
 				
 				if (selectedGameId) {
 					document.getElementById('gameSelect').value = selectedGameId;
@@ -2556,6 +2673,8 @@
             document.getElementById('itemsManagement').classList.remove('hidden');
             currentPage = 1;
             updateItemsListWithPagination();
+			document.getElementById('paginationTop').scrollIntoView({ behavior: 'smooth', block: 'center' });
+			document.getElementById('itemFilter').select();
         }
 
         function setupIntersectionObserver() {
@@ -2635,7 +2754,30 @@
 			const filterText = document.getElementById('itemFilter').value.toLowerCase();
 			
 			filteredItems = game.items.filter(item => {
-				const matchesText = !filterText || item.name.toLowerCase().includes(filterText);
+				// 修改關鍵字篩選邏輯：與心情篩選邏輯一致
+				let matchesText = true;
+				if (filterText) {
+					const keywords = filterText.split(/\s+/).filter(k => k.length > 0);
+					if (keywords.length > 0) {
+						const itemName = item.name.toLowerCase();
+						const logic = document.getElementById('settingsMoodLogic').value;
+						
+						switch(logic) {
+							case 'and':
+								matchesText = keywords.every(k => itemName.includes(k));
+								break;
+							case 'or':
+								matchesText = keywords.some(k => itemName.includes(k));
+								break;
+							case 'not':
+								matchesText = !keywords.some(k => itemName.includes(k));
+								break;
+							default:
+								matchesText = keywords.some(k => itemName.includes(k));
+						}
+					}
+				}
+				
 				const hasInvalidLinks = item.invalidLinks && item.invalidLinks.length > 0;
 				const matchesInvalidFilter = !showInvalidOnly || hasInvalidLinks;
 				const matchesFrozenFilter = !showFrozenOnly || item.frozen;
@@ -2644,34 +2786,34 @@
 				
 				return matchesText && matchesInvalidFilter && matchesFrozenFilter && matchesMoodFilter;
 			});
-            
-            filteredItems.sort((a, b) => (b.addedTime || 0) - (a.addedTime || 0));
-            
-            const totalItems = filteredItems.length;
-            itemsPerPage = parseInt(document.getElementById('pageSize').value);
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
-            if (currentPage > totalPages) currentPage = totalPages;
-            if (currentPage < 1) currentPage = 1;
-            
-            document.getElementById('itemsListTitle').innerHTML = `${game.name}<br />(${totalItems}/${game.items.length})`;
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-            updateItemsList(filteredItems.slice(startIndex, endIndex));
-            updatePagination(totalPages);
-            
-            setupIntersectionObserver();
-            document.querySelectorAll('.item-preview').forEach(preview => {
-                if (isElementInViewport(preview)) {
-                    const itemId = preview.id.replace('preview-', '');
-                    const item = game.items.find(i => i.id === itemId);
-                    if (item?.links?.length > 0 && !preview.innerHTML) {
-                        loadPreviewVideo(preview.id, item.links[0]);
-                    }
-                } else {
-                    visibleItemObserver.observe(preview);
-                }
-            });
-        }
+			
+			filteredItems.sort((a, b) => (b.addedTime || 0) - (a.addedTime || 0));
+			
+			const totalItems = filteredItems.length;
+			itemsPerPage = parseInt(document.getElementById('pageSize').value);
+			const totalPages = Math.ceil(totalItems / itemsPerPage);
+			if (currentPage > totalPages) currentPage = totalPages;
+			if (currentPage < 1) currentPage = 1;
+			
+			document.getElementById('itemsListTitle').innerHTML = `${game.name}<br />(${totalItems}/${game.items.length})`;
+			const startIndex = (currentPage - 1) * itemsPerPage;
+			const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+			updateItemsList(filteredItems.slice(startIndex, endIndex));
+			updatePagination(totalPages);
+			
+			setupIntersectionObserver();
+			document.querySelectorAll('.item-preview').forEach(preview => {
+				if (isElementInViewport(preview)) {
+					const itemId = preview.id.replace('preview-', '');
+					const item = game.items.find(i => i.id === itemId);
+					if (item?.links?.length > 0 && !preview.innerHTML) {
+						loadPreviewVideo(preview.id, item.links[0]);
+					}
+				} else {
+					visibleItemObserver.observe(preview);
+				}
+			});
+		}
         
         function changePageSize() {
             currentPage = 1;
@@ -2690,20 +2832,37 @@
         }
 
         function updatePagination(totalPages) {
-            const html = `
-                <button class="btn btn-gray" onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''}>首頁</button>
-                <button class="btn btn-gray" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一頁</button>
-                <span>第 ${currentPage} / ${totalPages} 頁</span>
-                <button class="btn btn-gray" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一頁</button>
-                <button class="btn btn-gray" onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>末頁</button>`;
-            ['paginationTop', 'paginationBottom'].forEach(id => document.getElementById(id).innerHTML = html);
-        }
+			const html = `
+				<button class="btn btn-gray" onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''}>首頁</button>
+				<button class="btn btn-gray" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一頁</button>
+				<span>第 ${currentPage} / ${totalPages} 頁</span>
+				<button class="btn btn-gray" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一頁</button>
+				<button class="btn btn-gray" onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>末頁</button>
+				<button class="btn btn-danger" onclick="batchDeleteItems()" style="margin-left: 20px;">批量刪除</button>
+				<button class="btn btn-warning" onclick="mergeDuplicateItems()">合拼同名項目</button>
+				<button class="btn btn-warning" onclick="mergeSelectedItems()">合拼勾選的項目</button>`;
+			['paginationTop', 'paginationBottom'].forEach(id => document.getElementById(id).innerHTML = html);
+		}
 
         function changePage(page) { currentPage = page; updateItemsListWithPagination(); }
 
         function updateItemsList(items) {
 			const itemsList = document.getElementById('itemsList');
 			itemsList.innerHTML = '';
+			
+			// 添加全選/取消全選控制項
+			const selectAllControl = document.createElement('div');
+			selectAllControl.className = 'list-item';
+			selectAllControl.style.cssText = 'margin-bottom: 10px; padding: 10px; background: #f0f0f0; border-radius: 10px;';
+			selectAllControl.innerHTML = `
+				<div style="display: flex; align-items: center; gap: 10px;">
+					<input type="checkbox" id="selectAllItems" onchange="toggleSelectAllItems(this.checked)">
+					<label for="selectAllItems" style="font-weight: bold; margin: 0;">全選/取消全選</label>
+					<span id="selectedCount" style="margin-left: auto; color: var(--primary); font-weight: bold;">已選擇 0 個項目</span>
+				</div>
+			`;
+			itemsList.appendChild(selectAllControl);
+			
 			items.forEach(item => {
 				const itemCard = document.createElement('div');
 				itemCard.className = 'list-item';
@@ -2726,6 +2885,9 @@
 					})();
 					
 					itemCard.innerHTML = `
+						<div class="item-checkbox-container">
+							<input type="checkbox" class="item-checkbox" value="${item.id}" onchange="updateSelectedCount()">
+						</div>
 						<div class="item-info">
 							<div style="flex: 1;">
 								<div class="edit-mood-buttons" id="edit-mood-buttons-${item.id}"></div>
@@ -2750,6 +2912,9 @@
 					const isFirstLinkInvalid = item.invalidLinks?.includes(firstLink);
 					
 					itemCard.innerHTML = `
+						<div class="item-checkbox-container">
+							<input type="checkbox" class="item-checkbox" value="${item.id}" onchange="updateSelectedCount()">
+						</div>
 						<div class="item-info">
 							<div class="item-preview" id="preview-${item.id}"></div>
 							<div style="flex: 1; min-width: 0;">
@@ -2777,6 +2942,387 @@
 				}
 				itemsList.appendChild(itemCard);
 			});
+		}
+		
+		// 合拼勾選的項目
+		function mergeSelectedItems() {
+			if (!selectedGameForEdit) {
+				alert('請先選擇要編輯的遊戲');
+				return;
+			}
+			
+			const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+			if (checkboxes.length < 2) {
+				alert('請選擇至少 2 個要合拼的項目');
+				return;
+			}
+			
+			const itemIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+			const game = games[selectedGameForEdit];
+			
+			// 獲取選中的項目
+			const selectedItems = itemIds.map(id => game.items.find(item => item.id === id)).filter(item => item);
+			
+			if (selectedItems.length < 2) {
+				alert('找不到選擇的項目');
+				return;
+			}
+			
+			let mergeMessage = `將合拼以下 ${selectedItems.length} 個項目：\n\n`;
+			selectedItems.forEach((item, index) => {
+				mergeMessage += `${index + 1}. "${item.name}" (票次: ${item.votes || 0}, 分數: ${item.score})\n`;
+			});
+			
+			mergeMessage += `\n合拼後將保留第一個項目作為主項目，並合拼所有連結及投票數據。\n是否確認合拼？`;
+			
+			if (confirm(mergeMessage)) {
+				// 選擇第一個項目作為主項目
+				const mainItem = selectedItems[0];
+				const mainIndex = game.items.findIndex(item => item.id === mainItem.id);
+				
+				// 收集所有項目的數據
+				const allLinks = new Set();
+				const allInvalidLinks = new Set();
+				const allMoods = new Set();
+				
+				// 先從主項目開始收集
+				(mainItem.links || []).forEach(link => allLinks.add(link));
+				(mainItem.invalidLinks || []).forEach(link => allInvalidLinks.add(link));
+				(mainItem.moods || []).forEach(mood => allMoods.add(mood));
+				
+				// 然後收集其他選中項目並合拼投票數據
+				const itemsToRemove = [];
+				for (let i = 1; i < selectedItems.length; i++) {
+					const item = selectedItems[i];
+					(item.links || []).forEach(link => allLinks.add(link));
+					(item.invalidLinks || []).forEach(link => allInvalidLinks.add(link));
+					(item.moods || []).forEach(mood => allMoods.add(mood));
+					
+					// 合拼投票數據
+					mergeVoteData(mainItem, item);
+					itemsToRemove.push(item.id);
+				}
+				
+				// 更新主項目
+				game.items[mainIndex].links = Array.from(allLinks);
+				game.items[mainIndex].invalidLinks = Array.from(allInvalidLinks);
+				game.items[mainIndex].moods = Array.from(allMoods);
+				
+				// 更新主項目的分數歷史記錄，合併所有選中項目的歷史
+				mergeScoreHistory(mainItem, selectedItems);
+				
+				// 移除其他選中的項目（除了主項目）
+				game.items = game.items.filter(item => !itemsToRemove.includes(item.id));
+				
+				// 更新遊戲的投票記錄，將被移除項目的投票記錄替換為主項目
+				updateGameVotesForSelectedItems(game, itemsToRemove, mainItem.id);
+				
+				// 儲存到本地存儲
+				localStorage.setItem('games', JSON.stringify(games));
+				syncData();
+				
+				// 更新顯示
+				updateItemsListWithPagination();
+				updateGamesList();
+				
+				// 重置全選checkbox
+				const selectAllCheckbox = document.getElementById('selectAllItems');
+				if (selectAllCheckbox) {
+					selectAllCheckbox.checked = false;
+				}
+				updateSelectedCount();
+				
+				alert(`已成功合拼 ${selectedItems.length} 個項目！\n移除了 ${itemsToRemove.length} 個項目。`);
+			}
+		}
+		
+		// 更新遊戲投票記錄（針對勾選項目合拼）
+		function updateGameVotesForSelectedItems(game, removedItemIds, mainItemId) {
+			if (!game.votes || game.votes.length === 0) return;
+			
+			// 更新投票記錄
+			game.votes.forEach(vote => {
+				if (removedItemIds.includes(vote.item1)) {
+					vote.item1 = mainItemId;
+				}
+				if (removedItemIds.includes(vote.item2)) {
+					vote.item2 = mainItemId;
+				}
+			});
+			
+			// 移除重複的投票記錄（如果合拼後出現完全相同的投票）
+			const uniqueVotes = [];
+			const voteSet = new Set();
+			
+			game.votes.forEach(vote => {
+				const voteKey = `${vote.item1}-${vote.item2}-${vote.value}-${vote.timestamp}`;
+				if (!voteSet.has(voteKey)) {
+					voteSet.add(voteKey);
+					uniqueVotes.push(vote);
+				}
+			});
+			
+			game.votes = uniqueVotes;
+		}
+		
+		// 全選/取消全選功能
+		function toggleSelectAllItems(checked) {
+			const checkboxes = document.querySelectorAll('.item-checkbox');
+			checkboxes.forEach(checkbox => {
+				checkbox.checked = checked;
+			});
+			updateSelectedCount();
+		}
+		
+		// 更新已選擇項目計數
+		function updateSelectedCount() {
+			const checkboxes = document.querySelectorAll('.item-checkbox');
+			let checkedCount = 0;
+			checkboxes.forEach(checkbox => {
+				if (checkbox.checked) checkedCount++;
+			});
+			document.getElementById('selectedCount').textContent = `已選擇 ${checkedCount} 個項目`;
+		}
+		
+		// 批量刪除項目
+		function batchDeleteItems() {
+			const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+			if (checkboxes.length === 0) {
+				alert('請先選擇要刪除的項目');
+				return;
+			}
+			
+			const itemIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+			const itemNames = itemIds.map(id => {
+				const item = games[selectedGameForEdit].items.find(i => i.id === id);
+				return item ? item.name : '';
+			}).filter(name => name);
+			
+			if (confirm(`確定要刪除以下 ${itemNames.length} 個項目嗎？\n\n${itemNames.slice(0, 10).join('\n')}${itemNames.length > 10 ? `\n...還有 ${itemNames.length - 10} 個項目` : ''}`)) {
+				// 從遊戲中移除選中的項目
+				games[selectedGameForEdit].items = games[selectedGameForEdit].items.filter(item => !itemIds.includes(item.id));
+				
+				// 儲存到本地存儲
+				localStorage.setItem('games', JSON.stringify(games));
+				syncData();
+				
+				// 更新顯示
+				updateItemsListWithPagination();
+				updateGamesList();
+				
+				alert(`已成功刪除 ${itemNames.length} 個項目`);
+			}
+		}
+		
+		// 合拼同名項目
+		function mergeDuplicateItems() {
+			if (!selectedGameForEdit) {
+				alert('請先選擇要編輯的遊戲');
+				return;
+			}
+			
+			const game = games[selectedGameForEdit];
+			if (!game.items || game.items.length === 0) {
+				alert('該遊戲中沒有項目');
+				return;
+			}
+			
+			// 按照名稱分組
+			const nameGroups = {};
+			game.items.forEach(item => {
+				if (!nameGroups[item.name]) {
+					nameGroups[item.name] = [];
+				}
+				nameGroups[item.name].push(item);
+			});
+			
+			// 找出重複的項目（同名項目多於1個）
+			const duplicates = {};
+			for (const name in nameGroups) {
+				if (nameGroups[name].length > 1) {
+					duplicates[name] = nameGroups[name];
+				}
+			}
+			
+			if (Object.keys(duplicates).length === 0) {
+				alert('未發現同名項目');
+				return;
+			}
+			
+			let mergeMessage = `發現以下同名項目，將保留第一個項目並合拼連結及投票數據：\n\n`;
+			let totalDuplicates = 0;
+			
+			for (const name in duplicates) {
+				mergeMessage += `"${name}"：${duplicates[name].length} 個同名項目\n`;
+				totalDuplicates += duplicates[name].length;
+			}
+			
+			mergeMessage += `\n共 ${Object.keys(duplicates).length} 組同名項目，總計 ${totalDuplicates} 個項目。\n是否確認合拼？`;
+			
+			if (confirm(mergeMessage)) {
+				const mergedItems = [];
+				const itemsToRemove = [];
+				
+				// 處理每個重複組
+				for (const name in duplicates) {
+					const group = duplicates[name];
+					
+					// 保留第一個項目作為主項目
+					const mainItem = group[0];
+					const mainIndex = game.items.findIndex(item => item.id === mainItem.id);
+					
+					// 合拼所有連結（包括有效和無效連結）
+					const allLinks = new Set();
+					const allInvalidLinks = new Set();
+					const allMoods = new Set();
+					
+					// 收集所有項目的數據
+					group.forEach(item => {
+						// 合拼連結
+						(item.links || []).forEach(link => allLinks.add(link));
+						(item.invalidLinks || []).forEach(link => allInvalidLinks.add(link));
+						(item.moods || []).forEach(mood => allMoods.add(mood));
+						
+						// 合拼投票數據（如果項目不同於主項目）
+						if (item.id !== mainItem.id) {
+							mergeVoteData(mainItem, item);
+							itemsToRemove.push(item.id);
+						}
+					});
+					
+					// 更新主項目
+					game.items[mainIndex].links = Array.from(allLinks);
+					game.items[mainIndex].invalidLinks = Array.from(allInvalidLinks);
+					game.items[mainIndex].moods = Array.from(allMoods);
+					
+					// 更新主項目的分數歷史記錄，合併所有項目的歷史
+					mergeScoreHistory(mainItem, group);
+					
+					// 將主項目添加到合拼後的列表
+					mergedItems.push(mainItem);
+				}
+				
+				// 移除同名項目（除了主項目）
+				game.items = game.items.filter(item => !itemsToRemove.includes(item.id));
+				
+				// 更新遊戲的投票記錄，將被移除項目的投票記錄替換為主項目
+				updateGameVotesAfterMerge(game, itemsToRemove, mergedItems);
+				
+				// 儲存到本地存儲
+				localStorage.setItem('games', JSON.stringify(games));
+				syncData();
+				
+				// 更新顯示
+				updateItemsListWithPagination();
+				updateGamesList();
+				
+				alert(`已成功合拼同名項目！\n移除了 ${itemsToRemove.length} 個同名項目。`);
+			}
+		}
+		
+		// 合拼投票數據的函數
+		function mergeVoteData(mainItem, secondaryItem) {
+			// 合拼票次
+			mainItem.votes = (mainItem.votes || 0) + (secondaryItem.votes || 0);
+			
+			// 合拼勝場（加權勝場）
+			mainItem.wins = (mainItem.wins || 0) + (secondaryItem.wins || 0);
+			
+			// 合拼負場（加權負場）
+			mainItem.losses = (mainItem.losses || 0) + (secondaryItem.losses || 0);
+			
+			// 計算合拼後的分數（加權平均）
+			if (mainItem.votes > 0 && secondaryItem.votes > 0) {
+				// 使用加權平均計算新分數
+				const totalVotes = mainItem.votes;
+				const mainWeight = (mainItem.votes - secondaryItem.votes) / totalVotes;
+				const secondaryWeight = secondaryItem.votes / totalVotes;
+				
+				mainItem.score = Math.round(
+					mainItem.score * mainWeight + 
+					secondaryItem.score * secondaryWeight
+				);
+			} else if (secondaryItem.votes > 0 && mainItem.votes === 0) {
+				// 如果主項目沒有投票，直接使用副項目的分數
+				mainItem.score = secondaryItem.score;
+			}
+			// 如果主項目有投票而副項目沒有，保持主項目分數不變
+		}
+		
+		// 合拼分數歷史記錄
+		function mergeScoreHistory(mainItem, itemGroup) {
+			if (!mainItem.scoreHistory) {
+				mainItem.scoreHistory = [];
+			}
+			
+			// 收集所有項目的分數歷史記錄
+			const allHistory = [];
+			
+			itemGroup.forEach(item => {
+				if (item.scoreHistory && item.scoreHistory.length > 0) {
+					allHistory.push(...item.scoreHistory);
+				}
+			});
+			
+			if (allHistory.length === 0) return;
+			
+			// 按時間戳排序
+			allHistory.sort((a, b) => a.timestamp - b.timestamp);
+			
+			// 更新主項目的分數歷史記錄
+			mainItem.scoreHistory = allHistory;
+			
+			// 確保最後一個記錄是當前分數
+			const currentTimestamp = Date.now();
+			const lastRecord = mainItem.scoreHistory[mainItem.scoreHistory.length - 1];
+			
+			if (lastRecord && lastRecord.score !== mainItem.score) {
+				mainItem.scoreHistory.push({
+					timestamp: currentTimestamp,
+					score: mainItem.score
+				});
+			}
+		}
+		
+		// 更新遊戲投票記錄，將被移除項目的ID替換為主項目的ID
+		function updateGameVotesAfterMerge(game, removedItemIds, mergedItems) {
+			if (!game.votes || game.votes.length === 0) return;
+			
+			// 創建一個映射表：被移除項目ID -> 主項目ID
+			const itemMap = new Map();
+			mergedItems.forEach(mainItem => {
+				// 找到所有被合拼到這個主項目的項目ID
+				const allItems = game.items.filter(item => 
+					item.name === mainItem.name && item.id !== mainItem.id
+				);
+				allItems.forEach(item => {
+					itemMap.set(item.id, mainItem.id);
+				});
+			});
+			
+			// 更新投票記錄
+			game.votes.forEach(vote => {
+				if (itemMap.has(vote.item1)) {
+					vote.item1 = itemMap.get(vote.item1);
+				}
+				if (itemMap.has(vote.item2)) {
+					vote.item2 = itemMap.get(vote.item2);
+				}
+			});
+			
+			// 移除重複的投票記錄（如果合拼後出現完全相同的投票）
+			const uniqueVotes = [];
+			const voteSet = new Set();
+			
+			game.votes.forEach(vote => {
+				const voteKey = `${vote.item1}-${vote.item2}-${vote.value}-${vote.timestamp}`;
+				if (!voteSet.has(voteKey)) {
+					voteSet.add(voteKey);
+					uniqueVotes.push(vote);
+				}
+			});
+			
+			game.votes = uniqueVotes;
 		}
 
         function toggleFrozen(itemId) {
@@ -3085,57 +3631,57 @@
         }
 
         function updateGameSettings() {
-			const gameId = document.getElementById('gameSelect').value;
-			selectedGameId = gameId; 
-			localStorage.setItem('selectedGameId', selectedGameId);
-			
-			document.getElementById('gameSettings').style.display = 'flex';
-			
-			if (!gameId) {
-				document.getElementById('extractMode').disabled = true;
-				document.getElementById('keywordFilter').disabled = true;
-				document.getElementById('itemCount').disabled = true;
-				document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
-				document.querySelector('button[onclick="startGame()"]').disabled = true;
-				
-				disableVotingMoodFilter();
-				return;
-			}
-			
-			document.getElementById('extractMode').disabled = false;
-			document.getElementById('keywordFilter').disabled = false;
-			
-			// 快速收斂模式下禁用項目數輸入
-			const extractMode = document.getElementById('extractMode').value;
-			if (extractMode === 'quickConverge') {
-				document.getElementById('itemCount').disabled = true;
-				document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
-			} else {
-				document.getElementById('itemCount').disabled = false;
-				document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
-			}
-			
-			document.querySelector('button[onclick="startGame()"]').disabled = false;
-			
-			enableVotingMoodFilter();
-			
-			const game = games[gameId];
-			const unfrozenItems = game.items.filter(item => !item.frozen);
-			document.getElementById('itemCount').max = unfrozenItems.length;
-			if (selectedItemCount > 0 && selectedItemCount <= unfrozenItems.length) {
-				document.getElementById('itemCount').value = selectedItemCount;
-			} else document.getElementById('itemCount').value = unfrozenItems.length;
-			if (document.getElementById('votingArea').classList.contains('hidden')) {
-				voteHistory = []; document.getElementById('undoBtn').disabled = true;
-			}
-			
-			const savedKeywordFilter = localStorage.getItem('keywordFilter');
-			if (savedKeywordFilter !== null) {
-				document.getElementById('keywordFilter').value = savedKeywordFilter;
-			}
-			
-			createVotingMoodFilter();
-		}
+            const gameId = document.getElementById('gameSelect').value;
+            selectedGameId = gameId; 
+            localStorage.setItem('selectedGameId', selectedGameId);
+            
+            document.getElementById('gameSettings').style.display = 'flex';
+            
+            if (!gameId) {
+                document.getElementById('extractMode').disabled = true;
+                document.getElementById('keywordFilter').disabled = true;
+                document.getElementById('itemCount').disabled = true;
+                document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
+                document.querySelector('button[onclick="startGame()"]').disabled = true;
+                
+                disableVotingMoodFilter();
+                return;
+            }
+            
+            document.getElementById('extractMode').disabled = false;
+            document.getElementById('keywordFilter').disabled = false;
+            
+            // 快速收斂模式下禁用項目數輸入
+            const extractMode = document.getElementById('extractMode').value;
+            if (extractMode === 'quickConverge') {
+                document.getElementById('itemCount').disabled = true;
+                document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
+            } else {
+                document.getElementById('itemCount').disabled = false;
+                document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
+            }
+            
+            document.querySelector('button[onclick="startGame()"]').disabled = false;
+            
+            enableVotingMoodFilter();
+            
+            const game = games[gameId];
+            const unfrozenItems = game.items.filter(item => !item.frozen);
+            document.getElementById('itemCount').max = unfrozenItems.length;
+            if (selectedItemCount > 0 && selectedItemCount <= unfrozenItems.length) {
+                document.getElementById('itemCount').value = selectedItemCount;
+            } else document.getElementById('itemCount').value = unfrozenItems.length;
+            if (document.getElementById('votingArea').classList.contains('hidden')) {
+                voteHistory = []; document.getElementById('undoBtn').disabled = true;
+            }
+            
+            const savedKeywordFilter = localStorage.getItem('keywordFilter');
+            if (savedKeywordFilter !== null) {
+                document.getElementById('keywordFilter').value = savedKeywordFilter;
+            }
+            
+            createVotingMoodFilter();
+        }
 
         function disableVotingMoodFilter() {
             const buttons = document.querySelectorAll('#votingMoodFilter .mood-filter-btn');
@@ -3157,18 +3703,20 @@
 			const gameId = document.getElementById('gameSelect').value;
 			if (!gameId) return;
 			
-			const keyword = document.getElementById('keywordFilter').value.toLowerCase().trim();
 			let items = games[gameId].items;
 			
-			if (keyword) {
-				items = items.filter(item => item.name.toLowerCase().includes(keyword));
-			}
+			// 1. 關鍵字篩選
+			const keyword = document.getElementById('keywordFilter').value;
+			const logic = document.getElementById('votingMoodLogic').value;
+			items = applyKeywordFilter(items, keyword, logic);
 			
-			const currentVotingMoodLogic = document.getElementById('votingMoodLogic').value;
+			// 2. 心情篩選
+			const currentVotingMoodLogic = logic;
 			if (selectedMoodFilters.length > 0) {
 				items = applyMoodFilter(items, selectedMoodFilters, currentVotingMoodLogic);
 			}
 			
+			// 3. 排除凍結項目
 			items = items.filter(item => !item.frozen);
 			
 			document.getElementById('itemCount').max = items.length;
@@ -3322,25 +3870,29 @@
 				if (!gameId) return;
 				currentGame = games[gameId];
 				
+				// 在開始遊戲時讀取平台篩選按鈕狀態
+				updatePlatformFilterButtons();
+				
 				// 在開始遊戲時固定抽取模式到新的變量
 				currentGameExtractMode = document.getElementById('extractMode').value;
 				
 				const itemCount = parseInt(document.getElementById('itemCount').value);
 				selectedItemCount = itemCount;
 				
-				const keyword = document.getElementById('keywordFilter').value.toLowerCase().trim();
 				let selectedItems = [...currentGame.items];
 				
-				if (keyword) {
-					selectedItems = selectedItems.filter(item => item.name.toLowerCase().includes(keyword));
-				}
+				// 1. 關鍵字篩選
+				const keyword = document.getElementById('keywordFilter').value;
+				const logic = document.getElementById('votingMoodLogic').value;
+				selectedItems = applyKeywordFilter(selectedItems, keyword, logic);
 				
-				// 使用当前下拉菜单的邏輯进行心情筛选
-				const currentVotingMoodLogic = document.getElementById('votingMoodLogic').value;
+				// 2. 心情篩選
+				const currentVotingMoodLogic = logic;
 				if (selectedMoodFilters.length > 0) {
 					selectedItems = applyMoodFilter(selectedItems, selectedMoodFilters, currentVotingMoodLogic);
 				}
 				
+				// 3. 排除凍結項目
 				selectedItems = selectedItems.filter(item => !item.frozen);
 				
 				if (selectedItems.length < 4) { 
@@ -3452,6 +4004,29 @@
 						});
 						selectedItems = selectedItems.slice(0, itemCount);
 						break;
+					case 'monthlyHot':
+						// 月度热门模式：按趋势排序（↑,≈,?,↓），然后按最近30日上升分数降序排列
+						const symbolOrder = { '↑': 0, '≈': 1, '?': 2, '↓': 3 };
+						
+						selectedItems.sort((a, b) => {
+							const symbolA = getRecentVolatilitySymbol(a);
+							const symbolB = getRecentVolatilitySymbol(b);
+							const orderA = symbolOrder.hasOwnProperty(symbolA) ? symbolOrder[symbolA] : 4;
+							const orderB = symbolOrder.hasOwnProperty(symbolB) ? symbolOrder[symbolB] : 4;
+							
+							// 先按趋势符号排序 (↑, ≈, ?, ↓)
+							if (orderA !== orderB) {
+								return orderA - orderB; // 升序排列
+							}
+							
+							// 符号相同时，按最近30日上升分数降序排列
+							const increaseA = getRecentScoreIncrease(a);
+							const increaseB = getRecentScoreIncrease(b);
+							return increaseB - increaseA; // 降序排列
+						});
+						
+						selectedItems = selectedItems.slice(0, itemCount);
+						break;
 					case 'quickConverge':
 						break;
 				}
@@ -3515,6 +4090,7 @@
 				}
 				
 				loadNewPair();
+				document.title = `${currentGame.name} | 無限對決` ;
 			} finally {
 				startGameExecuting = false;
 			}
@@ -3617,6 +4193,7 @@
 				}
 			}
 			updateItemStats();
+			updateExpectedWinrateLine();
 		}
 		
 		function updateGameStatusInfo() {
@@ -3641,7 +4218,8 @@
 				'highestWinRate': '勝率最高',
 				'leastVolatility': '波動最小',
 				'highestTrend': '升率最高',
-				'lowestTrend': '降率最高'
+				'lowestTrend': '降率最高',
+				'monthlyHot': '月度熱門'
 			};
 			
 			// 使用固定的 currentGameExtractMode 來顯示模式名稱
@@ -3943,19 +4521,20 @@
 		function isImageLink(link) {
 			if (!link) return false;
 			
-			// 解析URL获取路径部分
-			const url = new URL(link);
-			const pathname = url.pathname.toLowerCase();
-			
-			// 查找路径中 ? 或 / 之前的扩展名
-			// const fileNames = pathname.replaceAll('?','/').split('/') ;
-
-			// 检查常见图片扩展名
-			const allowedEnds = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', 'image', 'images', 'proxy'];
-			
-			return allowedEnds.some( x => pathname.includes(x) );
-			
-			// return fileNames.some( fileName => allowedEnds.some( end => fileName.endsWith(end) ) );
+			try {
+				// 嘗試解析 URL，如果失敗則返回 false
+				const url = new URL(link);
+				const pathname = url.pathname.toLowerCase();
+				
+				// 檢查常見圖片副檔名
+				const allowedEnds = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', 'image', 'images', 'proxy'];
+				
+				return allowedEnds.some(x => pathname.includes(x));
+			} catch (e) {
+				// URL 解析失敗，不是有效的 URL
+				// console.log('Invalid URL in isImageLink:', link, e);
+				return false;
+			}
 		}
 		
 		// 判断链接类型是否影片
@@ -4115,6 +4694,9 @@
 				// 更新遊戲狀態信息 - 只更新已投次數
 				document.getElementById('currentVoteCount').textContent = voteHistory.length;
 				
+				// 更新预期胜率线
+				updateExpectedWinrateLine();
+				
 				let replacePosition;
 				// 使用固定的 currentGameExtractMode 來決定替換邏輯
 				if (currentGameExtractMode === 'quickConverge') {
@@ -4220,6 +4802,7 @@
 				if (statsVisible) updateItemStats();
 				updateFreezeButtons();
 				if (voteHistory.length === 0) document.getElementById('undoBtn').disabled = true;
+				updateExpectedWinrateLine();
 			}
 		}
 
@@ -4236,24 +4819,82 @@
         }
 
         function searchRanking() {
-            const searchText = document.getElementById('rankingSearch').value.toLowerCase();
-            const rankingItems = document.querySelectorAll('#rankingList .list-item');
-            let visibleCount = 0;
-            
-            rankingItems.forEach(item => {
-                const itemName = item.querySelector('.item-name');
-                if (itemName) {
-                    const isVisible = itemName.textContent.toLowerCase().includes(searchText);
-                    item.style.display = isVisible ? '' : 'none';
-                    if (isVisible) visibleCount++;
-                }
-            });
-            
-            const gameId = document.getElementById('statsGameSelect').value;
-            const totalItems = gameId ? games[gameId].items.length : 0;
-            const titleText = `排行榜 (${visibleCount}/${totalItems})`;
-            document.getElementById('rankingTitle').textContent = titleText;
-        }
+			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+			const rankingItems = document.querySelectorAll('#rankingList .list-item');
+			let visibleCount = 0;
+			
+			rankingItems.forEach(item => {
+				const itemName = item.querySelector('.item-name');
+				if (itemName) {
+					// 修改關鍵字篩選邏輯：與心情篩選邏輯一致
+					let isVisible = true;
+					if (searchText) {
+						const keywords = searchText.split(/\s+/).filter(k => k.length > 0);
+						if (keywords.length > 0) {
+							const itemNameText = itemName.textContent.toLowerCase();
+							const logic = document.getElementById('statsMoodLogic').value;
+							
+							switch(logic) {
+								case 'and':
+									isVisible = keywords.every(k => itemNameText.includes(k));
+									break;
+								case 'or':
+									isVisible = keywords.some(k => itemNameText.includes(k));
+									break;
+								case 'not':
+									isVisible = !keywords.some(k => itemNameText.includes(k));
+									break;
+								default:
+									isVisible = keywords.some(k => itemNameText.includes(k));
+							}
+						}
+					}
+					
+					item.style.display = isVisible ? '' : 'none';
+					if (isVisible) visibleCount++;
+				}
+			});
+			
+			const gameId = document.getElementById('statsGameSelect').value;
+			const totalItems = gameId ? games[gameId].items.length : 0;
+			const titleText = `排行榜 (${visibleCount}/${totalItems})`;
+			document.getElementById('rankingTitle').textContent = titleText;
+		}
+		
+		// 投票頁的關鍵字篩選函數（與設定頁/統計頁保持一致）
+		function applyKeywordFilter(items, keyword, logic) {
+			if (!keyword || !items.length) return items;
+			
+			const keywords = keyword.toLowerCase().trim().split(/\s+/).filter(k => k.length > 0);
+			if (keywords.length === 0) return items;
+			
+			// 根據邏輯進行篩選
+			switch(logic) {
+				case 'and':
+					// 項目名稱必須包含所有關鍵字
+					return items.filter(item => {
+						const itemName = item.name.toLowerCase();
+						return keywords.every(k => itemName.includes(k));
+					});
+				case 'or':
+					// 項目名稱至少包含一個關鍵字
+					return items.filter(item => {
+						const itemName = item.name.toLowerCase();
+						return keywords.some(k => itemName.includes(k));
+					});
+				case 'not':
+					// 項目名稱不能包含任何關鍵字
+					return items.filter(item => {
+						const itemName = item.name.toLowerCase();
+						return !keywords.some(k => itemName.includes(k));
+					});
+				default:
+					return items.filter(item => {
+						const itemName = item.name.toLowerCase();
+						return keywords.some(k => itemName.includes(k));
+					});
+			}
+		}
 		
 		function calculateStandardDeviation(scores) {
 			if (scores.length === 0) return 0;
@@ -6129,7 +6770,7 @@
 			document.getElementById('expectedVotes3').textContent = `${expectedValue3} (容錯 全穩定)` ;
 			document.getElementById('expectedVotes4').textContent = `${expectedValue4} (隨機 全排)` ;
 			
-			// 點擊時顯示更多信息 ////
+			// 點擊時顯示更多信息
 			const expectedVotesCard = document.getElementById('expectedVotesCard');
 			expectedVotesCard.onclick = function() {
 				alert(`公式如下.
@@ -6314,7 +6955,7 @@
 			// 更新标题
 			updateRankingTitle(sortedItems, game);
 		}
-		
+
 		// 7. 排序排行榜项目
 		function sortRankingItems(items, sortBy, game) {
 			switch(sortBy) {
@@ -6347,16 +6988,28 @@
 						return volatilityB - volatilityA;
 					});
 				case 'trend':  // 趋势排序
+					const symbolOrder = { '↑': 0, '≈': 1, '?': 2, '↓': 3 };
 					return items.sort((a, b) => {
-						const trendA = calculateTrendValue(a);
-						const trendB = calculateTrendValue(b);
-						return trendB - trendA; // 从大到小排序
+						const symbolA = getRecentVolatilitySymbol(a);
+						const symbolB = getRecentVolatilitySymbol(b);
+						const orderA = symbolOrder.hasOwnProperty(symbolA) ? symbolOrder[symbolA] : 4;
+						const orderB = symbolOrder.hasOwnProperty(symbolB) ? symbolOrder[symbolB] : 4;
+
+						// 先按趋势符号排序 (↑, ≈, ?, ↓)
+						if (orderA !== orderB) {
+							return orderA - orderB; // 升序排列
+						}
+
+						// 符号相同时，按最近30日上升分数降序排列
+						const increaseA = getRecentScoreIncrease(a);
+						const increaseB = getRecentScoreIncrease(b);
+						return increaseB - increaseA; // 降序排列
 					});
 				default:
 					return items;
 			}
 		}
-		
+
 		// 计算趋势值的函数
 		function calculateTrendValue(item) {
 			if (!item.scoreHistory || item.scoreHistory.length < 3) {
@@ -6387,7 +7040,31 @@
 			// 返回趋势强度：分数变化/波动值
 			return scoreDiff / volatility;
 		}
-		
+
+		// 计算最近30日的分数增加
+		function getRecentScoreIncrease(item) {
+			if (!item.scoreHistory || item.scoreHistory.length < 2) {
+				return 0;
+			}
+
+			const now = Date.now();
+			const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+			
+			// 过滤最近30天的分数记录
+			const recentHistory = item.scoreHistory
+				.filter(record => record.timestamp >= thirtyDaysAgo)
+				.sort((a, b) => a.timestamp - b.timestamp);
+			
+			if (recentHistory.length < 2) {
+				return 0;
+			}
+			
+			// 计算分数变化：最后分数 - 最初分数
+			const firstScore = recentHistory[0].score;
+			const lastScore = recentHistory[recentHistory.length - 1].score;
+			return lastScore - firstScore;
+		}
+
 		// 8. 渲染排行榜项目
 		function renderRankingItems(sortedItems, game, stats, showSeparators) {
 			const rankingList = document.getElementById('rankingList');
@@ -6801,21 +7478,24 @@
         }
 
         function clearStats() {
-            const gameId = document.getElementById('statsGameSelect').value;
-            if (!gameId) { alert('請先選擇遊戲'); return; }
-            if (confirm('確定要清除這個遊戲的所有投票數據嗎？此操作無法復原！')) {
-                const game = games[gameId];
-                game.items.forEach(item => {
-                    item.score = 1500; item.votes = 0; item.wins = 0; item.losses = 0;
-                    item.moods = [];
-                    item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
-                });
-                game.votes = [];
-                localStorage.setItem('games', JSON.stringify(games));
-                syncData();
-                loadStats(); alert('統計數據已清除');
-            }
-        }
+			const gameId = document.getElementById('statsGameSelect').value;
+			if (!gameId) { alert('請先選擇遊戲'); return; }
+			if (confirm('確定要清除這個遊戲的所有投票數據嗎？此操作無法復原！')) {
+				const game = games[gameId];
+				game.items.forEach(item => {
+					item.score = 1500; 
+					item.votes = 0; 
+					item.wins = 0; 
+					item.losses = 0;
+					item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
+				});
+				game.votes = [];
+				localStorage.setItem('games', JSON.stringify(games));
+				syncData();
+				loadStats(); 
+				alert('統計數據已清除');
+			}
+		}
 		
 		// 一般项目右键菜单函数
 		function showItemContextMenu(event, itemId, gameId) {
@@ -6954,6 +7634,34 @@
 			document.addEventListener('click', hideContextMenuOnClick);
 		}
 		
+		function reloadTerm(pos,item) {
+			if ( !(currentGame && currentPair) ) return;
+			const game = games[currentGame.id];
+			// const item = game.items.find(i => i.id === itemId);
+			if (item) {
+				currentPair[pos] = item;
+				// 解除左/右側鎖定
+				// pos ? lockedRight = false : lockedLeft = false ;
+				// document.getElementById(`lockBtn${pos ? 'Right' : 'Left'}`).classList.remove('active');
+				// 重新載入左/右視頻
+				const link = getRandomValidLink(item);
+				currentVideoLinks[pos] = link;
+				loadVideo(`video${pos+1}Container`, link, pos+1);
+				// 更新標題
+				document.getElementById(`option${pos+1}Title`).textContent = item.name;
+				// 更新心情按鈕
+				createMoodButtons();
+				// 更新統計資訊
+				if (statsVisible) updateItemStats();
+				// 更新凍結按鈕狀態（根據新項目）
+				updateFreezeButtons();
+				// 更新预期胜率线
+				updateExpectedWinrateLine();
+				// 切換到投票頁面
+				// showPage('voting');
+			}
+		}
+
 		function setCandidate(pos,itemId) {
 			// 檢查投票頁面是否正在進行相同的遊戲
 			const votingGameId = currentGame ? currentGame.id : null;
@@ -6989,6 +7697,8 @@
 				updateFreezeButtons();
 				// 切換到投票頁面
 				showPage('voting');
+				// 更新预期胜率线
+				updateExpectedWinrateLine();
 			}
 		}
 
@@ -7087,6 +7797,8 @@
 			
 			let itemFound = false;
 			let count = 0;
+			let totalVotes = 0;
+			const game = games[gameId];
 			
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
@@ -7098,18 +7810,26 @@
 				
 				// 检查是否为一般项目（不是分隔线）
 				if (child.classList.contains('ranking-item') && !child.classList.contains('ranking-separator')) {
-					// 检查是否找到目标项目
-					if (child.id === `ranking-item-${itemId}`) {
-						itemFound = true;
-						count++; // 包括自己
-					} else if (!itemFound) {
-						count++;
+					// 从元素ID提取项目ID
+					const childItemId = child.id.replace('ranking-item-', '');
+					const item = game.items.find(item => item.id === childItemId);
+					
+					if (item) {
+						// 检查是否找到目标项目
+						if (child.id === `ranking-item-${itemId}`) {
+							itemFound = true;
+							count++; // 包括自己
+							totalVotes += item.votes || 0;
+						} else if (!itemFound) {
+							count++;
+							totalVotes += item.votes || 0;
+						}
 					}
 				}
 			}
 			
 			if (itemFound) {
-				alert(`本行及以上項目共有 ${count} 個。`);
+				alert(`本行及以上項目共有 ${count} 個，總票次 ${totalVotes}。`);
 			} else {
 				alert('項目未在當前顯示的排行榜中。');
 			}
@@ -7122,6 +7842,8 @@
 			
 			let itemFound = false;
 			let count = 0;
+			let totalVotes = 0;
+			const game = games[gameId];
 			
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
@@ -7133,19 +7855,26 @@
 				
 				// 检查是否为一般项目（不是分隔线）
 				if (child.classList.contains('ranking-item') && !child.classList.contains('ranking-separator')) {
-					// 检查是否找到目标项目
-					if (child.id === `ranking-item-${itemId}`) {
-						itemFound = true;
-					}
+					// 从元素ID提取项目ID
+					const childItemId = child.id.replace('ranking-item-', '');
+					const item = game.items.find(item => item.id === childItemId);
 					
-					if (itemFound) {
-						count++;
+					if (item) {
+						// 检查是否找到目标项目
+						if (child.id === `ranking-item-${itemId}`) {
+							itemFound = true;
+						}
+						
+						if (itemFound) {
+							count++;
+							totalVotes += item.votes || 0;
+						}
 					}
 				}
 			}
 			
 			if (itemFound) {
-				alert(`本行及以下項目共有 ${count} 個。`);
+				alert(`本行及以下項目共有 ${count} 個，總票次 ${totalVotes}。`);
 			} else {
 				alert('項目未在當前顯示的排行榜中。');
 			}
@@ -7156,8 +7885,14 @@
 			const rankingList = document.getElementById('rankingList');
 			const children = Array.from(rankingList.children);
 			
+			const gameId = document.getElementById('statsGameSelect').value;
+			if (!gameId) return;
+			
+			const game = games[gameId];
+			
 			let separatorFound = false;
 			let count = 0;
+			let totalVotes = 0;
 			
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
@@ -7179,12 +7914,19 @@
 				
 				// 如果是项目（不是分隔线），且分隔线还未找到
 				if (!separatorFound && child.classList.contains('ranking-item')) {
-					count++;
+					// 从元素ID提取项目ID
+					const childItemId = child.id.replace('ranking-item-', '');
+					const item = game.items.find(item => item.id === childItemId);
+					
+					if (item) {
+						count++;
+						totalVotes += item.votes || 0;
+					}
 				}
 			}
 			
 			if (separatorFound) {
-				alert(`以上項目共有 ${count} 個。`);
+				alert(`以上項目共有 ${count} 個，總票次 ${totalVotes}。`);
 			} else {
 				alert('分隔線未在當前顯示的排行榜中。');
 			}
@@ -7195,8 +7937,14 @@
 			const rankingList = document.getElementById('rankingList');
 			const children = Array.from(rankingList.children);
 			
+			const gameId = document.getElementById('statsGameSelect').value;
+			if (!gameId) return;
+			
+			const game = games[gameId];
+			
 			let separatorFound = false;
 			let count = 0;
+			let totalVotes = 0;
 			
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
@@ -7218,12 +7966,19 @@
 				
 				// 如果是项目（不是分隔线），且分隔线已找到
 				if (separatorFound && child.classList.contains('ranking-item')) {
-					count++;
+					// 从元素ID提取项目ID
+					const childItemId = child.id.replace('ranking-item-', '');
+					const item = game.items.find(item => item.id === childItemId);
+					
+					if (item) {
+						count++;
+						totalVotes += item.votes || 0;
+					}
 				}
 			}
 			
 			if (separatorFound) {
-				alert(`以下項目共有 ${count} 個。`);
+				alert(`以下項目共有 ${count} 個，總票次 ${totalVotes}。`);
 			} else {
 				alert('分隔線未在當前顯示的排行榜中。');
 			}
@@ -7849,122 +8604,241 @@
 			
 			return [`${year}-${month}-${day}`,`( ${diffDays}日前 )`] ;
 		}
+		
+		// 更新预期胜率线
+        function updateExpectedWinrateLine() {
+			// 获取滑动条容器和滑块
+			const sliderContainer = document.querySelector('.vote-slider-container');
+			const slider = document.getElementById('voteSlider');
+			if (!sliderContainer || !slider) return;
+			
+			// 移除旧的胜率线
+			const oldLine = sliderContainer.querySelector('.expected-winrate-line');
+			if (oldLine) oldLine.remove();
+
+			if ( !currentPair || !statsVisible ) return;
+
+			const item1 = currentPair[0];
+			const item2 = currentPair[1];
+			
+			// 计算项目2的预期胜率
+			const expectedWinRate = 1 / (1 + Math.pow(10, (item1.score - item2.score) / 400));
+			
+			// 获取滑动条的实际尺寸和位置
+			const sliderRect = slider.getBoundingClientRect();
+			const containerRect = sliderContainer.getBoundingClientRect();
+			
+			// 获取滑块的尺寸
+			const thumbWidth = 56; // 滑块宽度 = 50px , 偏移一點
+			const thumbHalfWidth = thumbWidth / 2;
+			
+			// 计算滑块的实际可移动范围
+			// 滑块的左边界：滑块左边缘对齐到滑动条左边缘时，滑块中心的位置
+			const minPosition = 0.2 + thumbHalfWidth / sliderRect.width * 100;
+			// 滑块的右边界：滑块右边缘对齐到滑动条右边缘时，滑块中心的位置
+			const maxPosition = 100 - (thumbHalfWidth / sliderRect.width * 100);
+			
+			// 计算胜率对应的滑动条位置 (0-100)
+			// 将胜率映射到滑块的实际可移动范围内
+			const winratePosition = minPosition + expectedWinRate * (maxPosition - minPosition);
+			
+			// 创建新的胜率线
+			const winrateLine = document.createElement('div');
+			winrateLine.className = 'expected-winrate-line';
+			winrateLine.style.position = 'absolute';
+			winrateLine.style.top = '0';
+			winrateLine.style.bottom = '0';
+			winrateLine.style.width = '5px';
+			winrateLine.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+			winrateLine.style.borderLeft = '1px solid rgba(0, 0, 0, 0.3)';
+			winrateLine.style.borderRight = '1px solid rgba(0, 0, 0, 0.3)';
+			winrateLine.style.zIndex = '5';
+			winrateLine.style.pointerEvents = 'none';
+			winrateLine.style.left = `${winratePosition}%`;
+			winrateLine.style.transform = 'translateX(-50%)';
+			
+			sliderContainer.appendChild(winrateLine);
+		}
 
 		function exportSettings() {
-            const settingsData = {};
-            Object.values(games).forEach(game => {
-                settingsData[game.id] = {
-                    id: game.id, name: game.name,
-                    items: game.items.map(item => ({
-                        id: item.id, name: item.name, links: item.links || [],
-                        invalidLinks: item.invalidLinks || [], addedTime: item.addedTime,
-                        moods: item.moods || [],
-                        frozen: item.frozen || false,
-                        scoreHistory: item.scoreHistory || []
-                    }))
-                };
-            });
-            downloadFile(settingsData, `設定${getFormattedDate()}.json`);
-        }
+			const settingsData = {
+				fileType: 'settings',
+				data: {}
+			};
+			Object.values(games).forEach(game => {
+				settingsData.data[game.id] = {
+					id: game.id, name: game.name,
+					items: game.items.map(item => ({
+						id: item.id, name: item.name, links: item.links || [],
+						invalidLinks: item.invalidLinks || [], addedTime: item.addedTime,
+						moods: item.moods || [], // 匯出心情
+						frozen: item.frozen || false, // 匯出凍結狀態
+					}))
+				};
+			});
+			downloadFile(settingsData, `設定${getFormattedDate()}.json`);
+		}
 
         function exportStats() {
-            const statsData = {};
-            Object.values(games).forEach(game => {
-                statsData[game.id] = {
-                    id: game.id, name: game.name, votes: game.votes,
-                    items: game.items.map(item => ({
-                        id: item.id, name: item.name, score: item.score, votes: item.votes,
-                        wins: item.wins || 0, losses: item.losses || 0,
-                        moods: item.moods || [],
-                        frozen: item.frozen || false,
-                        scoreHistory: item.scoreHistory || []
-                    }))
-                };
-            });
-            downloadFile(statsData, `統計${getFormattedDate()}.json`);
-        }
+			const statsData = {
+				fileType: 'stats',
+				data: {}
+			};
+			Object.values(games).forEach(game => {
+				statsData.data[game.id] = {
+					id: game.id, name: game.name, votes: game.votes,
+					items: game.items.map(item => ({
+						id: item.id, name: item.name, score: item.score, votes: item.votes,
+						wins: item.wins || 0, losses: item.losses || 0,
+						scoreHistory: item.scoreHistory || []
+					}))
+				};
+			});
+			downloadFile(statsData, `統計${getFormattedDate()}.json`);
+		}
 
-        function downloadFile(data, filename) {
-            const dataStr = JSON.stringify(data, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url; link.download = filename; link.click();
-            URL.revokeObjectURL(url);
-        }
+		function downloadFile(data, filename) {
+			const dataStr = JSON.stringify(data, null, 2);
+			const dataBlob = new Blob([dataStr], {type: 'application/json'});
+			const url = URL.createObjectURL(dataBlob);
+			const link = document.createElement('a');
+			link.href = url; link.download = filename; link.click();
+			URL.revokeObjectURL(url);
+		}
 
-        function importSettings(event) { importFile(event, 'settings'); }
-        function importStats(event) { importFile(event, 'stats'); }
+        function importSettings(event) { 
+			importFile(event, 'settings'); 
+		}
+
+		function importStats(event) { 
+			importFile(event, 'stats'); 
+		}
 
         function importFile(event, type) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    const isSettings = type === 'settings';
-                    const message = isSettings ? '匯入設定將會覆蓋現有遊戲設定（但保留統計資料），確定要繼續嗎？' : '匯入統計將會覆蓋現有投票資料，確定要繼續嗎？';
-                    
-                    if (confirm(message)) {
-                        Object.values(importedData).forEach(importedGame => {
-                            if (isSettings) {
-                                if (games[importedGame.id]) {
-                                    const existingGame = games[importedGame.id];
-                                    importedGame.votes = existingGame.votes || [];
-                                    importedGame.items.forEach(item => {
-                                        const existingItem = existingGame.items.find(ei => ei.id === item.id);
-                                        if (existingItem) {
-                                            ['score', 'votes', 'wins', 'losses', 'frozen'].forEach(prop => 
-                                                item[prop] = existingItem[prop] || (prop === 'score' ? 1500 : (prop === 'frozen' ? false : 0)));
-                                            item.scoreHistory = existingItem.scoreHistory || [{timestamp: Date.now(), score: 1500}];
-                                        } else {
-                                            item.score = 1500; item.votes = 0; item.wins = 0; item.losses = 0;
-                                            item.frozen = false;
-                                            item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
-                                        }
-                                        if (!item.links) item.links = item.link ? [item.link] : [];
-                                        if (!item.invalidLinks) item.invalidLinks = [];
-                                        if (!item.moods) item.moods = [];
-                                        if (!item.frozen) item.frozen = false;
-                                        if (!item.scoreHistory) item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
-                                    });
-                                } else {
-                                    importedGame.votes = [];
-                                    importedGame.items.forEach(item => {
-                                        item.score = 1500; item.votes = 0; item.wins = 0; item.losses = 0;
-                                        item.frozen = false;
-                                        if (!item.links) item.links = item.link ? [item.link] : [];
-                                        if (!item.invalidLinks) item.invalidLinks = [];
-                                        if (!item.moods) item.moods = [];
-                                        if (!item.scoreHistory) item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
-                                    });
-                                }
-                                games[importedGame.id] = importedGame;
-                            } else {
-                                if (games[importedGame.id]) {
-                                    games[importedGame.id].votes = importedGame.votes || [];
-                                    importedGame.items.forEach(importedItem => {
-                                        const item = games[importedGame.id].items.find(i => i.id === importedItem.id);
-                                        if (item) {
-                                            ['score', 'votes', 'wins', 'losses', 'moods', 'frozen', 'scoreHistory'].forEach(prop => 
-                                                item[prop] = importedItem[prop] || (prop === 'score' ? 1500 : (prop === 'moods' ? [] : (prop === 'frozen' ? false : (prop === 'scoreHistory' ? [{timestamp: Date.now(), score: 1500}] : 0)))));
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                        localStorage.setItem('games', JSON.stringify(games));
-                        syncData();
-                        if (isSettings) updateGamesList();
-                        else loadStats();
-                        alert(`${isSettings ? '設定' : '統計'}匯入成功！`);
-                    }
-                } catch (error) { alert('匯入失敗：檔案格式錯誤'); }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
+			const file = event.target.files[0];
+			if (!file) return;
+			const reader = new FileReader();
+			reader.onload = function(e) {
+				try {
+					const importedData = JSON.parse(e.target.result);
+					
+					// 檢查文件類型標記
+					const fileType = importedData.fileType;
+					const dataToImport = importedData.data;
+					
+					// 必須有 fileType 標記
+					if (!fileType) {
+						alert('此檔案沒有類型標記，無法識別為設定或統計檔案！');
+						return;
+					}
+					
+					// 驗證文件類型是否符合預期
+					if (type === 'settings' && fileType !== 'settings') {
+						alert('請選擇匯出設定的檔案進行匯入！');
+						return;
+					}
+					if (type === 'stats' && fileType !== 'stats') {
+						alert('請選擇匯出統計的檔案進行匯入！');
+						return;
+					}
+					
+					// 如果类型不匹配，直接中止，不询问继续
+					if ((type === 'settings' && fileType !== 'settings') || 
+						(type === 'stats' && fileType !== 'stats')) {
+						return;
+					}
+					
+					const isSettings = fileType === 'settings';
+					const message = isSettings ? '匯入設定將會覆蓋現有遊戲設定（但保留統計資料），確定要繼續嗎？' : '匯入統計將會覆蓋現有投票資料，確定要繼續嗎？';
+					
+					if (confirm(message)) {
+						Object.values(dataToImport).forEach(importedGame => {
+							if (isSettings) {
+								// 匯入設定：載入心情和凍結狀態
+								if (games[importedGame.id]) {
+									const existingGame = games[importedGame.id];
+									importedGame.votes = existingGame.votes || [];
+									importedGame.items.forEach(item => {
+										const existingItem = existingGame.items.find(ei => ei.id === item.id);
+										if (existingItem) {
+											// 保留現有的統計數據
+											['score', 'votes', 'wins', 'losses'].forEach(prop => 
+												item[prop] = existingItem[prop] || (prop === 'score' ? 1500 : 0));
+											item.scoreHistory = existingItem.scoreHistory || [{timestamp: Date.now(), score: 1500}];
+											// 載入心情和凍結狀態
+											item.moods = item.moods || [];
+											item.frozen = item.frozen || false;
+										} else {
+											// 對於新項目，使用匯入的凍結狀態
+											item.score = 1500; 
+											item.votes = 0; 
+											item.wins = 0; 
+											item.losses = 0;
+											// 修復：使用匯入的凍結狀態，如果沒有則設為 false
+											item.frozen = item.frozen || false;
+											item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
+										}
+										if (!item.links) item.links = item.link ? [item.link] : [];
+										if (!item.invalidLinks) item.invalidLinks = [];
+										if (!item.moods) item.moods = [];
+										// 修復：確保凍結狀態不被覆蓋
+										if (item.frozen === undefined) item.frozen = false;
+										if (!item.scoreHistory) item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
+									});
+								} else {
+									importedGame.votes = [];
+									importedGame.items.forEach(item => {
+										// 修復：對於新遊戲，保留匯入的凍結狀態
+										item.score = 1500; 
+										item.votes = 0; 
+										item.wins = 0; 
+										item.losses = 0;
+										// 使用匯入的凍結狀態，如果沒有則設為 false
+										item.frozen = item.frozen || false;
+										if (!item.links) item.links = item.link ? [item.link] : [];
+										if (!item.invalidLinks) item.invalidLinks = [];
+										if (!item.moods) item.moods = [];
+										// 確保凍結狀態有定義
+										if (item.frozen === undefined) item.frozen = false;
+										if (!item.scoreHistory) item.scoreHistory = [{timestamp: Date.now(), score: 1500}];
+									});
+								}
+								games[importedGame.id] = importedGame;
+							} else {
+								// 匯入統計：不載入心情和凍結狀態
+								if (games[importedGame.id]) {
+									games[importedGame.id].votes = importedGame.votes || [];
+									importedGame.items.forEach(importedItem => {
+										const item = games[importedGame.id].items.find(i => i.id === importedItem.id);
+										if (item) {
+											// 只更新統計數據，不更新心情和凍結狀態
+											['score', 'votes', 'wins', 'losses', 'scoreHistory'].forEach(prop => 
+												item[prop] = importedItem[prop] || (prop === 'score' ? 1500 : (prop === 'scoreHistory' ? [{timestamp: Date.now(), score: 1500}] : 0)));
+											// 不更新心情和凍結狀態，保留原有的
+										}
+									});
+								}
+							}
+						});
+						localStorage.setItem('games', JSON.stringify(games));
+						syncData();
+						if (isSettings) {
+							updateGamesList();
+							updateGameSelect();
+							updateStatsGameSelect();
+						} else {
+							loadStats();
+						}
+						alert(`${isSettings ? '設定' : '統計'}匯入成功！`);
+					}
+				} catch (error) { 
+					console.error(error);
+					alert('匯入失敗：檔案格式錯誤或已損毀'); 
+				}
+			};
+			reader.readAsText(file);
+			event.target.value = '';
+		}
 
         function clearAllInvalidLinks() {
             if (!selectedGameForEdit) { alert('請先選擇要編輯的遊戲'); return; }
@@ -7987,6 +8861,26 @@
                 updateItemsListWithPagination();
                 alert(`已刪除 ${deletedCount} 個無效連結！`);
             }
+        }
+		
+		// 獲取當前遊戲的平台篩選狀態
+        function getPlatformFiltersForGame(gameId) {
+            if (!gameId) {
+                return { youtube: true, bilibili: true }; // 默認值
+            }
+            
+            if (!platformFilters[gameId]) {
+                // 如果該遊戲沒有保存過篩選狀態，使用默認值
+                platformFilters[gameId] = { youtube: true, bilibili: true };
+                savePlatformFilters();
+            }
+            
+            return platformFilters[gameId];
+        }
+		
+		// 保存平台篩選狀態
+        function savePlatformFilters() {
+            localStorage.setItem('platformFilters', JSON.stringify(platformFilters));
         }
 
         function syncData() {
@@ -8086,6 +8980,7 @@
 			document.getElementById('votingMoodLogic').addEventListener('change', function() {
 				votingMoodLogic = this.value;
 				localStorage.setItem('votingMoodLogic', votingMoodLogic);
+				// 邏輯變化時更新項目數最大值
 				updateItemCountMax();
 			});
 			
@@ -8122,9 +9017,11 @@
 					startGame();
 				}
 			});
-			
+
 			document.getElementById('keywordFilter').addEventListener('input', function(e) {
 				localStorage.setItem('keywordFilter', e.target.value);
+				// 關鍵字變化時更新項目數最大值
+				updateItemCountMax();
 			});
 			
 			// 點擊放大圖表的模態框時關閉
@@ -8165,7 +9062,7 @@
 							currentPair = currentPair.map(p => 
 								currentGame.items.find(i => i.id === p.id) || p
 							);
-							loadBothVideos();
+							// loadBothVideos();
 							createMoodButtons();
 							if (statsVisible) updateItemStats();
 						}
@@ -8180,11 +9077,6 @@
 					if (savedPlatformFilters) {
 						platformFilters = JSON.parse(savedPlatformFilters);
 						updatePlatformFilterButtons();
-						
-						// 如果当前在投票页面且有正在进行的投票，重新加载影片
-						if (document.getElementById('voting').classList.contains('active') && currentPair) {
-							reloadBothVideos();
-						}
 					}
 				}
 			});

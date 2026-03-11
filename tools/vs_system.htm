@@ -18,8 +18,24 @@
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .header { text-align: center; color: white; margin-bottom: 0px; padding: 0px; }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-        .nav-buttons { display: flex; justify-content: center; gap: 20px; margin-bottom: 15px; }
+		.header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .nav-buttons {
+			display: flex;
+			justify-content: center;
+			gap: 20px;
+			margin-bottom: 15px;
+			position: sticky; /* 貼頂效果 */
+			top: -25px;
+			z-index: 1000; /* 確保不被其他元素覆蓋 */
+			transition: top 0.1s ease;
+			will-change: top;
+			width: fit-content;      /* 新增：寬度根據內容 */
+			margin-left: auto;       /* 新增：水平置中 */
+			margin-right: auto;      /* 新增：水平置中 */
+		}
+		.nav-buttons:hover {
+			top: 0px;
+		}
         .btn {
             padding: 12px 30px; border: none; border-radius: 25px; font-size: 16px;
             font-weight: bold; cursor: pointer; transition: all 0.3s;
@@ -35,6 +51,7 @@
         .btn-danger { background: var(--danger); color: white; }
         .btn-gray { background: var(--gray); color: white; }
         .btn-frozen { background: var(--frozen); color: white; }
+		.btn-orange { background: #ff9136; color: white; }
 		#toggleStatsButton.active { background: var(--info); color: white; }
         .page { display: none; animation: fadeIn 0.5s; }
         .page.active { display: block; }
@@ -1439,7 +1456,8 @@
 								<option value="strongest">名次最高</option>
 								<option value="similarScore">分數相近</option>
 								<option value="leastVolatility">波動最小</option>
-								<option value="monthlyHot">月度熱門</option>
+								<option value="highestHotness">熱度最高</option>
+								<option value="monthlyHot">趨勢最高</option>
 								<option value="highestTrend">升率最高</option>
 								<option value="lowestTrend">降率最高</option>
 								<option value="uniform">均勻隨機</option>
@@ -1751,10 +1769,11 @@
                                     <option value="score">依分數</option>
 									<option value="error">依誤差</option>
                                     <option value="winRate">依勝率</option>
+									<option value="hotness">依熱度</option>
 									<option value="volatility">依波動</option>
 									<option value="trend">依趨勢</option>
                                     <option value="votes">依票次</option>
-                                    <option value="time">依新加</option>
+									<option value="time">依新加</option>
                                 </select>
                             </div>
                         </div>
@@ -1770,6 +1789,7 @@
         </div>
     </div>
 	<center>
+		ver 0.6&emsp;~tyovery~&emsp;2026-03<br />
 		ver 0.5&emsp;~tyovery~&emsp;2026-02<br />
 		ver 0.4&emsp;~tyovery~&emsp;2026-01<br />
 		ver 0.3&emsp;~tyovery~&emsp;2025-12<br />
@@ -1820,13 +1840,16 @@
         let currentGame = null, currentPair = null, selectedGameForEdit = null;
         let activeItems = [], voteHistory = [], editingItemId = null, renamingGameId = null;
         let player1 = null, player2 = null, youtubeReady = false, currentPlayingPlayer = null;
+		let loadStatsTimer = null; // 用於取消未完成的任務
         let selectedGameId = localStorage.getItem('selectedGameId') || '';
         let selectedItemCount = parseInt(localStorage.getItem('selectedItemCount')) || 0;
         let selectedExtractMode = localStorage.getItem('selectedExtractMode') || 'quickConverge';
 		let currentGameExtractMode = '';
         let currentPage = 1, itemsPerPage = 10, statsVisible = localStorage.getItem('statsVisible') === 'true', filteredItems = [];
+		let scrollPositions = { voting: 0, stats: 0, settings: 0 }; // 記錄各頁滾動位置
+		let _skipScrollRestore = false; // 是否跳過頁面切換時的滾動位置恢復
         let currentVideoLinks = [null, null], visibleItemObserver = null;
-		let currentImageModal = null; // 新增圖片放大功能相關函數（使用全局模态框）
+		let currentImageModal = null; // 圖片放大功能相關函數（使用全局模态框）
         let showInvalidOnly = false;
         let showFrozenOnly = false;
         let cooldownActive = false;
@@ -1927,6 +1950,29 @@
             if (N == 0) return 0.5;
             return (N + W - L) / (2 * N);
         }
+		
+		// 计算最近 days 天内项目的加权胜率
+		function calculateRecentWinRate(itemId, game, days = 30) {
+			const now = Date.now();
+			const cutoff = now - days * 24 * 60 * 60 * 1000;
+			let totalVotes = 0;
+			let totalWins = 0;
+			if (game.votes) {
+				game.votes.forEach(vote => {
+					if (vote.timestamp >= cutoff) {
+						if (vote.item1 === itemId) {
+							totalVotes++;
+							totalWins += 1 - vote.value / 100;
+						} else if (vote.item2 === itemId) {
+							totalVotes++;
+							totalWins += vote.value / 100;
+						}
+					}
+				});
+			}
+			if (totalVotes === 0) return null; // 无投票
+			return totalWins / totalVotes;
+		}
 		
 		// 計算月度波動的函數
 		function calculateRecentVolatility(item) {
@@ -2102,47 +2148,37 @@
 			const itemId = currentPair[position].id;
 			const gameId = currentGame.id;
 			
-			// 切换到统计页
-			showPage('stats');
-			// 选择当前游戏
-			document.getElementById('statsGameSelect').value = gameId;
-			// 加载统计
-			loadStats();
-			// 清除过滤选项
-			clearStatsFilters();
-			// 收起所有图表
-			collapseAllCharts();
+			// 設置標誌跳過滾動恢復
+			_skipScrollRestore = true;
 			
-			// 找到对应的项目并滚动
-			const rankingItem = document.getElementById(`ranking-item-${itemId}`);
-			if (rankingItem) {
-				// 先展开图表
-				const chartContainer = rankingItem.querySelector('.score-chart-container');
-				if (chartContainer) {
-					rankingItem.classList.add('expanded');
-					expandedItemIds.push(itemId);
-					localStorage.setItem('expandedItemIds', JSON.stringify(expandedItemIds));
-					
-					chartContainer.style.display = 'block';
-					renderScoreChart(itemId, chartContainer);
-					
-					// 滚动到图表区域
-					chartContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-					
-				} else {
-					// 如果没有图表容器，直接滚动到项目并显示高亮
+			// 切換到統計頁
+			showPage('stats');
+			// 選擇當前遊戲
+			document.getElementById('statsGameSelect').value = gameId;
+			// 清除過濾選項
+			clearStatsFilters();
+			// 收起所有圖表並清空 expandedItemIds
+			collapseAllCharts();
+			// 將當前項目加入展開列表並保存
+			expandedItemIds.push(itemId);
+			localStorage.setItem('expandedItemIds', JSON.stringify(expandedItemIds));
+			// 加載統計（會調用 restoreExpandedCharts 展開圖表）
+			loadStats();
+			
+			// 滾動到項目
+			setTimeout(()=>{
+				const rankingItem = document.getElementById(`ranking-item-${itemId}`);
+				if (rankingItem) {
 					rankingItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
+					
+					// 添加高亮動畫
 					setTimeout(() => {
-						// 清除现有动画
 						rankingItem.style.animation = 'none';
-						// 强制重绘
 						void rankingItem.offsetWidth;
-						// 应用高亮动画
 						rankingItem.style.animation = 'highlightPulse 3s ease-in-out';
 					}, 300);
 				}
-			}
+			},200);
 		}
         
         // 平台篩選功能
@@ -2317,43 +2353,49 @@
 
 		function updateItemStats() {
 			if (!currentPair || !currentGame) return;
-			
+
 			const sortedItems = sortItemsByRank(currentGame.items);
-			
+
 			[0, 1].forEach(idx => {
 				const item = currentPair[idx];
 				const rank = sortedItems.findIndex(i => i.id === item.id) + 1;
-				const winRate = ( calculateWinRate(item) * 100 ).toFixed(1) ;
+				const winRate = (calculateWinRate(item) * 100).toFixed(1);
 				const recentVolatility = calculateRecentVolatility(item);
 				const volatilitySymbol = getRecentVolatilitySymbol(item);
-				
-				let error = calculateError(item); // 計算誤差
-				let errorColor = getErrorColor(error) ; // 獲取誤差顏色
-				error = error == Infinity ? '∞' : Math.round(error) ;
-				let errorDisplay = `<span style="color:${errorColor}">${error}</span>` ;
+
+				let error = calculateError(item);
+				let errorColor = getErrorColor(error);
+				error = error == Infinity ? '∞' : Math.round(error);
+				let errorDisplay = `<span style="color:${errorColor}">${error}</span>`;
 
 				const allLinks = [...new Set([...(item.links || []), ...(item.invalidLinks || [])])];
 				const totalLinkCount = allLinks.length;
 				const validLinks = allLinks.filter(link => !item.invalidLinks?.includes(link));
 				const validLinkCount = validLinks.length;
-				
-				const currentVideoUrl = currentVideoLinks[idx] || '[沒有]' ;
-				
-				// 计算上次投票天数
-				let lastVoteString = '(?)' ;
+
+				const currentVideoUrl = currentVideoLinks[idx] || '[沒有]';
+
+				let lastVoteString = '(?)';
 				if (item.scoreHistory && item.scoreHistory.length > 0) {
 					const lastVoteTime = Math.max(...item.scoreHistory.map(record => record.timestamp));
 					const currentTime = Date.now();
-					let diffTime = (currentTime - lastVoteTime) / 1e3 ; // 秒
+					let diffTime = (currentTime - lastVoteTime) / 1e3; // 秒
 					lastVoteString = diffTime <= 3 ? '剛剛' :
-					diffTime <= 60 ? ~~diffTime + '秒前' :
-					( diffTime /= 60 ) <= 60 ? ~~diffTime + '分鐘前' :
-					( diffTime /= 60 ) <= 24 ? ~~diffTime + '小時前' :
-					~~(diffTime/24) + '天前' ;
+						diffTime <= 60 ? ~~diffTime + '秒前' :
+						(diffTime /= 60) <= 60 ? ~~diffTime + '分鐘前' :
+						(diffTime /= 60) <= 24 ? ~~diffTime + '小時前' :
+						~~(diffTime / 24) + '天前';
 				}
-				
+
+				// 热度公式：當前分數 * 最近30日票次(若无则0.5)/30 * 最近30日胜率(若无则0.5)
+				const recentVotes = calculateRecentVotes(item.id, currentGame, 30);
+				const recentWinRate = calculateRecentWinRate(item.id, currentGame, 30);
+				const effectiveVotes = recentVotes || 0.5;
+				const effectiveWinRate = recentWinRate !== null ? recentWinRate : 0.5;
+				const hotness = Math.round(item.score * effectiveVotes / 30 * effectiveWinRate);
+
 				document.getElementById(`stats${idx + 1}`).innerHTML = `
-					<div>排名: ${rank} | 分數: ${item.score}±${errorDisplay} | 勝率: ${winRate}% | 波動: ${recentVolatility}${volatilitySymbol} | 票次: ${item.votes} | 上次: ${lastVoteString} | 連結: ${validLinkCount}/${totalLinkCount}</div>
+					<div>排名: ${rank} | 分數: ${item.score}±${errorDisplay} | 勝率: ${winRate}% | 熱度: ${hotness} | 波動: ${recentVolatility}${volatilitySymbol} | 票次: ${recentVotes}/${item.votes} | 上次: ${lastVoteString} | 連結: ${validLinkCount}/${totalLinkCount}</div>
 					<div class="current-video-url">${currentVideoUrl}</div>`;
 			});
 		}
@@ -2436,6 +2478,13 @@
 		}
 
         function showPage(pageName) {
+			// 保存當前頁面的滾動位置
+			const activePage = document.querySelector('.page.active');
+			if (activePage) {
+				const activePageId = activePage.id; // 'voting', 'stats', 'settings'
+				scrollPositions[activePageId] = window.scrollY;
+			}
+
 			if (isEditing && editingItemId) {
 				saveEditingItemData();
 			}
@@ -2486,6 +2535,8 @@
 				if (selectedGameId) {
 					document.getElementById('statsGameSelect').value = selectedGameId;
 					loadStats();
+					// 確保之前打開的圖表被還原（loadStats內部已調用restoreExpandedCharts，此處再次調用以增強穩定性）
+					// restoreExpandedCharts();
 				}
 			} else if (pageName === 'settings') {
 				createSettingsMoodFilter();
@@ -2495,6 +2546,15 @@
 					}
 				}, 100);
 			}
+
+			// 恢復目標頁面的滾動位置（如果沒有被跳過）
+			setTimeout(() => {
+				if (!_skipScrollRestore && scrollPositions[pageName] !== undefined) {
+					window.scrollTo(0, scrollPositions[pageName]);
+				}
+				// 重置標誌，避免影響下次切換
+				_skipScrollRestore = false;
+			}, 100);
 		}
 
         function clearScoreAnimations() {
@@ -3631,57 +3691,58 @@
         }
 
         function updateGameSettings() {
-            const gameId = document.getElementById('gameSelect').value;
-            selectedGameId = gameId; 
-            localStorage.setItem('selectedGameId', selectedGameId);
-            
-            document.getElementById('gameSettings').style.display = 'flex';
-            
-            if (!gameId) {
-                document.getElementById('extractMode').disabled = true;
-                document.getElementById('keywordFilter').disabled = true;
-                document.getElementById('itemCount').disabled = true;
-                document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
-                document.querySelector('button[onclick="startGame()"]').disabled = true;
-                
-                disableVotingMoodFilter();
-                return;
-            }
-            
-            document.getElementById('extractMode').disabled = false;
-            document.getElementById('keywordFilter').disabled = false;
-            
-            // 快速收斂模式下禁用項目數輸入
-            const extractMode = document.getElementById('extractMode').value;
-            if (extractMode === 'quickConverge') {
-                document.getElementById('itemCount').disabled = true;
-                document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
-            } else {
-                document.getElementById('itemCount').disabled = false;
-                document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
-            }
-            
-            document.querySelector('button[onclick="startGame()"]').disabled = false;
-            
-            enableVotingMoodFilter();
-            
-            const game = games[gameId];
-            const unfrozenItems = game.items.filter(item => !item.frozen);
-            document.getElementById('itemCount').max = unfrozenItems.length;
-            if (selectedItemCount > 0 && selectedItemCount <= unfrozenItems.length) {
-                document.getElementById('itemCount').value = selectedItemCount;
-            } else document.getElementById('itemCount').value = unfrozenItems.length;
-            if (document.getElementById('votingArea').classList.contains('hidden')) {
-                voteHistory = []; document.getElementById('undoBtn').disabled = true;
-            }
-            
-            const savedKeywordFilter = localStorage.getItem('keywordFilter');
-            if (savedKeywordFilter !== null) {
-                document.getElementById('keywordFilter').value = savedKeywordFilter;
-            }
-            
-            createVotingMoodFilter();
-        }
+			const gameId = document.getElementById('gameSelect').value;
+			selectedGameId = gameId; 
+			localStorage.setItem('selectedGameId', selectedGameId);
+			
+			document.getElementById('gameSettings').style.display = 'flex';
+			
+			if (!gameId) {
+				document.getElementById('extractMode').disabled = true;
+				document.getElementById('keywordFilter').disabled = true;
+				document.getElementById('itemCount').disabled = true;
+				document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
+				document.querySelector('button[onclick="startGame()"]').disabled = true;
+				
+				disableVotingMoodFilter();
+				return;
+			}
+			
+			document.getElementById('extractMode').disabled = false;
+			document.getElementById('keywordFilter').disabled = false;
+			
+			// 快速收斂模式下禁用項目數輸入
+			const extractMode = document.getElementById('extractMode').value;
+			if (extractMode === 'quickConverge') {
+				document.getElementById('itemCount').disabled = true;
+				document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
+			} else {
+				document.getElementById('itemCount').disabled = false;
+				document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
+			}
+			
+			document.querySelector('button[onclick="startGame()"]').disabled = false;
+			
+			enableVotingMoodFilter();
+			
+			const game = games[gameId];
+			const unfrozenItems = game.items.filter(item => !item.frozen);
+			document.getElementById('itemCount').max = unfrozenItems.length;
+			if (selectedItemCount > 0 && selectedItemCount <= unfrozenItems.length) {
+				document.getElementById('itemCount').value = selectedItemCount;
+			} else document.getElementById('itemCount').value = unfrozenItems.length;
+			if (document.getElementById('votingArea').classList.contains('hidden')) {
+				voteHistory = []; document.getElementById('undoBtn').disabled = true;
+			}
+			
+			// 移除了以下幾行，避免每次切回投票頁都從 localStorage 讀取關鍵字覆蓋當前輸入
+			// const savedKeywordFilter = localStorage.getItem('keywordFilter');
+			// if (savedKeywordFilter !== null) {
+			//     document.getElementById('keywordFilter').value = savedKeywordFilter;
+			// }
+			
+			createVotingMoodFilter();
+		}
 
         function disableVotingMoodFilter() {
             const buttons = document.querySelectorAll('#votingMoodFilter .mood-filter-btn');
@@ -4005,7 +4066,7 @@
 						selectedItems = selectedItems.slice(0, itemCount);
 						break;
 					case 'monthlyHot':
-						// 月度热门模式：按趋势排序（↑,≈,?,↓），然后按最近30日上升分数降序排列
+						// 趨勢最高模式：按趋势排序（↑,≈,?,↓），然后按最近30日上升分数降序排列
 						const symbolOrder = { '↑': 0, '≈': 1, '?': 2, '↓': 3 };
 						
 						selectedItems.sort((a, b) => {
@@ -4026,6 +4087,22 @@
 						});
 						
 						selectedItems = selectedItems.slice(0, itemCount);
+						break;
+					case 'highestHotness':
+						// 熱度最高模式：按新熱度值降序排序
+						// 熱度 = 當前分數 * 最近30日票次 / 30 * 最近30日加權勝率
+						// 若最近30日無投票，則票次以0.5、勝率以0.5計
+						selectedItems.sort((a, b) => {
+							const recentVotesA = calculateRecentVotes(a.id, currentGame, 30) || 0.5;
+							const recentVotesB = calculateRecentVotes(b.id, currentGame, 30) || 0.5;
+							const recentWinRateA = calculateRecentWinRate(a.id, currentGame, 30);
+							const recentWinRateB = calculateRecentWinRate(b.id, currentGame, 30);
+							const effectiveWinRateA = recentWinRateA !== null ? recentWinRateA : 0.5;
+							const effectiveWinRateB = recentWinRateB !== null ? recentWinRateB : 0.5;
+							const hotnessA = a.score * recentVotesA / 30 * effectiveWinRateA;
+							const hotnessB = b.score * recentVotesB / 30 * effectiveWinRateB;
+							return hotnessB - hotnessA; // 降序
+						});
 						break;
 					case 'quickConverge':
 						break;
@@ -4219,7 +4296,8 @@
 				'leastVolatility': '波動最小',
 				'highestTrend': '升率最高',
 				'lowestTrend': '降率最高',
-				'monthlyHot': '月度熱門'
+				'monthlyHot': '趨勢最高',
+				'highestHotness': '熱度最高'
 			};
 			
 			// 使用固定的 currentGameExtractMode 來顯示模式名稱
@@ -5122,7 +5200,7 @@
 						const timeString = `${hours}:${minutes}:${seconds}`;
 						labels.push([date, timeString]);
 						data.push(record.score);
-						errors.push(record.error || Infinity); // 新增：记录误差
+						errors.push(record.error || Infinity); // 记录误差
 					});
 				}
 			});
@@ -5137,10 +5215,12 @@
         }
 		
 		function statsHelp() {
-			let txt = `勝率 為 加權勝率，根據投票時的勝利程度分配。` ;
-			txt += `\n\n波動 為 最近 30日 的 最高分數 - 最低分數 。` ;
+			let txt = `誤差範圍以 95% 置信區間計算，公式為：\n1.96 * 400 / [ √(npq) ln(10) ]\nn = 票次    p = 勝率    q = 敗率 = 1-p` ;
+			txt += `\n\n勝率 為 加權勝率，根據投票時的勝利程度分配。` ;
+			txt += `\n\n熱度 = 當前分數 * ( 最近30日票次 / 30 ) * 最近30日勝率\n( 0 票以 1/2 票 , 1/2 勝率 計算 )` ;
+			txt += `\n\n波動 = 最近30日的最高分數 - 最近30日的最低分數 。` ;
 			txt += `\n↑↓代表期間上升或下降達到波動的 95%。` ;
-			txt += `\n\n誤差範圍以 95% 置信區間計算，公式為：\n1.96 * 400 / [ √(npq) ln(10) ]\nn = 票次    p = 勝率    q = 敗率 = 1-p` ;
+			txt += `\n\n票次 顯示格式為 最近30日票次 / 總票次` ;
 			alert(txt);
 		}
 
@@ -6641,51 +6721,63 @@
 		}
 
         function loadStats() {
-			// const startTime = Date.now();
+			const startTime = Date.now();
 			const gameId = document.getElementById('statsGameSelect').value;
 			selectedGameId = gameId; 
 			localStorage.setItem('selectedGameId', selectedGameId);
-			
+
+			// 如果沒有選擇遊戲，隱藏統計內容並返回
 			if (!gameId) { 
 				document.getElementById('statsContent').classList.add('hidden'); 
 				return; 
 			}
-			
+
 			const game = games[gameId];
 			document.getElementById('statsContent').classList.remove('hidden');
-			
-			// 確保遊戲對象存在，如果不存在則創建空結構
-			if (!game) {
-				// 如果遊戲不存在，顯示空狀態
-				showEmptyStats();
-				return;
-			}
-			
-			// 檢查遊戲是否有項目，如果沒有則重置卡片數值
+
+			// 如果遊戲沒有項目，顯示空狀態並返回
 			if (!game.items || game.items.length == 0) {
 				showEmptyStats();
 				return;
 			}
 
-			// 計算基礎統計數據並保存結果
+			// ========== 第一階段：輕量級計算（同步執行） ==========
+			// 計算基礎統計數據並更新卡片（這些操作較快）
 			const stats = calculateBasicStats(game);
-			
 			// 更新最後投票日期
 			updateLastVoteDate(game);
-			
-			// 渲染圖表（需要處理空項目情況）
-			renderScoreDistributionChart(game);
-			
-			// 渲染排行榜，傳入統計數據
-			renderRankingList(game, stats);
-			
-			// 更新浮動按鈕
-			updateFloatButtons();
-			
-			// 恢復搜索狀態
-			restoreSearchState();
-			
-			// console.log(`載入耗時: ${Date.now()-startTime}`) ;
+			console.log(`loadStats 第一階段耗時: ${Date.now() - startTime}ms`);
+
+			// 取消之前未完成的任務
+			if (loadStatsTimer) {
+				clearTimeout(loadStatsTimer);
+				loadStatsTimer = null;
+			}
+
+			// ========== 第二階段：渲染分數分布圖（稍微延遲） ==========
+			loadStatsTimer = setTimeout(() => {
+				const phase2Start = Date.now();
+				renderScoreDistributionChart(game);
+				console.log(`loadStats 第二階段耗時: ${Date.now() - phase2Start}ms`);
+
+				// ========== 第三階段：渲染排行榜（最耗時的部分） ==========
+				loadStatsTimer = setTimeout(() => {
+					const phase3Start = Date.now();
+					renderRankingList(game, stats);
+					console.log(`loadStats 第三階段耗時: ${Date.now() - phase3Start}ms`);
+
+					// ========== 第四階段：更新浮動按鈕、恢復搜索狀態、恢復展開圖表 ==========
+					loadStatsTimer = setTimeout(() => {
+						const phase4Start = Date.now();
+						updateFloatButtons();
+						restoreSearchState();
+						restoreExpandedCharts(); // 這裡可能會建立多個 Chart 實例，也可以進一步拆分
+						console.log(`loadStats 第四階段耗時: ${Date.now() - phase4Start}ms`);
+						console.log(`loadStats 總耗時（含非同步）: ${Date.now() - startTime}ms`);
+						loadStatsTimer = null; // 全部完成後清除定時器
+					}, 0);
+				}, 0);
+			}, 0);
 		}
 		
 		// 显示空统计状态的函数
@@ -6987,7 +7079,7 @@
 						const volatilityB = calculateRecentVolatility(b);
 						return volatilityB - volatilityA;
 					});
-				case 'trend':  // 趋势排序
+				case 'trend':  // 依趋势排序
 					const symbolOrder = { '↑': 0, '≈': 1, '?': 2, '↓': 3 };
 					return items.sort((a, b) => {
 						const symbolA = getRecentVolatilitySymbol(a);
@@ -6995,19 +7087,46 @@
 						const orderA = symbolOrder.hasOwnProperty(symbolA) ? symbolOrder[symbolA] : 4;
 						const orderB = symbolOrder.hasOwnProperty(symbolB) ? symbolOrder[symbolB] : 4;
 
-						// 先按趋势符号排序 (↑, ≈, ?, ↓)
 						if (orderA !== orderB) {
-							return orderA - orderB; // 升序排列
+							return orderA - orderB;
 						}
 
-						// 符号相同时，按最近30日上升分数降序排列
 						const increaseA = getRecentScoreIncrease(a);
 						const increaseB = getRecentScoreIncrease(b);
-						return increaseB - increaseA; // 降序排列
+						return increaseB - increaseA;
+					});
+				case 'hotness': // 依热度排序
+					return items.sort((a, b) => {
+						const recentVotesA = calculateRecentVotes(a.id, game, 30) || 0.5;
+						const recentVotesB = calculateRecentVotes(b.id, game, 30) || 0.5;
+						const recentWinRateA = calculateRecentWinRate(a.id, game, 30);
+						const recentWinRateB = calculateRecentWinRate(b.id, game, 30);
+						const effectiveWinRateA = recentWinRateA !== null ? recentWinRateA : 0.5;
+						const effectiveWinRateB = recentWinRateB !== null ? recentWinRateB : 0.5;
+						const hotnessA = a.score * recentVotesA / 30 * effectiveWinRateA;
+						const hotnessB = b.score * recentVotesB / 30 * effectiveWinRateB;
+						return hotnessB - hotnessA;
 					});
 				default:
 					return items;
 			}
+		}
+		
+		// 计算最近 days 天内项目的投票次数
+		function calculateRecentVotes(itemId, game, days = 30) {
+			const now = Date.now();
+			const cutoff = now - days * 24 * 60 * 60 * 1000;
+			let count = 0;
+			if (game.votes) {
+				game.votes.forEach(vote => {
+					if (vote.timestamp >= cutoff) {
+						if (vote.item1 === itemId || vote.item2 === itemId) {
+							count++;
+						}
+					}
+				});
+			}
+			return count;
 		}
 
 		// 计算趋势值的函数
@@ -7069,21 +7188,126 @@
 		function renderRankingItems(sortedItems, game, stats, showSeparators) {
 			const rankingList = document.getElementById('rankingList');
 			rankingList.innerHTML = '';
-			
+
 			const allItemsRanked = sortItemsByRank(game.items);
 			const rankMap = new Map();
 			allItemsRanked.forEach((item, index) => {
 				rankMap.set(item.id, index + 1);
 			});
-			
-			// 只在需要时计算分隔线位置
+
 			const separatorPositions = showSeparators ? calculateSeparatorPositions(sortedItems, stats) : null;
-			
-			// 渲染项目和分隔线，传入 showSeparators 参数
-			renderItemsWithSeparators(sortedItems, rankMap, separatorPositions, rankingList, game, showSeparators);
-			
-			// 恢复展开的图表
-			restoreExpandedCharts();
+
+			let upperSeparator2Added = false;
+			let upperSeparatorAdded = false;
+			let avgSeparatorAdded = false;
+			let lowerSeparatorAdded = false;
+			let lowerSeparator2Added = false;
+
+			sortedItems.forEach((item, index) => {
+				if (showSeparators && separatorPositions) {
+					if (!upperSeparator2Added && index === separatorPositions.upperSeparator2Index) {
+						const separator = createSeparator(`μ + 2σ = ${separatorPositions.upperThreshold2.toFixed(2)}`, 'separator-upper-2');
+						rankingList.appendChild(separator);
+						upperSeparator2Added = true;
+					}
+					if (!upperSeparatorAdded && index === separatorPositions.upperSeparatorIndex) {
+						const separator = createSeparator(`μ + σ = ${separatorPositions.upperThreshold.toFixed(2)}`, 'separator-upper');
+						rankingList.appendChild(separator);
+						upperSeparatorAdded = true;
+					}
+					if (!avgSeparatorAdded && index === separatorPositions.avgSeparatorIndex) {
+						const separator = createSeparator(`μ = ${separatorPositions.avgScore.toFixed(2)}`, 'separator-avg');
+						rankingList.appendChild(separator);
+						avgSeparatorAdded = true;
+					}
+					if (!lowerSeparatorAdded && index === separatorPositions.lowerSeparatorIndex) {
+						const separator = createSeparator(`μ - σ = ${separatorPositions.lowerThreshold.toFixed(2)}`, 'separator-lower');
+						rankingList.appendChild(separator);
+						lowerSeparatorAdded = true;
+					}
+					if (!lowerSeparator2Added && index === separatorPositions.lowerSeparator2Index) {
+						const separator = createSeparator(`μ - 2σ = ${separatorPositions.lowerThreshold2.toFixed(2)}`, 'separator-lower-2');
+						rankingList.appendChild(separator);
+						lowerSeparator2Added = true;
+					}
+				}
+
+				const displayRank = rankMap.get(item.id);
+				const winRate = (calculateWinRate(item) * 100).toFixed(1);
+				const recentVolatility = calculateRecentVolatility(item);
+				const volatilitySymbol = getRecentVolatilitySymbol(item);
+				let error = calculateError(item);
+				let errorColor = getErrorColor(error);
+				error = error == Infinity ? '∞' : Math.round(error);
+				let errorDisplay = `<span style="color:${errorColor}">${error}</span>`;
+
+				// 热度公式：當前分數 * 最近30日票次(若无则0.5) / 30 * 最近30日胜率(若无则0.5)
+				const recentVotes = calculateRecentVotes(item.id, game, 30);
+				const recentWinRate = calculateRecentWinRate(item.id, game, 30);
+				const effectiveVotes = recentVotes || 0.5;
+				const effectiveWinRate = recentWinRate !== null ? recentWinRate : 0.5;
+				const hotness = Math.round(item.score * effectiveVotes / 30 * effectiveWinRate);
+
+				const rankingItem = document.createElement('div');
+				rankingItem.className = 'list-item ranking-item';
+				rankingItem.id = `ranking-item-${item.id}`;
+
+				if (item.frozen) {
+					rankingItem.classList.add('frozen');
+				}
+
+				let moodDisplay = '';
+				if (item.moods && item.moods.length > 0) {
+					moodDisplay = `<div class="mood-display">${item.moods.join('')}</div>`;
+				}
+
+				rankingItem.innerHTML = `
+					<div style="display: flex; flex-direction: column; width: 100%;">
+						<div style="display: flex; align-items: center; width: 100%; height: 0px;">
+							<span style="font-size: 1.2em; font-weight: bold; color: var(--primary); width: 3em; margin-right: 20px;">
+								#${displayRank}
+							</span>
+							<span class="item-name" style="flex: 1; font-size: 1.0em; font-weight: bold;">${item.name}</span>
+							<div style="display: flex; align-items: center;">
+								${moodDisplay}
+								<span style="font-size: 1.0em; color: hsl(180,100%,40%);">
+									分數: ${item.score}±${errorDisplay} |
+									勝率: ${winRate}% |
+									熱度: ${hotness} |
+									波動: ${recentVolatility}${volatilitySymbol} |
+									票次: ${recentVotes}/${item.votes}
+								</span>
+							</div>
+						</div>
+						<div class="score-chart-container" style="display: none;"></div>
+					</div>`;
+
+				rankingItem.onclick = function() {
+					toggleScoreChart(item.id);
+				};
+
+				rankingItem.addEventListener('contextmenu', function(e) {
+					e.preventDefault();
+					showItemContextMenu(e, item.id, game.id);
+				});
+
+				rankingList.appendChild(rankingItem);
+			});
+
+			if (showSeparators && separatorPositions) {
+				ensureAllSeparators(rankingList, {
+					upperSeparator2Added,
+					upperSeparatorAdded,
+					avgSeparatorAdded,
+					lowerSeparatorAdded,
+					lowerSeparator2Added,
+					upperThreshold2: separatorPositions.upperThreshold2,
+					upperThreshold: separatorPositions.upperThreshold,
+					avgScore: separatorPositions.avgScore,
+					lowerThreshold: separatorPositions.lowerThreshold,
+					lowerThreshold2: separatorPositions.lowerThreshold2
+				});
+			}
 		}
 		
 		// 9. 计算分隔线位置
@@ -7314,35 +7538,36 @@
 		function scrollToTop() {
 			const rankingList = document.getElementById('rankingList');
 			const children = Array.from(rankingList.children);
-			
+
 			// 找到第一個可見的項目（不是分隔線，且不是隱藏的）
 			for (let i = 0; i < children.length; i++) {
 				const child = children[i];
-				if (child.style.display !== 'none' && 
-					child.classList.contains('ranking-item') && 
+				if (child.style.display !== 'none' &&
+					child.classList.contains('ranking-item') &&
 					!child.classList.contains('ranking-separator')) {
 					child.scrollIntoView({
-						behavior: 'smooth',
+						behavior: 'auto',   // 修改為 auto
 						block: 'center'
 					});
 					break;
 				}
 			}
+			document.getElementById('rankingSearch').select();
 		}
 
 		// 滾動到頁底
 		function scrollToBottom() {
 			const rankingList = document.getElementById('rankingList');
 			const children = Array.from(rankingList.children);
-			
+
 			// 找到最後一個可見的項目（不是分隔線，且不是隱藏的）
 			for (let i = children.length - 1; i >= 0; i--) {
 				const child = children[i];
-				if (child.style.display !== 'none' && 
-					child.classList.contains('ranking-item') && 
+				if (child.style.display !== 'none' &&
+					child.classList.contains('ranking-item') &&
 					!child.classList.contains('ranking-separator')) {
 					child.scrollIntoView({
-						behavior: 'smooth',
+						behavior: 'auto',   // 修改為 auto
 						block: 'center'
 					});
 					break;
@@ -7355,10 +7580,10 @@
 			const separator = document.getElementById(separatorId);
 			if (separator) {
 				separator.scrollIntoView({
-					behavior: 'smooth',
+					behavior: 'auto',   // 修改為 auto
 					block: 'center'
 				});
-				
+
 				// 添加高亮效果
 				separator.style.backgroundColor = 'rgba(245, 101, 101, 0.3)';
 				setTimeout(() => {
@@ -7422,7 +7647,7 @@
 			const { 
 				upperSeparator2Added, 
 				upperSeparatorAdded, 
-				avgSeparatorAdded,  // 新增
+				avgSeparatorAdded,
 				lowerSeparatorAdded, 
 				lowerSeparator2Added 
 			} = separatorPositions;
@@ -7601,27 +7826,27 @@
 			
 			// 添加「設為左候選項」
 			const setAsLeftBtn = document.createElement('li');
-			setAsLeftBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">設為左候選項</button>`;
+			setAsLeftBtn.innerHTML = `<button class="btn btn-orange" style="width: 100%; text-align: left;">設為左候選項</button>`;
 			setAsLeftBtn.onclick = function() {
 				setCandidate(0,itemId);
 				hideContextMenu();
 			};
-			
+
 			// 添加「設為右候選項」
 			const setAsRightBtn = document.createElement('li');
-			setAsRightBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">設為右候選項</button>`;
+			setAsRightBtn.innerHTML = `<button class="btn btn-orange" style="width: 100%; text-align: left;">設為右候選項</button>`;
 			setAsRightBtn.onclick = function() {
 				setCandidate(1,itemId);
 				hideContextMenu();
 			};
-			
+
+			contextMenuList.appendChild(setAsLeftBtn);
+			contextMenuList.appendChild(setAsRightBtn);
 			contextMenuList.appendChild(copyTitleBtn);
 			contextMenuList.appendChild(copyFullLineBtn);
 			contextMenuList.appendChild(copyFullRankingBtn);
 			contextMenuList.appendChild(countAboveBtn);
 			contextMenuList.appendChild(countBelowBtn);
-			contextMenuList.appendChild(setAsLeftBtn);
-			contextMenuList.appendChild(setAsRightBtn);
 			contextMenuList.appendChild(toggleFreezeBtn);
 			contextMenuList.appendChild(freezeAboveBtn);
 			contextMenuList.appendChild(unfreezeAboveBtn);
@@ -8516,40 +8741,49 @@
 					showPage('stats');
 					document.getElementById('statsGameSelect').value = item.gameId;
 					loadStats(); // 加载统计數據
-					clearStatsFilters() ; // 清除過濾選項
-					collapseAllCharts() ; // 收起圖
+					clearStatsFilters(); // 清除過濾選項
+					collapseAllCharts(); // 收起圖
 					
-					// 打开&滚动 图表
-					const rankingItem = document.getElementById(`ranking-item-${item.itemId}`);
-					if (rankingItem) {
-						// 先展开图表
-						const chartContainer = rankingItem.querySelector('.score-chart-container');
-						if (chartContainer) {
-							// 展开图表
-							rankingItem.classList.add('expanded');
-							expandedItemIds.push(item.itemId);
-							localStorage.setItem('expandedItemIds', JSON.stringify(expandedItemIds));
-							
-							chartContainer.style.display = 'block';
-							renderScoreChart(item.itemId, chartContainer);
-							
-							// 滚动到图表区域
-							chartContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-							
-						} else {
-							// 如果没有图表容器，直接滚动到项目并显示高亮
-							rankingItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					// 等待 loadStats 完成（因为loadStats内部有异步延迟）然后滚动到项目
+					const maxAttempts = 10;
+					let attempts = 0;
+					const attemptScroll = function() {
+						const rankingItem = document.getElementById(`ranking-item-${item.itemId}`);
+						if (rankingItem) {
+							// 先展开图表
+							const chartContainer = rankingItem.querySelector('.score-chart-container');
+							if (chartContainer) {
+								// 展开图表
+								rankingItem.classList.add('expanded');
+								expandedItemIds.push(item.itemId);
+								localStorage.setItem('expandedItemIds', JSON.stringify(expandedItemIds));
+								
+								chartContainer.style.display = 'block';
+								renderScoreChart(item.itemId, chartContainer);
+								
+								// 滚动到图表区域
+								chartContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+								
+							} else {
+								// 如果没有图表容器，直接滚动到项目并显示高亮
+								rankingItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-							setTimeout(() => {
-								// 清除现有动画
-								rankingItem.style.animation = 'none';
-								// 强制重绘
-								void rankingItem.offsetWidth;
-								// 应用高亮动画
-								rankingItem.style.animation = 'highlightPulse 3s ease-in-out';
-							}, 300);
+								setTimeout(() => {
+									// 清除现有动画
+									rankingItem.style.animation = 'none';
+									// 强制重绘
+									void rankingItem.offsetWidth;
+									// 应用高亮动画
+									rankingItem.style.animation = 'highlightPulse 3s ease-in-out';
+								}, 300);
+							}
+						} else if (attempts < maxAttempts) {
+							attempts++;
+							setTimeout(attemptScroll, 200); // 每200ms尝试一次
 						}
-					}
+					};
+					
+					setTimeout(attemptScroll, 100); // 初始延迟100ms
 				};
 				
 				tbody.appendChild(row);
@@ -8936,6 +9170,12 @@
 			
 			// 更新平台筛选按钮状态
 			updatePlatformFilterButtons();
+			
+			// 初次載入時從 localStorage 讀取關鍵字並設定
+			const savedKeywordFilter = localStorage.getItem('keywordFilter');
+			if (savedKeywordFilter !== null) {
+				document.getElementById('keywordFilter').value = savedKeywordFilter;
+			}
 			
 			// 确保统计显示按钮状态正确
 			const toggleStatsBtn = document.getElementById('toggleStatsButton');

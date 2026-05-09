@@ -1450,15 +1450,20 @@
                     </div>
                     <div id="gameSettings" style="display: flex; gap: 20px; align-items: center;">
                         <div class="form-group">
-                            <label for="extractMode">抽取模式：</label>
-                            <select id="extractMode" class="form-control" style="width: auto; display: inline-block;">
+							<label for="extractMode">抽取模式
+								<button class="btn btn-info" style="width: 22px; height: 22px; padding: 0; border-radius: 50%; font-size: 12px; line-height: 1; vertical-align: middle; cursor: pointer; min-height: 22px;" onclick="showExtractModeHelp()" title="抽取模式說明">
+									?
+								</button>
+								：
+							</label>
+							<select id="extractMode" class="form-control" style="width: auto; display: inline-block;">
 								<option value="quickConverge">快速收斂</option>
 								<option value="strongest">名次最高</option>
 								<option value="similarScore">分數相近</option>
-								<option value="leastVolatility">波動最小</option>
 								<option value="highestHotness">熱度最高</option>
 								<option value="monthlyHot">趨勢最高</option>
 								<option value="highestTrend">升率最高</option>
+								<option value="leastVolatility">波動最小</option>
 								<option value="lowestTrend">降率最高</option>
 								<option value="uniform">均勻隨機</option>
 								<option value="middle">名次中段</option>
@@ -1702,6 +1707,10 @@
                             <div class="stat-value" id="totalItems">0</div>
                             <div>總項目數</div>
                         </div>
+						<div class="stat-card">
+							<div class="stat-value" id="healthScore">?%</div>
+							<div>數據健康度</div>
+						</div>
                         <div class="stat-card">
                             <div class="stat-value" id="totalVotes">0</div>
                             <div>總投票數</div>
@@ -1789,6 +1798,7 @@
         </div>
     </div>
 	<center>
+		ver 0.7&emsp;~tyovery~&emsp;2026-05<br />
 		ver 0.6&emsp;~tyovery~&emsp;2026-03<br />
 		ver 0.5&emsp;~tyovery~&emsp;2026-02<br />
 		ver 0.4&emsp;~tyovery~&emsp;2026-01<br />
@@ -2320,12 +2330,14 @@
 				if (errorB === undefined || errorB === null) return -1;
 				
 				if (errorA !== errorB) return errorA - errorB;
-				
+
 				// 誤差也相同時，按勝率降序排列 (取3位小數, 因勝率差別小時, 實際分別不大)
 				const winRateA = calculateWinRate(a).toFixed(3) ;
 				const winRateB = calculateWinRate(b).toFixed(3) ;
-				if (winRateB !== winRateA) return winRateB - winRateA;
+				return winRateB - winRateA;
+				// if (winRateB !== winRateA) return winRateB - winRateA;
 				
+				/* 以下備用, 但實際幾乎只作用在新項目上, 故會降低效能
 				// 勝率也相同時，按30日上升趨勢降序排列
 				const trendA = getRecentScoreIncrease(a) ;
 				const trendB = getRecentScoreIncrease(b) ;
@@ -2333,6 +2345,7 @@
 
 				// 最後按票次降序排列
 				return b.votes - a.votes;
+				*/
 			});
 		}
 
@@ -3711,15 +3724,9 @@
 			document.getElementById('extractMode').disabled = false;
 			document.getElementById('keywordFilter').disabled = false;
 			
-			// 快速收斂模式下禁用項目數輸入
-			const extractMode = document.getElementById('extractMode').value;
-			if (extractMode === 'quickConverge') {
-				document.getElementById('itemCount').disabled = true;
-				document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
-			} else {
-				document.getElementById('itemCount').disabled = false;
-				document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
-			}
+			// 移除快速收斂模式下禁用項目數輸入的限制，所有模式皆可設置參賽項目數
+			document.getElementById('itemCount').disabled = false;
+			document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
 			
 			document.querySelector('button[onclick="startGame()"]').disabled = false;
 			
@@ -3734,12 +3741,6 @@
 			if (document.getElementById('votingArea').classList.contains('hidden')) {
 				voteHistory = []; document.getElementById('undoBtn').disabled = true;
 			}
-			
-			// 移除了以下幾行，避免每次切回投票頁都從 localStorage 讀取關鍵字覆蓋當前輸入
-			// const savedKeywordFilter = localStorage.getItem('keywordFilter');
-			// if (savedKeywordFilter !== null) {
-			//     document.getElementById('keywordFilter').value = savedKeywordFilter;
-			// }
 			
 			createVotingMoodFilter();
 		}
@@ -4105,6 +4106,8 @@
 						});
 						break;
 					case 'quickConverge':
+						// 快速收斂：取出名次最高的前 itemCount 個項目
+						selectedItems = sortItemsByRank(selectedItems).slice(0, itemCount);
 						break;
 				}
 
@@ -4114,7 +4117,8 @@
 							 currentGameExtractMode === 'middle' || currentGameExtractMode === 'middleWinRate' || currentGameExtractMode === 'nearAverage' || currentGameExtractMode === 'maxError' || currentGameExtractMode === 'similarScore' || currentGameExtractMode === 'leastVolatility' ? selectedItems : 
 							 selectedItems.slice(0, itemCount);
 							 
-				if (currentGameExtractMode !== 'quickConverge' && activeItems.length < 4) { alert('選擇的項目數不足 4 個'); return; }
+				// 確保套用參賽數後，池中項目依然符合最低要求
+				if (activeItems.length < 4) { alert('選擇的項目數不足 4 個'); return; }
 
 				// 更新遊戲狀態信息 - 使用固定的抽取模式名稱
 				// 在開始遊戲時固定顯示當前選擇的遊戲名稱
@@ -5222,6 +5226,31 @@
 			txt += `\n↑↓代表期間上升或下降達到波動的 95%。` ;
 			txt += `\n\n票次 顯示格式為 最近30日票次 / 總票次` ;
 			alert(txt);
+		}
+		
+		function showExtractModeHelp() {
+			const helpText = [
+				// '使用不同模式有助維持數據健康度.`,
+				'快速收斂：排名頭段 [參賽項目數] 項, 快速定位最大誤差項目.', // 誤差最大 vs 分數最近
+				'名次最高：排名頭段 [參賽項目數] 項, 隨機對決.',
+				'分數相近：分數相近的隨機 [參賽項目數] 項, 隨機對決.',
+				'熱度最高：近30日 最熱門的 [參賽項目數] 項, 隨機對決.',
+				'趨勢最高：近30日 最顯著上升的 [參賽項目數] 項, 隨機對決.',
+				'升率最高：近30日 最穩定上升的 [參賽項目數] 項, 隨機對決.',
+				'波動最小：近30日 波動最小的 [參賽項目數] 項, 隨機對決.',
+				'降率最高：近30日 最穩定下降的 [參賽項目數] 項, 隨機對決.',
+				'均勻隨機：隨機取 [參賽項目數] 項, 隨機對決.',
+				'名次中段：排名中段 [參賽項目數] 項, 隨機對決.',
+				'名次最低：排名尾段 [參賽項目數] 項, 隨機對決.',
+				'勝率最高：加權勝率最高的 [參賽項目數] 項, 隨機對決.',
+				'勝率中段：加權勝率最按近50%的 [參賽項目數] 項, 隨機對決.',
+				'勝率最低：加權勝率最低的 [參賽項目數] 項, 隨機對決.',
+				'近平均分：最按近平均分的 [參賽項目數] 項, 隨機對決.',
+				'最少票次：總票次最少的 [參賽項目數] 項, 隨機對決.',
+				'最大誤差：誤差最大的 [參賽項目數] 項, 隨機對決.',
+				'最近加入：最新加入的 [參賽項目數] 項, 隨機對決.'
+			].join('\n');
+			alert(helpText);
 		}
 
         function renderScoreDistributionChart(game) {
@@ -6784,6 +6813,7 @@
 		function showEmptyStats() {
 			// 更新基礎統計數據顯示為默認值
 			document.getElementById('totalItems').textContent = '0';
+			document.getElementById('healthScore').textContent = '?%';
 			document.getElementById('totalVotes').textContent = '0';
 			document.getElementById('expectedVotes1').textContent = '0';
 			document.getElementById('expectedVotes2').textContent = '0';
@@ -6899,6 +6929,29 @@
 				lowerThreshold, lowerThreshold2
 			});
 			
+			// 计算平均误差（忽略 Infinity）
+			let totalError = 0;
+			let validErrorCount = 0;
+			game.items.forEach(item => {
+				const error = calculateError(item);
+				if (error !== Infinity) {
+					totalError += error;
+					validErrorCount++;
+				}
+			});
+			const avgError = validErrorCount > 0 ? totalError / validErrorCount : 0;
+			document.getElementById('avgError').textContent = avgError.toFixed(2);
+
+			// 健康度计算
+			const totalVotes = game.votes.length;
+			const connectivity = calculateConnectivity(game);
+			const coverage = n > 0 ? Math.min(totalVotes / (n * 25), 1) : 0;
+			const stability = 1 - Math.min(avgError / 500, 1);
+			const discrimination = Math.min(scoreStdDev / 400, 1);
+			// 权重：连通 0.35，覆盖 0.25，稳定 0.25，鉴别 0.15
+			const healthScore = Math.round( ( connectivity * 0.35 + coverage * 0.25 + stability * 0.25 + discrimination * 0.15 ) * 100 );
+			document.getElementById('healthScore').textContent = healthScore + '%';
+			
 			// 计算平均误差
 			calculateAverageError(game);
 			
@@ -6908,6 +6961,49 @@
 				scoreStdDev, upperThreshold2, upperThreshold, 
 				lowerThreshold, lowerThreshold2
 			};
+		}
+		
+		// 计算连通性（最大连通分量占比）
+		function calculateConnectivity(game) {
+			const n = game.items.length;
+			if (n === 0) return 1; // 无项目时默认连通性满分（实际调用前已判空，此处安全返回）
+			// 建立 itemId -> 索引 的映射
+			const idToIndex = new Map();
+			game.items.forEach((item, i) => idToIndex.set(item.id, i));
+			// 构建邻接表（无向图）
+			const adj = Array.from({ length: n }, () => []);
+			game.votes.forEach(vote => {
+				const idx1 = idToIndex.get(vote.item1);
+				const idx2 = idToIndex.get(vote.item2);
+				// 忽略无效或自环的投票记录
+				if (idx1 !== undefined && idx2 !== undefined && idx1 !== idx2) {
+					adj[idx1].push(idx2);
+					adj[idx2].push(idx1);
+				}
+			});
+			// BFS 找出最大连通分量大小
+			const visited = new Array(n).fill(false);
+			let maxCompSize = 0;
+			for (let i = 0; i < n; i++) {
+				if (!visited[i]) {
+					let size = 0;
+					const stack = [i];
+					visited[i] = true;
+					while (stack.length) {
+						const u = stack.pop();
+						size++;
+						for (const v of adj[u]) {
+							if (!visited[v]) {
+								visited[v] = true;
+								stack.push(v);
+							}
+						}
+					}
+					if (size > maxCompSize) maxCompSize = size;
+				}
+			}
+			// 连通性分数 = 最大分量节点数 / 总节点数
+			return maxCompSize / n;
 		}
 		
 		// 3. 计算中位数
@@ -8475,7 +8571,9 @@
 				'score': '依分數',
 				'error': '依誤差',
 				'winRate': '依勝率',
+				'hotness': '依熱度',
 				'volatility': '依波動',
+				'trend': '依趨勢',
 				'votes': '依票次',
 				'time': '依新加'
 			};
@@ -8486,13 +8584,19 @@
 		function copyFullRanking(gameId) {
 			const game = games[gameId];
 			const rankingList = document.getElementById('rankingList');
-			const rankingTitle = document.getElementById('rankingTitle') ;
+			const rankingTitle = document.getElementById('rankingTitle');
 			
-			let rankingText = `${game.name} ${rankingTitle.innerText} | ${getSortByName(document.getElementById('sortBy').value)} 排序\n`;
+			// 獲取篩選狀態
+			const moodLogicValue = document.getElementById('statsMoodLogic').value;
+			const moodLogicText = moodLogicValue === 'and' ? '和' : moodLogicValue === 'or' ? '或' : '非';
+			const moodEmojisText = statsMoodFilters.length > 0 ? statsMoodFilters.join('') : '';
+			const searchText = document.getElementById('rankingSearch').value.trim();
+			const searchDisplay = searchText ?? '';
 			
-			// 直接从页面提取当前显示的排行榜文字，确保换行正确
-			// rankingText += [...rankingList.childNodes].map(x=>x.innerText.replaceAll('\n','  ')).join('\n') ;
-			rankingText += [...rankingList.childNodes].map(x=>x.innerText).filter(x=>!x.includes('\n\t')).map(x=>x.replaceAll('\n','  ')).join('\n') ;
+			let rankingText = `${game.name} ${rankingTitle.innerText} ${getSortByName(document.getElementById('sortBy').value)}排序`;
+			rankingText += ` 篩選(${moodLogicText}): ${moodEmojisText} ${searchDisplay}\n`;
+			
+			rankingText += [...rankingList.childNodes].map(x=>x.innerText).filter(x=>!x.includes('\n\t')).map(x=>x.replaceAll('\n','  ')).join('\n');
 			navigator.clipboard.writeText(rankingText);
 		}
 
@@ -9137,14 +9241,9 @@
         }
 		
 		function updateItemCountState() {
-			const extractMode = document.getElementById('extractMode').value;
-			if (extractMode === 'quickConverge') {
-				document.getElementById('itemCount').disabled = true;
-				document.querySelector('button[onclick="setMaxItems()"]').disabled = true;
-			} else {
-				document.getElementById('itemCount').disabled = false;
-				document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
-			}
+			// 移除根據 extractMode 禁用項目的邏輯，確保參賽項目數隨時可用
+			document.getElementById('itemCount').disabled = false;
+			document.querySelector('button[onclick="setMaxItems()"]').disabled = false;
 		}
 
         document.addEventListener('DOMContentLoaded', function() {

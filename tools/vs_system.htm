@@ -1657,6 +1657,7 @@
                     </select>
 					<button class="btn btn-info" onclick="exportStats()">匯出統計</button>
                     <button class="btn btn-warning" onclick="document.getElementById('importStatsFile').click()">匯入統計</button>
+					<button class="btn btn-danger" onclick="resetStatsKeepScores()">只留分數</button>
 					<button class="btn btn-danger" onclick="clearStats()">清除數據</button>
                     <input type="file" id="importStatsFile" accept=".json" class="hidden">
                 </div>
@@ -2919,11 +2920,42 @@
 
         function changePage(page) { currentPage = page; updateItemsListWithPagination(); }
 
+		// 自动保存项目名称
+		function autoSaveEditName(itemId) {
+			const nameInput = document.getElementById(`edit-name-${itemId}`);
+			if (!nameInput) return;
+			if (!editingItemData[itemId]) editingItemData[itemId] = {};
+			editingItemData[itemId].name = nameInput.value;
+		}
+
+		// 自动保存项目链接（textarea）
+		function autoSaveEditLinks(itemId) {
+			const linksTextarea = document.getElementById(`edit-links-${itemId}`);
+			if (!linksTextarea) return;
+			if (!editingItemData[itemId]) editingItemData[itemId] = {};
+			editingItemData[itemId].links = linksTextarea.value;
+		}
+
+		// 用于 HTML 属性值转义
+		function escapeAttribute(str) {
+			if (!str) return '';
+			return str.replace(/[&<>]/g, function(m) {
+				if (m === '&') return '&amp;';
+				if (m === '<') return '&lt;';
+				if (m === '>') return '&gt;';
+				return m;
+			}).replace(/["']/g, function(m) {
+				if (m === '"') return '&quot;';
+				if (m === "'") return '&#39;';
+				return m;
+			});
+		}
+
         function updateItemsList(items) {
 			const itemsList = document.getElementById('itemsList');
 			itemsList.innerHTML = '';
 			
-			// 添加全選/取消全選控制項
+			// 添加全选/取消全选控制项（保持不变）...
 			const selectAllControl = document.createElement('div');
 			selectAllControl.className = 'list-item';
 			selectAllControl.style.cssText = 'margin-bottom: 10px; padding: 10px; background: #f0f0f0; border-radius: 10px;';
@@ -2939,9 +2971,7 @@
 			items.forEach(item => {
 				const itemCard = document.createElement('div');
 				itemCard.className = 'list-item';
-				if (item.frozen) {
-					itemCard.classList.add('frozen');
-				}
+				if (item.frozen) itemCard.classList.add('frozen');
 				if (editingItemId === item.id) {
 					itemCard.classList.add('editing');
 					const savedData = editingItemData[item.id];
@@ -2949,34 +2979,42 @@
 					const linksText = savedData?.links || (() => {
 						const allLinks = [...(item.links || [])];
 						item.invalidLinks?.forEach(link => {
-							if (!allLinks.includes(link)) {
-								allLinks.push(link);
-							}
+							if (!allLinks.includes(link)) allLinks.push(link);
 						});
 						return allLinks.map(link => 
 							item.invalidLinks?.includes(link) ? `[無效] ${link}` : link).join('\n') || '';
 					})();
 					
 					itemCard.innerHTML = `
-						<div class="item-checkbox-container">
-							<input type="checkbox" class="item-checkbox" value="${item.id}" onchange="updateSelectedCount()">
+					<div class="item-checkbox-container">
+						<input type="checkbox" class="item-checkbox" value="${item.id}" onchange="updateSelectedCount()">
+					</div>
+					<div class="item-info">
+						<div style="flex: 1;">
+							<div class="edit-mood-buttons" id="edit-mood-buttons-${item.id}"></div>
+							<input type="text" class="form-control" id="edit-name-${item.id}" value="${escapeAttribute(nameValue)}" style="margin-bottom: 10px;">
+							<textarea class="form-control" id="edit-links-${item.id}" placeholder="每行一個連結" style="min-height: 80px;">${escapeHtml(linksText)}</textarea>
 						</div>
-						<div class="item-info">
-							<div style="flex: 1;">
-								<div class="edit-mood-buttons" id="edit-mood-buttons-${item.id}"></div>
-								<input type="text" class="form-control" id="edit-name-${item.id}" value="${nameValue}" style="margin-bottom: 10px;">
-								<textarea class="form-control" id="edit-links-${item.id}" placeholder="每行一個連結" style="min-height: 80px;">${linksText}</textarea>
-							</div>
-						</div>
-						<div style="display: flex; gap: 10px;">
-							<button class="btn btn-primary" onclick="saveItem('${item.id}')">儲存</button>
-							<button class="btn btn-gray" onclick="cancelEdit()">取消</button>
-						</div>`;
+					</div>
+					<div style="display: flex; gap: 10px;">
+						<button class="btn btn-primary" onclick="saveItem('${item.id}')">儲存</button>
+						<button class="btn btn-gray" onclick="cancelEdit()">取消</button>
+					</div>`;
 					
+					// 绑定自动保存事件
 					setTimeout(() => {
+						const nameInput = document.getElementById(`edit-name-${item.id}`);
+						const linksTextarea = document.getElementById(`edit-links-${item.id}`);
+						if (nameInput) {
+							nameInput.oninput = () => autoSaveEditName(item.id);
+						}
+						if (linksTextarea) {
+							linksTextarea.oninput = () => autoSaveEditLinks(item.id);
+						}
 						createEditMoodButtons(item.id, savedData?.moods || item.moods || []);
 					}, 0);
 				} else {
+					// 非编辑模式代码保持不变...
 					const firstLink = item.links?.[0] ?? '';
 					const uniqueLinks = [...new Set(item.links || [])];
 					const linkCount = uniqueLinks.length;
@@ -2992,9 +3030,9 @@
 							<div class="item-preview" id="preview-${item.id}"></div>
 							<div style="flex: 1; min-width: 0;">
 								<div class="item-mood-buttons" id="item-mood-buttons-${item.id}"></div>
-								<div style="font-weight: bold;">${item.name}</div>
+								<div style="font-weight: bold;">${escapeHtml(item.name)}</div>
 								<div class="${isFirstLinkInvalid ? 'invalid-link' : ''} item-link-container" style="color: var(--primary); font-size: 0.9em;">
-									${firstLink}
+									${escapeHtml(firstLink)}
 								</div>
 								<div style="color: var(--gray); font-size: 0.85em;">共 ${linkCount+invalidCount} 個連結</div>
 								${invalidCount > 0 ? `<div style="color: var(--danger); font-size: 0.85em;">⚠️ ${invalidCount} 個無效連結</div>` : ''}
@@ -3017,6 +3055,19 @@
 			});
 		}
 		
+		// 转义HTML特殊字符，防止XSS
+		function escapeHtml(str) {
+			if (!str) return '';
+			return str.replace(/[&<>]/g, function(m) {
+				if (m === '&') return '&amp;';
+				if (m === '<') return '&lt;';
+				if (m === '>') return '&gt;';
+				return m;
+			}).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+				return c;
+			});
+		}
+
 		// 合拼勾選的項目
 		function mergeSelectedItems() {
 			if (!selectedGameForEdit) {
@@ -3493,6 +3544,27 @@
             }
         }
 
+		// 辅助函数：从B站链接中提取p参数（集数），并生成完整的嵌入URL
+		function getBilibiliEmbedUrl(link, bvMatch, avMatch) {
+			let baseUrl = '';
+			if (bvMatch) {
+				baseUrl = `https://player.bilibili.com/player.html?bvid=${bvMatch[0]}&high_quality=1&autoplay=0`;
+			} else if (avMatch) {
+				baseUrl = `https://player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&autoplay=0`;
+			} else {
+				return null;
+			}
+			
+			// 提取p参数（集数）
+			let p = '';
+			const pMatch = link.match(/[?&]p=(\d+)/);
+			if (pMatch) {
+				p = `&p=${pMatch[1]}`;
+			}
+			
+			return baseUrl + p;
+		}
+
         function loadPreviewVideo(containerId, link) {
 			const container = document.getElementById(containerId);
 			if (!container || !link) return;
@@ -3508,14 +3580,18 @@
 				if (videoId) container.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?controls=1&modestbranding=1&rel=0" frameborder="0" allowfullscreen></iframe>`;
 			} else if (link.includes('bilibili.com')) {
 				let bvMatch = link.match(/BV[\w]+/);
-				if (bvMatch) container.innerHTML = `<iframe src="https://player.bilibili.com/player.html?bvid=${bvMatch[0]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
-				else {
-					const avMatch = link.match(/av(\d+)/);
-					if (avMatch) container.innerHTML = `<iframe src="https://player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				let avMatch = null;
+				if (!bvMatch) {
+					avMatch = link.match(/av(\d+)/);
+				}
+				const embedUrl = getBilibiliEmbedUrl(link, bvMatch, avMatch);
+				if (embedUrl) {
+					container.innerHTML = `<iframe src="${embedUrl}" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				} else {
+					container.innerHTML = `<div style="color: var(--danger);">無法解析的B站連結</div>`;
 				}
 			} else if (isImageLink(link)) {
 				// 圖片連結 - 添加點擊放大功能（使用全局模态框）
-				// 修改圖片樣式：高度與外框一致，寬度按比例自動調整
 				const encodedLink = encodeURI(link).replace(/'/g, "\\'");
 				container.innerHTML = `
 					<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; overflow:hidden; background-color:#000; position:relative;">
@@ -4510,30 +4586,11 @@
 			const item = currentGame.items.find(i => i.id === currentPair[playerNum - 1].id);
 			const isInvalid = item?.invalidLinks?.includes(link);
 			
-			// 處理沒有連結或連結為null的情況 - 移動到最前面
+			// 處理沒有連結或連結為null的情況
 			if (!link) {
 				container.innerHTML = '<div style="color: var(--danger); background: #fff; padding: 20px; text-align: center; border-radius: 10px;">無符合篩選條件的連結</div>';
 				return;
 			}
-
-			// 輸出連結類型到控制台 - 使用輔助函數
-			let linkType = '未知連結';
-			if (link.includes('bilibili.com')) {
-				linkType = 'Bilibili影片';
-			} else if (link.includes('youtube.com') || link.includes('youtu.be')) {
-				linkType = 'YouTube影片';
-			} else if (isVideoFile(link)) {
-				linkType = '影片檔案';
-			} else {
-				linkType = '圖片連結'; // 如果都不是則一律判定為圖片連結
-			}
-			
-			// console.log(`選項${playerNum} (${playerNum === 1 ? '左側' : '右側'}) 連結類型: ${linkType}`);
-			// console.log(`選項${playerNum} 連結: ${link}`);
-
-			// 原有的视频加载逻辑保持不变
-			if (playerNum === 1 && player1) { try { player1.destroy(); } catch(e) {} player1 = null; }
-			else if (playerNum === 2 && player2) { try { player2.destroy(); } catch(e) {} player2 = null; }
 
 			const buttons = `
 				<button class="invalid-btn ${isInvalid ? 'active' : ''}" onclick="toggleInvalidLink(${playerNum})" title="標記為無效影片">⚠️</button>
@@ -4544,10 +4601,15 @@
 			// 判断链接类型并相应处理
 			if (link.includes('bilibili.com')) {
 				let bvMatch = link.match(/BV[\w]+/);
-				if (bvMatch) container.innerHTML = `${buttons}<iframe src="https://player.bilibili.com/player.html?bvid=${bvMatch[0]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
-				else {
-					const avMatch = link.match(/av(\d+)/);
-					if (avMatch) container.innerHTML = `${buttons}<iframe src="https://player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&autoplay=0" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				let avMatch = null;
+				if (!bvMatch) {
+					avMatch = link.match(/av(\d+)/);
+				}
+				const embedUrl = getBilibiliEmbedUrl(link, bvMatch, avMatch);
+				if (embedUrl) {
+					container.innerHTML = `${buttons}<iframe src="${embedUrl}" scrolling="no" frameborder="0" allowfullscreen></iframe>`;
+				} else {
+					container.innerHTML = `${buttons}<div style="color: var(--danger);">無法解析的B站連結</div>`;
 				}
 			} else if (link.includes('youtube.com') || link.includes('youtu.be')) {
 				let videoId = '';
@@ -4578,7 +4640,6 @@
 				container.innerHTML = `${buttons}<video src="${link}" style="width:100%; height:100%; border-radius:10px;" controls></video>`;
 			} else {
 				// 圖片連結 - 添加點擊放大功能（使用全局模态框）
-				// 修改圖片樣式：高度與外框一致，寬度按比例自動調整
 				const encodedLink = encodeURI(link).replace(/'/g, "\\'");
 				container.innerHTML = `
 					${buttons}
@@ -4589,11 +4650,6 @@
 							 onload="this.style.opacity='1'"
 							 onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' fill=\'%23ccc\'/><text x=\'50\' y=\'50\' font-size=\'10\' text-anchor=\'middle\' dy=\'.3em\'>圖片加載失敗</text></svg>';">
 					</div>`;
-				/* 註解掉 其他連結 當作後備
-				// 其他連結，嘗試使用iframe嵌入
-				// 為了安全，使用sandbox限制
-				container.innerHTML = `${buttons}<iframe src="${link}" style="width:100%; height:100%; border-radius:10px;" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" frameborder="0" allowfullscreen></iframe>`;
-				*/
 			}
 			
 			if (statsVisible) updateItemStats();
@@ -7798,6 +7854,60 @@
             if (gameId) loadStats();
         }
 
+		// 重置當前遊戲的統計數據，僅保留每個項目的當前分數作為預設值
+		function resetStatsKeepScores() {
+			const gameId = document.getElementById('statsGameSelect').value;
+			if (!gameId) {
+				alert('請先選擇遊戲');
+				return;
+			}
+			
+			const game = games[gameId];
+			if (!game.items || game.items.length === 0) {
+				alert('此遊戲沒有項目，無需重置');
+				return;
+			}
+			
+			if (confirm('確定要重置此遊戲的所有投票數據，但保留每個項目當前的分數嗎？\n此操作無法復原！')) {
+				// 重置每個項目的統計數據，保留當前分數
+				game.items.forEach(item => {
+					item.votes = 0;
+					item.wins = 0;
+					item.losses = 0;
+					// 將分數歷史重置為目前分數的單筆記錄
+					item.scoreHistory = [{
+						timestamp: Date.now(),
+						score: item.score
+					}];
+				});
+				
+				// 清空遊戲的投票記錄
+				game.votes = [];
+				
+				// 保存到 localStorage
+				localStorage.setItem('games', JSON.stringify(games));
+				
+				// 同步其他頁面（透過 storage 事件會自動觸發，但仍可手動同步）
+				syncData();
+				
+				// 重新載入統計頁面
+				loadStats();
+				
+				// 如果當前投票頁面使用的是同一個遊戲，可選擇重新載入或清空當前對決（避免狀態不一致）
+				if (currentGame && currentGame.id === gameId) {
+					// 將投票頁面的狀態重置，避免顯示過時的正在投票項目
+					document.getElementById('votingArea').classList.add('hidden');
+					currentGame = null;
+					currentPair = null;
+					document.getElementById('gameStatusInfo').style.display = 'none';
+					voteHistory = [];
+					document.getElementById('undoBtn').disabled = true;
+				}
+				
+				alert('統計數據已重置，各項目分數保持不變');
+			}
+		}
+
         function clearStats() {
 			const gameId = document.getElementById('statsGameSelect').value;
 			if (!gameId) { alert('請先選擇遊戲'); return; }
@@ -7814,6 +7924,18 @@
 				localStorage.setItem('games', JSON.stringify(games));
 				syncData();
 				loadStats(); 
+
+				// 如果當前投票頁面使用的是同一個遊戲，可選擇重新載入或清空當前對決（避免狀態不一致）
+				if (currentGame && currentGame.id === gameId) {
+					// 將投票頁面的狀態重置，避免顯示過時的正在投票項目
+					document.getElementById('votingArea').classList.add('hidden');
+					currentGame = null;
+					currentPair = null;
+					document.getElementById('gameStatusInfo').style.display = 'none';
+					voteHistory = [];
+					document.getElementById('undoBtn').disabled = true;
+				}
+
 				alert('統計數據已清除');
 			}
 		}

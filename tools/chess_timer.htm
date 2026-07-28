@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>棋鐘</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    user-select: none; touch-action: manipulation;
+    background: #111;
+    -webkit-text-size-adjust: 100%;
+  }
+  #app {
+    display: flex; flex-direction: column;
+    width: 100vw;
+    height: 100vh; /* 會被 JS 覆寫成精確 px */
+    position: relative;
+  }
+
+  .player {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color .15s;
+    background: #ecf0f1; color: #333;
+  }
+  .player.active { background-color: #2ecc71; color: #fff; }
+  .player.active.byoyomi { background-color: #e67e22; }
+  .player.flagfallen { background-color: #e74c3c !important; color: #fff; }
+
+  .content {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transform: rotate(90deg);
+    transform-origin: center center;
+    flex-shrink: 0;
+  }
+  .label { font-size: calc(var(--tsize) * 0.38); opacity: .75; margin-bottom: calc(var(--tsize) * 0.18); white-space: nowrap; }
+  .time  { font-size: var(--tsize); font-weight: bold; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
+  .time .frac { font-size: 55%; opacity: 0.8; }
+  .info  { font-size: calc(var(--tsize) * 0.30); opacity: .85; margin-top: calc(var(--tsize) * 0.18); min-height: calc(var(--tsize) * 0.35); white-space: nowrap; }
+
+  #controls {
+    position: fixed; top: 50%; left: 0; right: 0; transform: translateY(-50%);
+    display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+    gap: clamp(6px, 2vw, 14px);
+    z-index: 10; pointer-events: none;
+  }
+  #controls button {
+    pointer-events: auto; border: none; border-radius: 999px;
+    background: rgba(52,73,94,0.92); color: #fff;
+    display: flex; align-items: center; gap: 6px;
+    font-size: clamp(13px, 3.2vmin, 20px);
+    padding: clamp(8px, 1.6vmin, 14px) clamp(12px, 2.6vmin, 20px);
+    white-space: nowrap;
+  }
+  #controls button:active { opacity: 0.6; }
+
+  #settingsPanel {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.94); color: #fff;
+    z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: flex-start;
+    gap: 14px; padding: 20px; overflow-y: auto;
+  }
+  #settingsPanel.show { display: flex; }
+  #settingsPanel h2 { margin: 10px 0 0 0; }
+  #settingsPanel h3 { margin: 6px 0 0 0; font-size: 15px; opacity: .8; align-self: flex-start; max-width:320px; width:100%;}
+  #settingsPanel label {
+    width: 100%; max-width: 320px; display: flex; flex-direction: column; font-size: 16px; gap: 6px;
+  }
+  #settingsPanel input {
+    font-size: 20px; padding: 8px; border-radius: 8px; border: none;
+  }
+  #settingsPanel .btnRow { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 20px; }
+  #settingsPanel button {
+    padding: 12px 22px; font-size: 16px; border-radius: 10px; border: none; color: #fff;
+  }
+  #btnSave { background: #2ecc71; }
+  #btnClose { background: #7f8c8d; }
+
+  .presetGrid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    width: 100%; max-width: 320px;
+  }
+  .presetGrid button {
+    background: #34495e; padding: 10px 4px; font-size: 14px; border-radius: 8px; border: none; color: #fff;
+  }
+  .presetGrid button:active { background: #4f6b85; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="player" id="player1">
+    <div class="content" id="content1" style="--tsize: 40px;">
+      <div class="label">先手</div>
+      <div class="time" id="time1">10:00<span class="frac">.00</span></div>
+      <div class="info" id="info1"></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="btnSettings">⚙️ 設定</button>
+    <button id="btnStartPause">▶️ 開始</button>
+    <button id="btnReset">🔄 重置</button>
+  </div>
+
+  <div class="player" id="player2">
+    <div class="content" id="content2" style="--tsize: 40px;">
+      <div class="label">後手</div>
+      <div class="time" id="time2">10:00<span class="frac">.00</span></div>
+      <div class="info" id="info2"></div>
+    </div>
+  </div>
+</div>
+
+<div id="settingsPanel">
+  <h2>棋鐘設定</h2>
+
+  <h3>快速選項</h3>
+  <div class="presetGrid" id="presetGrid">
+    <button data-t="5"  data-i="5"  data-p="5">5,5,5</button>
+    <button data-t="10"  data-i="10"  data-p="10">10,10,10</button>
+    <button data-t="15"  data-i="15"  data-p="15">15,15,15</button>
+    <button data-t="30"  data-i="10"  data-p="30">30,10,30</button>
+    <button data-t="45"  data-i="5"  data-p="30">45,5,30</button>
+    <button data-t="60"  data-i="5"  data-p="30">60,5,30</button>
+	<button data-t="0" data-i="0"  data-p="5">5秒/步</button>
+	<button data-t="0" data-i="0"  data-p="10">10秒/步</button>
+    <button data-t="0" data-i="0"  data-p="15">15秒/步</button>
+    <button data-t="0"  data-i="0" data-p="30">30秒/步</button>
+	<button data-t="0"  data-i="0" data-p="45">45秒/步</button>
+	<button data-t="0"  data-i="0" data-p="60">1分/步</button>
+  </div>
+
+  <label>總時限（分鐘）
+    <input type="number" id="setTotalMin" min="0" step="0.5" value="10" inputmode="decimal">
+  </label>
+  <label>每步加秒
+    <input type="number" id="setIncrement" min="0" step="1" value="0" inputmode="numeric">
+  </label>
+  <label>讀秒（0 = 不啟用）
+    <input type="number" id="setPerMove" min="0" step="1" value="0" inputmode="numeric">
+  </label>
+  <div class="btnRow">
+    <button id="btnSave">儲存並重置</button>
+    <button id="btnClose">取消</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------- 設定值 ----------
+  let totalMin = 15; // 總時限（分鐘）
+  let incrementSec = 5; // 每步加秒
+  let perMoveLimit = 10; // 讀秒
+
+  // ---------- 元素 ----------
+  const appEl = document.getElementById('app');
+  const el1 = document.getElementById('player1');
+  const el2 = document.getElementById('player2');
+  const content1 = document.getElementById('content1');
+  const content2 = document.getElementById('content2');
+  const timeEl1 = document.getElementById('time1');
+  const timeEl2 = document.getElementById('time2');
+  const infoEl1 = document.getElementById('info1');
+  const infoEl2 = document.getElementById('info2');
+  const btnStartPause = document.getElementById('btnStartPause');
+  const btnReset = document.getElementById('btnReset');
+  const btnSettings = document.getElementById('btnSettings');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const setTotalMin = document.getElementById('setTotalMin');
+  const setPerMove = document.getElementById('setPerMove');
+  const setIncrement = document.getElementById('setIncrement');
+  const btnSave = document.getElementById('btnSave');
+  const btnClose = document.getElementById('btnClose');
+  const presetGrid = document.getElementById('presetGrid');
+
+  // ---------- 版面：精準等分 + 響應式字體 ----------
+  function setAppHeight(){
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    appEl.style.height = h + 'px';
+  }
+
+  function layoutPlayer(playerEl, contentEl){
+    const w = playerEl.clientWidth;
+    const h = playerEl.clientHeight;
+    if(w === 0 || h === 0) return;
+    // content 旋轉 90 度前，先把寬高互換，旋轉後才會剛好貼合 playerEl 的方框，不會溢出/裁切
+    contentEl.style.width = h + 'px';
+    contentEl.style.height = w + 'px';
+
+    // 依「旋轉後可讀寬度(=h)」與「旋轉後可讀高度(=w)」兩者中較嚴格者，計算時間文字字級
+    const byWrapWidth = h / 4.6;   // 時間文字約 8 個字元，需要的寬度限制
+    const byStackHeight = w / 2.1; // label+time+info 三行需要的高度限制
+    let t = Math.min(byWrapWidth, byStackHeight) * 0.94;
+    t = Math.max(14, t);
+    contentEl.style.setProperty('--tsize', t + 'px');
+  }
+
+  function layoutAll(){
+    setAppHeight();
+    requestAnimationFrame(()=>{
+      layoutPlayer(el1, content1);
+      layoutPlayer(el2, content2);
+    });
+  }
+
+  window.addEventListener('resize', layoutAll);
+  window.addEventListener('orientationchange', ()=>{
+    layoutAll();
+    setTimeout(layoutAll, 300); // 部分手機瀏覽器轉向後尺寸延遲更新
+  });
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', layoutAll);
+  }
+
+  // ---------- 狀態 ----------
+  let players = [
+    { main: 0, byo: 0, inByo: false, lastDisplayed: null, flagged: false },
+    { main: 0, byo: 0, inByo: false, lastDisplayed: null, flagged: false }
+  ];
+  let active = 0;
+  let running = false;
+  let gameOver = false;
+  let timerHandle = null;
+  let lastTimestamp = null;
+
+  // ---------- 聲音 ----------
+  let audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function beep(freq, duration, type, vol){
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = freq;
+    osc.type = type || 'sine';
+    gain.gain.value = vol == null ? 0.3 : vol;
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+  function beepCountdown(){ beep(1000, 0.1, 'square', 0.3); }
+  function beepEnterByoyomi(){
+    beep(650, 0.15, 'sine', 0.4);
+    setTimeout(()=>beep(650, 0.15, 'sine', 0.4), 200);
+  }
+  function beepFlagFall(){ beep(300, 0.6, 'sawtooth', 0.5); }
+
+  // ---------- 工具 ----------
+  function formatTimeParts(ms){
+    if(ms < 0) ms = 0;
+    let totalSeconds = ms / 1000;
+    let m = Math.floor(totalSeconds / 60);
+    let s = totalSeconds - m * 60;
+    s = Math.floor(s * 100) / 100;
+    if(s >= 60){ s -= 60; m += 1; }
+    let sInt = Math.floor(s);
+    let sFracHundredths = Math.round((s - sInt) * 100);
+    if(sFracHundredths >= 100){ sFracHundredths -= 100; sInt += 1; }
+    if(sInt >= 60){ sInt -= 60; m += 1; }
+    const mainStr = String(m).padStart(2,'0') + ':' + String(sInt).padStart(2,'0');
+    const fracStr = '.' + String(sFracHundredths).padStart(2,'0');
+    return { main: mainStr, frac: fracStr };
+  }
+
+  function setTimeDisplay(el, ms){
+    const parts = formatTimeParts(ms);
+    el.innerHTML = parts.main + '<span class="frac">' + parts.frac + '</span>';
+  }
+
+  function loadSettingsToState(){
+    const totalMs = totalMin * 60 * 1000;
+    players[0] = { main: totalMs, byo: 0, inByo: false, lastDisplayed: null, flagged: false };
+    players[1] = { main: totalMs, byo: 0, inByo: false, lastDisplayed: null, flagged: false };
+  }
+
+  function render(){
+    const p1 = players[0], p2 = players[1];
+    setTimeDisplay(timeEl1, p1.inByo ? p1.byo : p1.main);
+    setTimeDisplay(timeEl2, p2.inByo ? p2.byo : p2.main);
+    infoEl1.textContent = p1.flagged ? '超時！' : (p1.inByo ? '讀秒中' : '');
+    infoEl2.textContent = p2.flagged ? '超時！' : (p2.inByo ? '讀秒中' : '');
+
+    el1.classList.toggle('active', active === 0 && running);
+    el2.classList.toggle('active', active === 1 && running);
+    el1.classList.toggle('byoyomi', p1.inByo);
+    el2.classList.toggle('byoyomi', p2.inByo);
+    el1.classList.toggle('flagfallen', p1.flagged);
+    el2.classList.toggle('flagfallen', p2.flagged);
+  }
+
+  function flagFall(idx){
+    running = false;
+    gameOver = true;
+    players[idx].flagged = true;
+    beepFlagFall();
+    clearInterval(timerHandle);
+    timerHandle = null;
+    render();
+  }
+
+  function tick(){
+    if(!running || gameOver) return;
+    const now = Date.now();
+    const delta = now - lastTimestamp;
+    lastTimestamp = now;
+    const p = players[active];
+
+    if(p.inByo){
+      p.byo -= delta;
+      if(p.byo <= 0){
+        p.byo = 0;
+        flagFall(active);
+        return;
+      }
+    } else {
+      p.main -= delta;
+      if(p.main <= 0){
+        p.main = 0;
+        if(perMoveLimit > 0){
+          p.inByo = true;
+          p.byo = perMoveLimit * 1000;
+          p.lastDisplayed = null;
+          beepEnterByoyomi();
+        } else {
+          flagFall(active);
+          return;
+        }
+      }
+    }
+
+    const currentVal = p.inByo ? p.byo : p.main;
+    const currentSec = Math.ceil(currentVal / 1000);
+    if(currentSec !== p.lastDisplayed){
+      p.lastDisplayed = currentSec;
+      if(currentSec <= 10 && currentSec >= 1){
+        beepCountdown();
+      }
+    }
+    render();
+  }
+
+  function switchTurn(fromIdx){
+    if(!running || gameOver) return;
+    if(active !== fromIdx) return;
+    const p = players[fromIdx];
+    if(p.inByo){
+      p.byo = perMoveLimit * 1000;
+    } else {
+      p.main += incrementSec * 1000;
+    }
+    p.lastDisplayed = null;
+    active = 1 - active;
+    lastTimestamp = Date.now();
+    render();
+  }
+
+  function startPause(){
+    ensureAudio();
+    if(gameOver) return;
+    if(!running){
+      running = true;
+      lastTimestamp = Date.now();
+      if(!timerHandle) timerHandle = setInterval(tick, 50);
+      btnStartPause.textContent = '⏸ 暫停';
+    } else {
+      running = false;
+      btnStartPause.textContent = '▶️ 開始';
+    }
+    render();
+  }
+
+  function resetGame(){
+    running = false;
+    gameOver = false;
+    if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
+    active = 0;
+    loadSettingsToState();
+    btnStartPause.textContent = '▶️ 開始';
+    render();
+  }
+
+  // ---------- 事件 ----------
+  el1.addEventListener('click', ()=> switchTurn(0));
+  el2.addEventListener('click', ()=> switchTurn(1));
+
+  btnStartPause.addEventListener('click', (e)=>{ e.stopPropagation(); startPause(); });
+  btnReset.addEventListener('click', (e)=>{ e.stopPropagation(); resetGame(); });
+
+  btnSettings.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    setTotalMin.value = totalMin;
+    setPerMove.value = perMoveLimit;
+    setIncrement.value = incrementSec;
+    settingsPanel.classList.add('show');
+  });
+  btnClose.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    settingsPanel.classList.remove('show');
+  });
+  btnSave.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    totalMin = parseFloat(setTotalMin.value) || 0;
+    perMoveLimit = parseFloat(setPerMove.value) || 0;
+    incrementSec = parseFloat(setIncrement.value) || 0;
+    settingsPanel.classList.remove('show');
+    resetGame();
+  });
+
+  presetGrid.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    setTotalMin.value = btn.dataset.t;
+    setPerMove.value = btn.dataset.p;
+    setIncrement.value = btn.dataset.i;
+  });
+
+  // 初始化
+  layoutAll();
+  resetGame();
+})();
+</script>
+</body>
+</html>

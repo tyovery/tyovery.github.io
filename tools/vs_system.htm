@@ -102,7 +102,17 @@
 			min-height: 200px;
 		}
         .option-card:hover { transform: scale(1.05); background: #edf2f7; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
-        .option-title { font-size: 1.5em; font-weight: bold; margin-bottom: 15px; color: #2d3748; }
+        .option-title {
+			font-size: 1.5em;
+			font-weight: bold;
+			margin-bottom: 15px;
+			color: #2d3748;
+			word-break: break-all; /* 允许在任意字符处换行 */
+			word-wrap: break-word; /* 允许长单词或URL换行 */
+			overflow-wrap: break-word; /* 更现代的换行属性 */
+			white-space: normal; /* 允许换行 */
+			max-width: 100%; /* 确保不超过容器宽度 */
+		}
         .video-container {
             width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px;
             overflow: hidden; margin-bottom: 15px; position: relative;
@@ -251,7 +261,7 @@
         .list-item.editing { background: #e6fffa; border: 2px solid var(--info); }
         .list-item.frozen { border: 2px solid var(--frozen); }
 		.item-info { flex: 1; display: flex; gap: 15px; align-items: center; }
-		.item-link-container {
+		.item-name , .item-name-container , .item-link-container {
 			word-break: break-all; /* 允许在任意字符处换行 */
 			word-wrap: break-word; /* 允许长单词或URL换行 */
 			overflow-wrap: break-word; /* 更现代的换行属性 */
@@ -1657,6 +1667,7 @@
                     </select>
 					<button class="btn btn-info" onclick="exportStats()">匯出統計</button>
                     <button class="btn btn-warning" onclick="document.getElementById('importStatsFile').click()">匯入統計</button>
+					<button class="btn btn-danger" onclick="reduceData()">縮減數據</button>
 					<button class="btn btn-danger" onclick="resetStatsKeepScores()">只留分數</button>
 					<button class="btn btn-danger" onclick="clearStats()">清除數據</button>
                     <input type="file" id="importStatsFile" accept=".json" class="hidden">
@@ -1714,14 +1725,14 @@
 						</div>
                         <div class="stat-card">
                             <div class="stat-value" id="totalVotes">0</div>
-                            <div>總投票數</div>
+                            <div>總有效票次</div>
                         </div>
                         <div class="stat-card" id="expectedVotesCard">
 							<div class="stat-value" id="expectedVotes1" style="font-size: 1.0em; margin-bottom: 5px; display: none;">0</div>
 							<div class="stat-value" id="expectedVotes2" style="font-size: 1.0em; margin-bottom: 5px;">0</div>
 							<div class="stat-value" id="expectedVotes3" style="font-size: 1.0em; margin-bottom: 5px;">0</div>
 							<div class="stat-value" id="expectedVotes4" style="font-size: 1.0em; margin-bottom: 5px;">0</div>
-                            <div>期望票數</div>
+                            <div>期望票次</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-value" id="avgError">0</div>
@@ -1776,14 +1787,14 @@
                                 </div>
                                 <select id="sortBy" class="form-control" style="width: 95px">
                                     <option value="rank">依名次</option>
-                                    <option value="score">依分數</option>
+									<option value="hotness">依熱度</option>
+									<option value="votes">依票次</option>
 									<option value="error">依誤差</option>
                                     <option value="winRate">依勝率</option>
-									<option value="hotness">依熱度</option>
-									<option value="volatility">依波動</option>
 									<option value="trend">依趨勢</option>
-                                    <option value="votes">依票次</option>
+									<option value="volatility">依波動</option>
 									<option value="time">依新加</option>
+									<option value="score">依分數</option>
                                 </select>
                             </div>
                         </div>
@@ -1799,6 +1810,7 @@
         </div>
     </div>
 	<center>
+		ver 0.8&emsp;~tyovery~&emsp;2026-08<br />
 		ver 0.7&emsp;~tyovery~&emsp;2026-05<br />
 		ver 0.6&emsp;~tyovery~&emsp;2026-03<br />
 		ver 0.5&emsp;~tyovery~&emsp;2026-02<br />
@@ -2234,59 +2246,37 @@
         
         // 支持平台篩選
         function getRandomValidLink(item) {
-            if (!item?.links?.length) return null;
-            
-            // 先获取所有有效链接（排除无效链接）
-            let validLinks = item.links.filter(link => !item.invalidLinks?.includes(link));
-            
-            if (validLinks.length === 0) {
-                validLinks = [...item.links];
-            }
-            
-            // 获取当前游戏的平台筛选条件
-            const gameId = currentGame ? currentGame.id : document.getElementById('gameSelect').value;
-            const gameFilters = getPlatformFiltersForGame(gameId);
-            
-            // 根据平台筛选条件过滤链接
-            let filteredLinks = validLinks.filter(link => {
-                const isYoutube = link.includes('youtube.com') || link.includes('youtu.be');
-                const isBilibili = link.includes('bilibili.com');
-                
-                // 只有当平台筛选开启时才包含对应平台的链接
-                if (isYoutube && !gameFilters.youtube) return false;
-                if (isBilibili && !gameFilters.bilibili) return false;
-                
-                // 如果链接不是YouTube也不是Bilibili，则保留（允许其他平台）
-                return true;
-            });
-            
-            // 如果筛选后没有链接，返回null
-            if (filteredLinks.length === 0) {
-                return null;
-            }
-            
-            // 如果有当前链接且在当前可用链接中，优先排除当前链接
-            let availableLinks = [...filteredLinks];
-            const currentLink1 = currentVideoLinks[0];
-            const currentLink2 = currentVideoLinks[1];
-            
-            if (availableLinks.length > 1) {
-                if (currentLink1 && availableLinks.includes(currentLink1)) {
-                    availableLinks = availableLinks.filter(link => link !== currentLink1);
-                }
-                if (currentLink2 && availableLinks.includes(currentLink2)) {
-                    availableLinks = availableLinks.filter(link => link !== currentLink2);
-                }
-            }
-            
-            // 如果排除当前链接后还有可选链接，从其中随机选择
-            if (availableLinks.length > 0) {
-                return availableLinks[Math.floor(Math.random() * availableLinks.length)];
-            }
-            
-            // 否则从所有筛选后的链接中随机选择
-            return filteredLinks[Math.floor(Math.random() * filteredLinks.length)];
-        }
+			if (!item?.links?.length) return null;
+			// 只考虑有效链接（不在invalidLinks中的）
+			let validLinks = item.links.filter(link => !item.invalidLinks?.includes(link));
+			if (validLinks.length === 0) return null; // 没有有效链接，直接返回 null
+			const gameId = currentGame ? currentGame.id : document.getElementById('gameSelect').value;
+			const gameFilters = getPlatformFiltersForGame(gameId);
+			let filteredLinks = validLinks.filter(link => {
+				const isYoutube = link.includes('youtube.com') || link.includes('youtu.be');
+				const isBilibili = link.includes('bilibili.com');
+				if (isYoutube && !gameFilters.youtube) return false;
+				if (isBilibili && !gameFilters.bilibili) return false;
+				return true;
+			});
+			if (filteredLinks.length === 0) return null;
+			// 如果有当前链接且在当前可用链接中，优先排除当前链接
+			let availableLinks = [...filteredLinks];
+			const currentLink1 = currentVideoLinks[0];
+			const currentLink2 = currentVideoLinks[1];
+			if (availableLinks.length > 1) {
+				if (currentLink1 && availableLinks.includes(currentLink1)) {
+					availableLinks = availableLinks.filter(link => link !== currentLink1);
+				}
+				if (currentLink2 && availableLinks.includes(currentLink2)) {
+					availableLinks = availableLinks.filter(link => link !== currentLink2);
+				}
+			}
+			if (availableLinks.length > 0) {
+				return availableLinks[Math.floor(Math.random() * availableLinks.length)];
+			}
+			return filteredLinks[Math.floor(Math.random() * filteredLinks.length)];
+		}
 
         function toggleStats() {
 			statsVisible = !statsVisible;
@@ -2605,7 +2595,9 @@
 
         function createGame() {
             const gameName = document.getElementById('gameName').value.trim();
-            if (!gameName) { alert('請輸入遊戲名稱'); return; }
+            if(!gameName){ alert('請輸入遊戲名稱'); return; }
+			let len = [...gameName].length ;
+			if( len > 20 ){ alert(`遊戲名稱最多20字元，現在有${len}字元。`) ; return ; }
             const gameId = Date.now().toString();
             games[gameId] = { id: gameId, name: gameName, items: [], votes: [] };
             localStorage.setItem('games', JSON.stringify(games));
@@ -2701,15 +2693,16 @@
 
         function saveGameRename(gameId) {
             const newName = document.getElementById(`rename-input-${gameId}`).value.trim();
-            if (newName) {
-                games[gameId].name = newName;
-                localStorage.setItem('games', JSON.stringify(games));
-                syncData();
-                renamingGameId = null;
-                updateGamesList();
-                updateGameSelect();
-                updateStatsGameSelect();
-            } else alert('遊戲名稱不能為空');
+			if (!newName) { alert('遊戲名稱不能為空') ; return ; }
+			let len = [...newName].length ;
+			if( len > 20 ){ alert(`遊戲名稱最多20字元，現在有${len}字元。`) ; return ; }
+			games[gameId].name = newName;
+			localStorage.setItem('games', JSON.stringify(games));
+			syncData();
+			renamingGameId = null;
+			updateGamesList();
+			updateGameSelect();
+			updateStatsGameSelect();
         }
 
         function cancelGameRename() { renamingGameId = null; updateGamesList(); }
@@ -2777,50 +2770,79 @@
         }
 
         function addItems() {
-            if (!selectedGameForEdit) { alert('請先選擇要編輯的遊戲'); return; }
-            const itemsInput = document.getElementById('itemsInput').value.trim();
-            if (!itemsInput) { alert('請輸入項目資料'); return; }
+			if (!selectedGameForEdit) { alert('請先選擇要編輯的遊戲'); return; }
+			const itemsInput = document.getElementById('itemsInput');
+			let rawText = itemsInput.value;
+			if (!rawText.trim()) { alert('請輸入項目資料'); return; }
 
-            const game = games[selectedGameForEdit];
-            const lines = itemsInput.split('\n');
-            let addedCount = 0;
-			const scores = game.items.map( item => item.score ) ;
+			const lines = rawText.split(/\r?\n/);
+			const game = games[selectedGameForEdit];
+			const scores = game.items.map(item => item.score);
 			const avgScore = game.items.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 1500;
 			const scoreStdDev = calculateStandardDeviation(scores);
-			const defaultScore = Math.ceil( avgScore - scoreStdDev ); // 預設分數為 ceil( μ - σ )
+			const defaultScore = Math.ceil(avgScore - scoreStdDev);
 
-            lines.forEach(line => {
-                line = line.trim();
-                if (!line) return;
-                const parts = line.split(',');
-                if (parts.length) {
-                    const itemName = parts[0].trim();
-                    const itemLink = parts.slice(1).join(',').trim();
-                    if (itemName) {
-                        game.items.push({
-                            id: Date.now().toString() + '_' + Math.random(),
-                            name: itemName, 
-                            links: itemLink ? [itemLink] : [],
-                            invalidLinks: [],
-                            score: defaultScore, votes: 0, wins: 0, losses: 0, addedTime: Date.now(),
-                            moods: [],
-                            frozen: false,
-                            scoreHistory: [{timestamp: Date.now(), score: defaultScore}]
-                        });
-                        addedCount++;
-                    }
-                }
-            });
+			let addedCount = 0;
+			const errorLines = [];      // 存儲錯誤行的原始內容（保留原樣）
 
-            if (addedCount > 0) {
-                localStorage.setItem('games', JSON.stringify(games));
-                syncData();
-                document.getElementById('itemsInput').value = '';
-                updateItemsListWithPagination();
-                alert(`成功新增 ${addedCount} 個項目！`);
+			for (let line of lines) {
+				const trimmedLine = line.trim();
+				// 空行直接跳過，不保留也不報錯
+				if (trimmedLine === "") continue;
+
+				// 分割名稱和連結
+				const parts = line.split(',');
+				const rawName = parts[0];
+				const itemName = rawName.trim();
+				const itemLink = parts.slice(1).join(',').trim(); // 連結可為空
+
+				// 驗證名稱
+				if (itemName === "") {
+					errorLines.push(line);
+					continue;
+				}
+				if ([...itemName].length > 100) {
+					errorLines.push(line);
+					continue;
+				}
+
+				// 名稱有效，新增項目
+				game.items.push({
+					id: Date.now().toString() + '_' + Math.random(),
+					name: itemName,
+					links: itemLink ? [itemLink] : [],
+					invalidLinks: [],
+					score: defaultScore,
+					votes: 0,
+					wins: 0,
+					losses: 0,
+					addedTime: Date.now(),
+					moods: [],
+					frozen: false,
+					scoreHistory: [{ timestamp: Date.now(), score: defaultScore }]
+				});
+				addedCount++;
+			}
+
+			// 更新輸入框：保留錯誤行（原樣），移除成功行和空行
+			let errorLen = errorLines.length ;
+			if (errorLen > 0) {
+				itemsInput.value = errorLines.join('\n');
+				alert(`有項目的名稱為空 或 多於 100 字元，已跳過 ${errorLen} 個項目。\n請修正後再試。`);
+			} else {
+				itemsInput.value = ''; // 全部成功則清空
+			}
+
+			if (addedCount > 0) {
+				localStorage.setItem('games', JSON.stringify(games));
+				syncData();
+				updateItemsListWithPagination();
 				updateGamesList();
-            } else alert('沒有有效的項目被新增，請檢查格式');
-        }
+				alert(`成功新增 ${addedCount} 個項目！`);
+			} else {
+				alert('沒有有效的項目被新增，請檢查格式');
+			}
+		}
 
         function updateItemsListWithPagination() {
 			if (!selectedGameForEdit) return;
@@ -3030,7 +3052,7 @@
 							<div class="item-preview" id="preview-${item.id}"></div>
 							<div style="flex: 1; min-width: 0;">
 								<div class="item-mood-buttons" id="item-mood-buttons-${item.id}"></div>
-								<div style="font-weight: bold;">${escapeHtml(item.name)}</div>
+								<div class="item-name-container" style="font-weight: bold;">${escapeHtml(item.name)}</div>
 								<div class="${isFirstLinkInvalid ? 'invalid-link' : ''} item-link-container" style="color: var(--primary); font-size: 0.9em;">
 									${escapeHtml(firstLink)}
 								</div>
@@ -3697,43 +3719,43 @@
             const item = games[selectedGameForEdit].items.find(i => i.id === itemId);
             if (item) {
                 const newName = document.getElementById(`edit-name-${itemId}`).value.trim();
+				if (!newName) { alert('項目名稱不能為空'); return ; }
+				let len = [...newName].length ;
+				if( len > 100 ){ alert(`項目名稱最多100字元，現在有${len}字元。`) ; return ; }
                 const newLinksText = document.getElementById(`edit-links-${itemId}`).value.trim();
-                if (newName) {
-                    const allLinks = newLinksText.split('\n').map(link => link.trim()).filter(link => link);
-                    const validLinks = [];
-                    const invalidLinks = [];
-                    
-                    const linkSet = new Set();
-                    
-                    allLinks.forEach(link => {
-                        if (link.startsWith('[無效] ')) {
-                            const cleanLink = link.substring(5);
-                            if (linkSet.has(cleanLink)) {
-                                const index = validLinks.indexOf(cleanLink);
-                                if (index > -1) {
-                                    validLinks.splice(index, 1);
-                                }
-                            }
-                            invalidLinks.push(cleanLink);
-                            linkSet.add(cleanLink);
-                        } else {
-                            if (!linkSet.has(link)) {
-                                validLinks.push(link);
-                                linkSet.add(link);
-                            }
-                        }
-                    });
-                    
-                    item.name = newName;
-                    item.links = [...new Set(validLinks)];
-                    item.invalidLinks = [...new Set(invalidLinks)];
-                    localStorage.setItem('games', JSON.stringify(games));
-                    syncData(); // 同步到所有網頁, 但會中斷播放中的影片.
-                    editingItemId = null;
-                    isEditing = false;
-                    delete editingItemData[itemId];
-                    updateItemsListWithPagination();
-                } else alert('項目名稱不能為空');
+				const allLinks = newLinksText.split('\n').map(link => link.trim()).filter(link => link);
+				const validLinks = [];
+				const invalidLinks = [];
+				const linkSet = new Set();
+				
+				allLinks.forEach(link => {
+					if (link.startsWith('[無效] ')) {
+						const cleanLink = link.substring(5);
+						if (linkSet.has(cleanLink)) {
+							const index = validLinks.indexOf(cleanLink);
+							if (index > -1) {
+								validLinks.splice(index, 1);
+							}
+						}
+						invalidLinks.push(cleanLink);
+						linkSet.add(cleanLink);
+					} else {
+						if (!linkSet.has(link)) {
+							validLinks.push(link);
+							linkSet.add(link);
+						}
+					}
+				});
+				
+				item.name = newName;
+				item.links = [...new Set(validLinks)];
+				item.invalidLinks = [...new Set(invalidLinks)];
+				localStorage.setItem('games', JSON.stringify(games));
+				syncData(); // 同步到所有網頁, 但會中斷播放中的影片.
+				editingItemId = null;
+				isEditing = false;
+				delete editingItemData[itemId];
+				updateItemsListWithPagination();
             }
         }
 
@@ -4588,7 +4610,7 @@
 			
 			// 處理沒有連結或連結為null的情況
 			if (!link) {
-				container.innerHTML = '<div style="color: var(--danger); background: #fff; padding: 20px; text-align: center; border-radius: 10px;">無符合篩選條件的連結</div>';
+				container.innerHTML = '<div style="color: var(--danger); background: #fff; padding: 20px; text-align: center; border-radius: 10px;">此項目無有效連結，請在設定頁添加或修復連結。</div>';
 				return;
 			}
 
@@ -4729,52 +4751,50 @@
         }
 
         function processVote(sliderValue) {
-			startCooldown();
-			
-			const oldMoods = {
-				item1: [...(currentPair[0].moods || [])],
-				item2: [...(currentPair[1].moods || [])]
-			};
-			
-			voteHistory.push({
-				pair: [...currentPair], value: sliderValue,
-				oldScores: { item1: currentPair[0].score, item2: currentPair[1].score },
-				oldWins: { item1: currentPair[0].wins || 0, item2: currentPair[1].wins || 0 },
-				oldLosses: { item1: currentPair[0].losses || 0, item2: currentPair[1].losses || 0 },
-				oldMoods: oldMoods
-			});
+			try {
+				startCooldown();
+				
+				const oldMoods = {
+					item1: [...(currentPair[0].moods || [])],
+					item2: [...(currentPair[1].moods || [])]
+				};
+				
+				voteHistory.push({
+					pair: [...currentPair], value: sliderValue,
+					oldScores: { item1: currentPair[0].score, item2: currentPair[1].score },
+					oldWins: { item1: currentPair[0].wins || 0, item2: currentPair[1].wins || 0 },
+					oldLosses: { item1: currentPair[0].losses || 0, item2: currentPair[1].losses || 0 },
+					oldMoods: oldMoods
+				});
 
-			// 計算項目 的 誤差
-			let error1 = calculateError(currentPair[0]);
-			let error2 = calculateError(currentPair[1]);
-			
-			// 最大誤差
-			if (error1 === Infinity) error1 = 3500 ;
-			if (error2 === Infinity) error2 = 3500 ;
-			
-			const scoreA = currentPair[0].score, scoreB = currentPair[1].score;
-			const winRateA = 1 - (sliderValue / 100), winRateB = sliderValue / 100;
-			const expectedA = 1 / (1 + Math.pow(10, (scoreB - scoreA) / 400));
-			const expectedB = 1 / (1 + Math.pow(10, (scoreA - scoreB) / 400));
-			const k_min = 16 ;
-			const k_max = 481.648 ;
-			
-			let k1 = k_min + (k_max - k_min) * error1**2 / ( error1**2 + 463725.2449534823 ) ;
-			let k2 = k_min + (k_max - k_min) * error2**2 / ( error2**2 + 463725.2449534823 ) ;
-
-			k1 = Math.max(k_min, Math.min(k_max, k1));
-			k2 = Math.max(k_min, Math.min(k_max, k2));
-			
-			const item1 = currentGame.items.find(item => item.id === currentPair[0].id);
-			const item2 = currentGame.items.find(item => item.id === currentPair[1].id);
-			
-			if (item1 && item2) {
+				let error1 = calculateError(currentPair[0]);
+				let error2 = calculateError(currentPair[1]);
+				if (error1 === Infinity) error1 = 3500;
+				if (error2 === Infinity) error2 = 3500;
+				
+				const scoreA = currentPair[0].score, scoreB = currentPair[1].score;
+				const winRateA = 1 - (sliderValue / 100), winRateB = sliderValue / 100;
+				const expectedA = 1 / (1 + Math.pow(10, (scoreB - scoreA) / 400));
+				const expectedB = 1 / (1 + Math.pow(10, (scoreA - scoreB) / 400));
+				const k_min = 16, k_max = 481.648;
+				
+				let k1 = k_min + (k_max - k_min) * error1**2 / ( error1**2 + 463725.2449534823 );
+				let k2 = k_min + (k_max - k_min) * error2**2 / ( error2**2 + 463725.2449534823 );
+				k1 = Math.max(k_min, Math.min(k_max, k1));
+				k2 = Math.max(k_min, Math.min(k_max, k2));
+				
+				const item1 = currentGame.items.find(item => item.id === currentPair[0].id);
+				const item2 = currentGame.items.find(item => item.id === currentPair[1].id);
+				
+				if (!item1 || !item2) {
+					throw new Error('找不到對決項目，請重新開始遊戲');
+				}
+				
 				const newScore1 = Math.round(item1.score + k1 * (winRateA - expectedA));
 				const newScore2 = Math.round(item2.score + k2 * (winRateB - expectedB));
 				
 				const leftElement = document.getElementById('sliderScoreChangeLeft');
 				const rightElement = document.getElementById('sliderScoreChangeRight');
-				
 				const change1 = newScore1 - item1.score;
 				const change2 = newScore2 - item2.score;
 				
@@ -4783,14 +4803,14 @@
 				
 				scoreAnimationActive = true;
 				
-				leftElement.textContent = change1 > 0 ? `+${change1}` : `${change1}` ;
-				leftElement.className = `slider-score-change left ${change1 > 0 ? 'positive' : change1 < 0 ? 'negative' : 'zero' }`;
+				leftElement.textContent = change1 > 0 ? `+${change1}` : `${change1}`;
+				leftElement.className = `slider-score-change left ${change1 > 0 ? 'positive' : change1 < 0 ? 'negative' : 'zero'}`;
 				leftElement.style.animation = 'none'; 
 				leftElement.offsetHeight; 
 				leftElement.style.animation = null;
 				
-				rightElement.textContent = change2 > 0 ? `+${change2}` : `${change2}` ;
-				rightElement.className = `slider-score-change right ${change2 > 0 ? 'positive' : change2 < 0 ? 'negative' : 'zero' }`;
+				rightElement.textContent = change2 > 0 ? `+${change2}` : `${change2}`;
+				rightElement.className = `slider-score-change right ${change2 > 0 ? 'positive' : change2 < 0 ? 'negative' : 'zero'}`;
 				rightElement.style.animation = 'none'; 
 				rightElement.offsetHeight; 
 				rightElement.style.animation = null;
@@ -4800,84 +4820,51 @@
 				item1.votes++;
 				item2.votes++;
 				['wins', 'losses'].forEach(prop => { if (!item1[prop]) item1[prop] = 0; if (!item2[prop]) item2[prop] = 0; });
-				
-				item1.wins += 1 - sliderValue/100 ;
-				item1.losses += sliderValue/100 ;
-				item2.wins += sliderValue/100 ;
-				item2.losses += 1 - sliderValue/100 ;
+				item1.wins += 1 - sliderValue/100;
+				item1.losses += sliderValue/100;
+				item2.wins += sliderValue/100;
+				item2.losses += 1 - sliderValue/100;
 				
 				const errorAfter1 = calculateError(item1);
 				const errorAfter2 = calculateError(item2);
-				
 				const timestamp = Date.now();
 				if (!item1.scoreHistory) item1.scoreHistory = [];
 				if (!item2.scoreHistory) item2.scoreHistory = [];
-				
-				// 記錄分數時同時記錄投票後的誤差
-				item1.scoreHistory.push({
-					timestamp, 
-					score: newScore1,
-					error: errorAfter1
-				});
-				item2.scoreHistory.push({
-					timestamp, 
-					score: newScore2,
-					error: errorAfter2
-				});
+				item1.scoreHistory.push({ timestamp, score: newScore1, error: errorAfter1 });
+				item2.scoreHistory.push({ timestamp, score: newScore2, error: errorAfter2 });
 				
 				currentGame.votes.push({ timestamp: Date.now(), item1: currentPair[0].id, item2: currentPair[1].id, value: sliderValue });
-				localStorage.setItem('games', JSON.stringify(games));
+				
+				const jsonStr = JSON.stringify(games);
+				console.log('JSON 字串長度:', jsonStr.length);
+				localStorage.setItem('games', jsonStr);
 				syncData();
 				
-				// 更新遊戲狀態信息 - 只更新已投次數
 				document.getElementById('currentVoteCount').textContent = voteHistory.length;
-				
-				// 更新预期胜率线
 				updateExpectedWinrateLine();
 				
 				let replacePosition;
-				// 使用固定的 currentGameExtractMode 來決定替換邏輯
 				if (currentGameExtractMode === 'quickConverge') {
-					if (lockedLeft && lockedRight) {
-						replacePosition = 'both';
-					} else if (lockedLeft) {
-						replacePosition = 1;
-					} else if (lockedRight) {
-						replacePosition = 0;
-					} else {
-						replacePosition = 'both';
-					}
+					if (lockedLeft && lockedRight) replacePosition = 'both';
+					else if (lockedLeft) replacePosition = 1;
+					else if (lockedRight) replacePosition = 0;
+					else replacePosition = 'both';
 				} else {
 					if (sliderValue === 50) {
-						if (!lockedLeft && !lockedRight) {
-							replacePosition = 'both';
-						} else if (lockedLeft && !lockedRight) {
-							replacePosition = 1;
-						} else if (!lockedLeft && lockedRight) {
-							replacePosition = 0;
-						} else {
-							replacePosition = 'both';
-						}
+						if (!lockedLeft && !lockedRight) replacePosition = 'both';
+						else if (lockedLeft && !lockedRight) replacePosition = 1;
+						else if (!lockedLeft && lockedRight) replacePosition = 0;
+						else replacePosition = 'both';
 					} else if (sliderValue < 50) {
-						if (lockedLeft && lockedRight) {
-							replacePosition = 'both';
-						} else if (lockedLeft) {
-							replacePosition = 1;
-						} else if (lockedRight) {
-							replacePosition = 0;
-						} else {
-							replacePosition = 1;
-						}
+						if (lockedLeft && lockedRight) replacePosition = 'both';
+						else if (lockedLeft) replacePosition = 1;
+						else if (lockedRight) replacePosition = 0;
+						else replacePosition = 1;
 					} else {
-						if (lockedLeft && lockedRight) {
-							replacePosition = 'both';
-						} else if (lockedLeft) {
-							replacePosition = 1;
-						} else if (lockedRight) {
-							replacePosition = 0;
-						} else {
-							replacePosition = 0;
-						}
+						if (lockedLeft && lockedRight) replacePosition = 'both';
+						else if (lockedLeft) replacePosition = 1;
+						else if (lockedRight) replacePosition = 0;
+						else replacePosition = 0;
 					}
 				}
 				
@@ -4889,6 +4876,41 @@
 				setTimeout(() => {
 					scoreAnimationActive = false;
 				}, 2000);
+				
+			} catch (error) {
+				console.error('投票過程發生錯誤:', error);
+				
+				// 判斷是否為儲存空間不足錯誤
+				if (error.name === 'QuotaExceededError') {
+					alert('儲存空間不足，無法保存本次投票結果。\n頁面將重新整理。\n請嘗試使用統計頁的 "縮減數據" 按鈕。');
+					/*	// 復原冷卻與按鈕狀態（可選）
+					cooldownActive = false;
+					document.getElementById('voteSlider').disabled = false;
+					document.querySelectorAll('.flex-center .btn').forEach(btn => {
+						if (btn.id === 'undoBtn') {
+							btn.disabled = (voteHistory.length === 0);
+						} else {
+							btn.disabled = false;
+						}
+					});
+					*/
+					// 重新載入頁面，確保記憶體與 localStorage 同步
+					location.reload();
+				} else {
+					// 其他錯誤僅提示，不重新載入
+					alert('投票失敗：' + error.message);
+					// 復原冷卻狀態，讓介面恢復可操作
+					cooldownActive = false;
+					document.getElementById('voteSlider').disabled = false;
+					document.querySelectorAll('.flex-center .btn').forEach(btn => {
+						if (btn.id === 'undoBtn') {
+							btn.disabled = (voteHistory.length === 0);
+						} else {
+							btn.disabled = false;
+						}
+					});
+					document.getElementById('voteSlider').value = 50;
+				}
 			}
 		}
 
@@ -6907,48 +6929,61 @@
 		
 		// 2. 计算基础统计数据
 		function calculateBasicStats(game) {
-			const n = game.items.length ;
+			const n = game.items.length;
 
-			// 检查游戏项目是否存在且不为空
-			if (!game.items || n == 0) {
+			// 檢查遊戲項目是否存在且不為空
+			if (!game.items || n === 0) {
+				document.getElementById('totalItems').textContent = '0';
+				document.getElementById('healthScore').textContent = '?%';
+				document.getElementById('totalVotes').textContent = '0';
+				document.getElementById('expectedVotes1').textContent = '0';
+				document.getElementById('expectedVotes2').textContent = '0';
+				document.getElementById('expectedVotes3').textContent = '0';
+				document.getElementById('expectedVotes4').textContent = '0';
+				document.getElementById('avgError').textContent = '?';
+				document.getElementById('avgScore').textContent = '?';
+				document.getElementById('medianScore').textContent = '?';
+				document.getElementById('maxScore').textContent = '?';
+				document.getElementById('minScore').textContent = '?';
+				document.getElementById('stdDevScore').textContent = '?';
 				return {
-					maxScore: 1500, 
-					minScore: 1500, 
-					avgScore: 1500, 
-					medianScore: 1500,
-					scoreStdDev: 0, 
-					upperThreshold2: 1500, 
-					upperThreshold: 1500, 
-					lowerThreshold: 1500, 
-					lowerThreshold2: 1500
+					maxScore: 1500, minScore: 1500, avgScore: 1500, medianScore: 1500,
+					scoreStdDev: 0, upperThreshold2: 1500, upperThreshold: 1500,
+					lowerThreshold: 1500, lowerThreshold2: 1500
 				};
 			}
-			
+
 			document.getElementById('totalItems').textContent = n;
-			document.getElementById('totalVotes').textContent = game.votes.length;
-			
-			// 手動 容錯 前10
-			// let expectedValue1 = Math.round( 5 * n * Math.log2(10) );
-			// let expectedValue1 = 10/2 * 50 * Math.round( Math.log2(n) - Math.log2(10) + 1 ) ;
-			
-			// 零容錯 全排
-			const treeHeight = Math.ceil( Math.log2(n) ) ;
-			let expectedValue2 = n * treeHeight - 2**treeHeight + 1 ;
-			
-			// 容錯 全穩定 ( 每項目50票次 )
-			let expectedValue3 = 25 * n ; 
 
-			// 隨機 全排
-            let H = 0 ;
-            for(let k = 1; k < n; ++k) H += 1/k;
-			let expectedValue4 = Math.round(n*(n-1)/2*H) ;
+			// 計算總投票數（項目 votes 總和 ÷ 2）
+			let totalVotesSum = 0;
 
-			// document.getElementById('expectedVotes1').textContent = `${expectedValue1} (手動 容錯 前10)`;
+			let minScore = Infinity, maxScore = -Infinity, totalScore = 0;
+			let scores = [];
+
+			game.items.forEach(item => {
+				totalVotesSum += (item.votes || 0);
+				if (item.score < minScore) minScore = item.score;
+				if (item.score > maxScore) maxScore = item.score;
+				totalScore += item.score;
+				scores.push(item.score);
+			});
+
+			const totalVotes = totalVotesSum / 2 ;
+			document.getElementById('totalVotes').textContent = totalVotes;
+
+			// 期望票數（保持原有計算，僅顯示）
+			const treeHeight = Math.ceil(Math.log2(n));
+			let expectedValue2 = n * treeHeight - 2 ** treeHeight + 1;
+			let expectedValue3 = 25 * n;
+			let H = 0;
+			for (let k = 1; k < n; ++k) H += 1 / k;
+			let expectedValue4 = Math.round(n * (n - 1) / 2 * H);
+
 			document.getElementById('expectedVotes2').textContent = `${expectedValue2} (零容錯 全排)`;
-			document.getElementById('expectedVotes3').textContent = `${expectedValue3} (容錯 全穩定)` ;
-			document.getElementById('expectedVotes4').textContent = `${expectedValue4} (隨機 全排)` ;
-			
-			// 點擊時顯示更多信息
+			document.getElementById('expectedVotes3').textContent = `${expectedValue3} (容錯 全穩定)`;
+			document.getElementById('expectedVotes4').textContent = `${expectedValue4} (隨機 全排)`;
+
 			const expectedVotesCard = document.getElementById('expectedVotesCard');
 			expectedVotesCard.onclick = function() {
 				alert(`公式如下.
@@ -6956,38 +6991,27 @@
 容錯 全穩定 : n/2 ∙ 50 , 每個項目 50 票次
 隨機 全排 : nCr(n,2) ∙ H_(n-1) , H 為調和級數`);
 			};
-			
-			let minScore = Infinity, maxScore = -Infinity, totalScore = 0;
-			let scores = [];
-			
-			game.items.forEach(item => {
-				if (item.score < minScore) minScore = item.score;
-				if (item.score > maxScore) maxScore = item.score;
-				totalScore += item.score;
-				scores.push(item.score);
-			});
-			
+
+			// 計算分數統計
 			scores.sort((a, b) => a - b);
 			const medianScore = calculateMedian(scores);
-			const avgScore = n > 0 ? (totalScore / n).toFixed(2) : 1500;
+			const avgScore = (totalScore / n).toFixed(2);
 			const scoreStdDev = calculateStandardDeviation(scores);
-			
-			// 计算分隔线阈值
-			const upperThreshold2 = parseFloat(avgScore) + 2 * parseFloat(scoreStdDev);
-			const upperThreshold = parseFloat(avgScore) + parseFloat(scoreStdDev);
-			const lowerThreshold = parseFloat(avgScore) - parseFloat(scoreStdDev);
-			const lowerThreshold2 = parseFloat(avgScore) - 2 * parseFloat(scoreStdDev);
-			
+
+			const upperThreshold2 = parseFloat(avgScore) + 2 * scoreStdDev;
+			const upperThreshold = parseFloat(avgScore) + scoreStdDev;
+			const lowerThreshold = parseFloat(avgScore) - scoreStdDev;
+			const lowerThreshold2 = parseFloat(avgScore) - 2 * scoreStdDev;
+
 			// 更新DOM元素
-			updateStatsElements({
-				maxScore, minScore, avgScore, medianScore, 
-				scoreStdDev, upperThreshold2, upperThreshold, 
-				lowerThreshold, lowerThreshold2
-			});
-			
-			// 计算平均误差（忽略 Infinity）
-			let totalError = 0;
-			let validErrorCount = 0;
+			document.getElementById('maxScore').textContent = maxScore;
+			document.getElementById('minScore').textContent = minScore;
+			document.getElementById('avgScore').textContent = avgScore;
+			document.getElementById('stdDevScore').textContent = scoreStdDev.toFixed(2);
+			document.getElementById('medianScore').textContent = medianScore.toFixed(1);
+
+			// 計算平均誤差
+			let totalError = 0, validErrorCount = 0;
 			game.items.forEach(item => {
 				const error = calculateError(item);
 				if (error !== Infinity) {
@@ -6998,23 +7022,17 @@
 			const avgError = validErrorCount > 0 ? totalError / validErrorCount : 0;
 			document.getElementById('avgError').textContent = avgError.toFixed(2);
 
-			// 健康度计算
-			const totalVotes = game.votes.length;
+			// 健康度計算
 			const connectivity = calculateConnectivity(game);
 			const coverage = n > 0 ? Math.min(totalVotes / (n * 25), 1) : 0;
 			const stability = 1 - Math.min(avgError / 500, 1);
 			const discrimination = Math.min(scoreStdDev / 400, 1);
-			// 权重：连通 0.35，覆盖 0.25，稳定 0.25，鉴别 0.15
-			const healthScore = Math.round( ( connectivity * 0.35 + coverage * 0.25 + stability * 0.25 + discrimination * 0.15 ) * 100 );
+			const healthScore = Math.round((connectivity * 0.35 + coverage * 0.25 + stability * 0.25 + discrimination * 0.15) * 100);
 			document.getElementById('healthScore').textContent = healthScore + '%';
-			
-			// 计算平均误差
-			calculateAverageError(game);
-			
-			// 返回統計數據供其他函數使用
+
 			return {
-				maxScore, minScore, avgScore: parseFloat(avgScore), medianScore, 
-				scoreStdDev, upperThreshold2, upperThreshold, 
+				maxScore, minScore, avgScore: parseFloat(avgScore), medianScore,
+				scoreStdDev, upperThreshold2, upperThreshold,
 				lowerThreshold, lowerThreshold2
 			};
 		}
@@ -7221,9 +7239,9 @@
 					return items.sort((a, b) => {
 						const errorA = calculateError(a);
 						const errorB = calculateError(b);
-						if (errorA === Infinity && errorB !== Infinity) return -1;
-						if (errorA !== Infinity && errorB === Infinity) return 1;
-						return errorB - errorA;
+						if (errorA === Infinity && errorB !== Infinity) return 1;
+						if (errorA !== Infinity && errorB === Infinity) return -1;
+						return errorA - errorB;
 					});
 				case 'volatility':
 					return items.sort((a, b) => {
@@ -7853,6 +7871,89 @@
             const gameId = document.getElementById('statsGameSelect').value;
             if (gameId) loadStats();
         }
+		
+		function reduceData() {
+			let msg = '確定要刪除所有遊戲的孤立投票記錄，並縮減所有項目的歷史分數記錄（保留最近30天）嗎？' ;
+			msg += '\n此操作無法復原！' ;
+			if ( !confirm(msg) ) return ;
+
+			const now = Date.now();
+			const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+			const thirtyDaysAgo = now - thirtyDaysMs;
+
+			// 遍歷所有遊戲
+			Object.values(games).forEach(game => {
+				if (!game.items || game.items.length === 0) return;
+
+				// ---------- 步驟 1：刪除孤立投票記錄 (game.votes) ----------
+				const validItemIds = new Set(game.items.map(item => item.id));
+				if (game.votes && game.votes.length > 0) {
+					game.votes = game.votes.filter(vote => 
+						validItemIds.has(vote.item1) && validItemIds.has(vote.item2)
+					);
+				}
+
+				// ---------- 計算此遊戲的 μ 和 σ (用於步驟 2) ----------
+				const scores = game.items.map(item => item.score);
+				const avg = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+				const variance = scores.reduce((sum, s) => sum + (s - avg) ** 2, 0) / scores.length;
+				const stdDev = Math.sqrt(variance);
+				const threshold = avg - 2 * stdDev;  // μ - 2σ
+
+				// ---------- 步驟 2：對分數低於 μ - 2σ 的項目，刪除所有超過30天的記錄 ----------
+				game.items.forEach(item => {
+					if (item.score < threshold && item.scoreHistory) {
+						// 僅保留 30 天內的記錄
+						item.scoreHistory = item.scoreHistory.filter(record => 
+							record.timestamp >= thirtyDaysAgo
+						);
+					}
+				});
+
+				// ---------- 步驟 3：對所有項目，超過30天的記錄每天僅保留最後一筆 ----------
+				game.items.forEach(item => {
+					if (!item.scoreHistory || item.scoreHistory.length === 0) return;
+
+					const history = item.scoreHistory;
+					const recentRecords = [];   // 30天內的記錄
+					const oldRecords = [];      // 超過30天的記錄
+
+					// 分離超期與近期記錄
+					history.forEach(record => {
+						if (record.timestamp >= thirtyDaysAgo) {
+							recentRecords.push(record);
+						} else {
+							oldRecords.push(record);
+						}
+					});
+
+					// 對超期記錄按天分組，取每天最後一筆（時間戳最大者）
+					const dailyMap = new Map(); // key: 日期字串, value: 該日最後的記錄物件
+					oldRecords.forEach(record => {
+						const dateKey = new Date(record.timestamp).toLocaleDateString('zh-TW');
+						if (!dailyMap.has(dateKey) || record.timestamp > dailyMap.get(dateKey).timestamp) {
+							dailyMap.set(dateKey, record);
+						}
+					});
+
+					// 合併：30天內全部保留 + 每日最後一筆的舊記錄
+					const newHistory = [...recentRecords];
+					dailyMap.forEach(record => newHistory.push(record));
+
+					// 按時間由舊到新排序
+					newHistory.sort((a, b) => a.timestamp - b.timestamp);
+					item.scoreHistory = newHistory;
+				});
+			});
+
+			// 儲存變更
+			localStorage.setItem('games', JSON.stringify(games));
+			syncData();
+
+			// 重新整理統計頁面
+			loadStats();
+			alert('數據縮減完成！');
+		}
 
 		// 重置當前遊戲的統計數據，僅保留每個項目的當前分數作為預設值
 		function resetStatsKeepScores() {
@@ -7911,7 +8012,7 @@
         function clearStats() {
 			const gameId = document.getElementById('statsGameSelect').value;
 			if (!gameId) { alert('請先選擇遊戲'); return; }
-			if (confirm('確定要清除這個遊戲的所有投票數據嗎？此操作無法復原！')) {
+			if (confirm('確定要清除這個遊戲的所有投票數據嗎？\n此操作無法復原！')) {
 				const game = games[gameId];
 				game.items.forEach(item => {
 					item.score = 1500; 
@@ -7944,6 +8045,7 @@
 		function showItemContextMenu(event, itemId, gameId) {
 			const contextMenu = document.getElementById('contextMenu');
 			const contextMenuList = document.getElementById('contextMenuList');
+			if (!contextMenu || !contextMenuList) return;
 			contextMenuList.innerHTML = '';
 			
 			const game = games[gameId];
@@ -7963,7 +8065,7 @@
 			copyFullLineBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">複製全行文字</button>`;
 			copyFullLineBtn.onclick = function() {
 				const rankingItem = document.getElementById(`ranking-item-${item.id}`);
-				let fullText = rankingItem ? rankingItem.innerText.replaceAll('\n','  ') : '[missing item]' ;
+				let fullText = rankingItem ? rankingItem.innerText.replaceAll('\n','  ') : '[missing item]';
 				navigator.clipboard.writeText(fullText);
 				hideContextMenu();
 			};
@@ -7976,7 +8078,7 @@
 				hideContextMenu();
 			};
 			
-			// 點算以上項目(包括本行)按钮
+			// 點算以上項目(包括本行)
 			const countAboveBtn = document.createElement('li');
 			countAboveBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算本行及以上項目</button>`;
 			countAboveBtn.onclick = function() {
@@ -7984,7 +8086,7 @@
 				hideContextMenu();
 			};
 			
-			// 點算以下項目(包括本行)按钮
+			// 點算以下項目(包括本行)
 			const countBelowBtn = document.createElement('li');
 			countBelowBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算本行及以下項目</button>`;
 			countBelowBtn.onclick = function() {
@@ -7992,7 +8094,7 @@
 				hideContextMenu();
 			};
 			
-			// 冻结按钮
+			// 冻结/解冻当前项目
 			const toggleFreezeBtn = document.createElement('li');
 			toggleFreezeBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">${item.frozen ? '解除凍結' : '凍結'}</button>`;
 			toggleFreezeBtn.onclick = function() {
@@ -8001,16 +8103,13 @@
 				syncData();
 				const rankingItem = document.getElementById(`ranking-item-${itemId}`);
 				if (rankingItem) {
-					if (item.frozen) {
-						rankingItem.classList.add('frozen');
-					} else {
-						rankingItem.classList.remove('frozen');
-					}
+					if (item.frozen) rankingItem.classList.add('frozen');
+					else rankingItem.classList.remove('frozen');
 				}
 				hideContextMenu();
 			};
 			
-			// 冻结以上全部项目按钮
+			// 冻结以上全部项目
 			const freezeAboveBtn = document.createElement('li');
 			freezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以上全部項目</button>`;
 			freezeAboveBtn.onclick = function() {
@@ -8018,7 +8117,7 @@
 				hideContextMenu();
 			};
 			
-			// 解除冻结以上全部项目按钮
+			// 解除冻结以上全部项目
 			const unfreezeAboveBtn = document.createElement('li');
 			unfreezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以上全部項目</button>`;
 			unfreezeAboveBtn.onclick = function() {
@@ -8026,7 +8125,7 @@
 				hideContextMenu();
 			};
 			
-			// 冻结以下全部项目按钮
+			// 冻结以下全部项目
 			const freezeBelowBtn = document.createElement('li');
 			freezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以下全部項目</button>`;
 			freezeBelowBtn.onclick = function() {
@@ -8034,7 +8133,7 @@
 				hideContextMenu();
 			};
 			
-			// 解除冻结以下全部项目按钮
+			// 解除冻结以下全部项目
 			const unfreezeBelowBtn = document.createElement('li');
 			unfreezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以下全部項目</button>`;
 			unfreezeBelowBtn.onclick = function() {
@@ -8042,22 +8141,23 @@
 				hideContextMenu();
 			};
 			
-			// 添加「設為左候選項」
+			// 設為左候選項
 			const setAsLeftBtn = document.createElement('li');
 			setAsLeftBtn.innerHTML = `<button class="btn btn-orange" style="width: 100%; text-align: left;">設為左候選項</button>`;
 			setAsLeftBtn.onclick = function() {
-				setCandidate(0,itemId);
+				setCandidate(0, itemId);
 				hideContextMenu();
 			};
-
-			// 添加「設為右候選項」
+			
+			// 設為右候選項
 			const setAsRightBtn = document.createElement('li');
 			setAsRightBtn.innerHTML = `<button class="btn btn-orange" style="width: 100%; text-align: left;">設為右候選項</button>`;
 			setAsRightBtn.onclick = function() {
-				setCandidate(1,itemId);
+				setCandidate(1, itemId);
 				hideContextMenu();
 			};
-
+			
+			// 将所有按钮添加到菜单
 			contextMenuList.appendChild(setAsLeftBtn);
 			contextMenuList.appendChild(setAsRightBtn);
 			contextMenuList.appendChild(copyTitleBtn);
@@ -8071,9 +8171,41 @@
 			contextMenuList.appendChild(freezeBelowBtn);
 			contextMenuList.appendChild(unfreezeBelowBtn);
 			
+			// 显示前移除残留三角形
+			removeContextMenuPointer();
+			
+			// 使用 fixed 定位，自动平移菜单确保在视口内
+			contextMenu.style.position = 'fixed';
+			contextMenu.style.left = '-10000px';
 			contextMenu.style.display = 'block';
-			contextMenu.style.left = `${event.pageX}px`;
-			contextMenu.style.top = `${event.pageY}px`;
+			const rect = contextMenu.getBoundingClientRect();
+			const winWidth = window.innerWidth;
+			const winHeight = window.innerHeight;
+			let left = event.clientX;
+			let top = event.clientY;
+			if (left + rect.width > winWidth) left = winWidth - rect.width - 5;
+			if (top + rect.height > winHeight) top = winHeight - rect.height - 5;
+			if (left < 0) left = 5;
+			if (top < 0) top = 5;
+			contextMenu.style.left = `${left}px`;
+			contextMenu.style.top = `${top}px`;
+			contextMenu.style.zIndex = '10000';
+			
+			// 添加蓝色三角形指示器（贴在菜单左侧边缘）
+			const pointer = document.createElement('div');
+			pointer.id = 'contextMenuPointer';
+			pointer.style.position = 'fixed';
+			pointer.style.left = `${left - 10}px`;
+			pointer.style.top = `${event.clientY - 8}px`;
+			pointer.style.width = '0';
+			pointer.style.height = '0';
+			pointer.style.borderTop = '8px solid transparent';
+			pointer.style.borderBottom = '8px solid transparent';
+			pointer.style.borderRight = '10px solid #3b82f6';
+			pointer.style.zIndex = '10001';
+			pointer.style.pointerEvents = 'none';
+			document.body.appendChild(pointer);
+			
 			document.addEventListener('click', hideContextMenuOnClick);
 		}
 		
@@ -8149,6 +8281,7 @@
 		function showSeparatorContextMenu(event, separatorText) {
 			const contextMenu = document.getElementById('contextMenu');
 			const contextMenuList = document.getElementById('contextMenuList');
+			if (!contextMenu || !contextMenuList) return;
 			contextMenuList.innerHTML = '';
 			
 			const gameId = document.getElementById('statsGameSelect').value;
@@ -8170,7 +8303,7 @@
 				hideContextMenu();
 			};
 			
-			// 點算以上項目(包括本行)按钮
+			// 點算以上項目
 			const countAboveBtn = document.createElement('li');
 			countAboveBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算以上項目</button>`;
 			countAboveBtn.onclick = function() {
@@ -8178,7 +8311,7 @@
 				hideContextMenu();
 			};
 			
-			// 點算以下項目(包括本行)按钮
+			// 點算以下項目
 			const countBelowBtn = document.createElement('li');
 			countBelowBtn.innerHTML = `<button class="btn btn-info" style="width: 100%; text-align: left;">點算以下項目</button>`;
 			countBelowBtn.onclick = function() {
@@ -8186,7 +8319,7 @@
 				hideContextMenu();
 			};
 			
-			// 冻结以上全部项目按钮
+			// 冻结以上全部项目
 			const freezeAboveBtn = document.createElement('li');
 			freezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以上全部項目</button>`;
 			freezeAboveBtn.onclick = function() {
@@ -8194,7 +8327,7 @@
 				hideContextMenu();
 			};
 			
-			// 解除冻结以上全部项目按钮
+			// 解除冻结以上全部项目
 			const unfreezeAboveBtn = document.createElement('li');
 			unfreezeAboveBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以上全部項目</button>`;
 			unfreezeAboveBtn.onclick = function() {
@@ -8202,7 +8335,7 @@
 				hideContextMenu();
 			};
 			
-			// 冻结以下全部项目按钮
+			// 冻结以下全部项目
 			const freezeBelowBtn = document.createElement('li');
 			freezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">凍結以下全部項目</button>`;
 			freezeBelowBtn.onclick = function() {
@@ -8210,7 +8343,7 @@
 				hideContextMenu();
 			};
 			
-			// 解除冻结以下全部项目按钮
+			// 解除冻结以下全部项目
 			const unfreezeBelowBtn = document.createElement('li');
 			unfreezeBelowBtn.innerHTML = `<button class="btn btn-frozen" style="width: 100%; text-align: left;">解除凍結以下全部項目</button>`;
 			unfreezeBelowBtn.onclick = function() {
@@ -8226,10 +8359,42 @@
 			contextMenuList.appendChild(unfreezeAboveBtn);
 			contextMenuList.appendChild(freezeBelowBtn);
 			contextMenuList.appendChild(unfreezeBelowBtn);
-
+			
+			// 显示前移除残留三角形
+			removeContextMenuPointer();
+			
+			// 定位菜单（fixed）
+			contextMenu.style.position = 'fixed';
+			contextMenu.style.left = '-10000px';
 			contextMenu.style.display = 'block';
-			contextMenu.style.left = `${event.pageX}px`;
-			contextMenu.style.top = `${event.pageY}px`;
+			const rect = contextMenu.getBoundingClientRect();
+			const winWidth = window.innerWidth;
+			const winHeight = window.innerHeight;
+			let left = event.clientX;
+			let top = event.clientY;
+			if (left + rect.width > winWidth) left = winWidth - rect.width - 5;
+			if (top + rect.height > winHeight) top = winHeight - rect.height - 5;
+			if (left < 0) left = 5;
+			if (top < 0) top = 5;
+			contextMenu.style.left = `${left}px`;
+			contextMenu.style.top = `${top}px`;
+			contextMenu.style.zIndex = '10000';
+			
+			// 添加蓝色三角形指示器
+			const pointer = document.createElement('div');
+			pointer.id = 'contextMenuPointer';
+			pointer.style.position = 'fixed';
+			pointer.style.left = `${left - 10}px`;
+			pointer.style.top = `${event.clientY - 8}px`;
+			pointer.style.width = '0';
+			pointer.style.height = '0';
+			pointer.style.borderTop = '8px solid transparent';
+			pointer.style.borderBottom = '8px solid transparent';
+			pointer.style.borderRight = '10px solid #3b82f6';
+			pointer.style.zIndex = '10001';
+			pointer.style.pointerEvents = 'none';
+			document.body.appendChild(pointer);
+			
 			document.addEventListener('click', hideContextMenuOnClick);
 		}
 		
@@ -8722,10 +8887,17 @@
 			navigator.clipboard.writeText(rankingText);
 		}
 
+		// 移除三角形指示器的辅助函数
+		function removeContextMenuPointer() {
+			const pointer = document.getElementById('contextMenuPointer');
+			if (pointer) pointer.remove();
+		}
+
 		function hideContextMenu() {
 			const contextMenu = document.getElementById('contextMenu');
 			contextMenu.style.display = 'none';
 			document.removeEventListener('click', hideContextMenuOnClick);
+			removeContextMenuPointer(); // 移除三角形
 		}
 
 		function hideContextMenuOnClick(event) {
@@ -9087,7 +9259,10 @@
 			// 获取滑动条的实际尺寸和位置
 			const sliderRect = slider.getBoundingClientRect();
 			const containerRect = sliderContainer.getBoundingClientRect();
-			
+		console.log('滑動條尺寸和位置:');
+		console.log(sliderRect);
+		console.log(containerRect);
+
 			// 获取滑块的尺寸
 			const thumbWidth = 56; // 滑块宽度 = 50px , 偏移一點
 			const thumbHalfWidth = thumbWidth / 2;
@@ -9100,24 +9275,30 @@
 			
 			// 计算胜率对应的滑动条位置 (0-100)
 			// 将胜率映射到滑块的实际可移动范围内
+			let winrateLine = null;
 			const winratePosition = minPosition + expectedWinRate * (maxPosition - minPosition);
+
+		console.log(`預期勝率 = ${expectedWinRate.toFixed(3)} , score = ${item1.score} , ${item2.score}`) ;
+		console.log(`勝率位置 = ${winratePosition}`);
 			
-			// 创建新的胜率线
-			const winrateLine = document.createElement('div');
-			winrateLine.className = 'expected-winrate-line';
-			winrateLine.style.position = 'absolute';
-			winrateLine.style.top = '0';
-			winrateLine.style.bottom = '0';
-			winrateLine.style.width = '5px';
-			winrateLine.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-			winrateLine.style.borderLeft = '1px solid rgba(0, 0, 0, 0.3)';
-			winrateLine.style.borderRight = '1px solid rgba(0, 0, 0, 0.3)';
-			winrateLine.style.zIndex = '5';
-			winrateLine.style.pointerEvents = 'none';
-			winrateLine.style.left = `${winratePosition}%`;
-			winrateLine.style.transform = 'translateX(-50%)';
-			
-			sliderContainer.appendChild(winrateLine);
+			if(winratePosition !== undefined && winratePosition !== null && !isNaN(winratePosition))
+			{	// 创建新的胜率线
+				winrateLine = document.createElement('div');
+				winrateLine.className = 'expected-winrate-line';
+				winrateLine.style.position = 'absolute';
+				winrateLine.style.top = '0';
+				winrateLine.style.bottom = '0';
+				winrateLine.style.width = '5px';
+				winrateLine.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+				winrateLine.style.borderLeft = '1px solid rgba(0, 0, 0, 0.3)';
+				winrateLine.style.borderRight = '1px solid rgba(0, 0, 0, 0.3)';
+				winrateLine.style.zIndex = '5';
+				winrateLine.style.pointerEvents = 'none';
+				winrateLine.style.left = `${winratePosition}%`;
+				winrateLine.style.transform = 'translateX(-50%)';
+				
+				sliderContainer.appendChild(winrateLine);
+			}
 		}
 
 		function exportSettings() {

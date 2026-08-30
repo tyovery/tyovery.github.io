@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>求解任意n次多項式方程 (支援複數係數)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 850px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 { text-align: center; color: #2c3e50; }
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .help-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover { background-color: #2980b9; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background-color: #f2f2f2; }
+        .poly-display {
+            font-family: monospace;
+            background: #eef;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+        .verify-table {
+            background-color: #fafafa;
+        }
+    </style>
+</head>
+<body>
+
+<h1>求解任意n次多項式方程</h1>
+
+<div class="card">
+    <div class="form-group">
+        <label for="coeffs">多項式係數（從高次項到常數項，用逗號分隔，支援複數）：</label>
+        <input type="text" id="coeffs" class="enter-submit" value="1,0,0,0,-1" placeholder="例如：2, -12, 22, -12 代表 2z³ - 12z² + 22z - 12">
+        <div class="help-text">請由最高次項至常數項依序輸入係數（如：1+i, 2.5, -3i）。</div>
+    </div>
+
+    <div class="form-group">
+        <label for="initials">猜根的初始值（選填，用逗號分隔複數如 "0, 1+i, 2-i"）：</label>
+        <input type="text" id="initials" class="enter-submit" placeholder="若留空，系統將自動生成圓周均勻分佈且非對稱的點">
+    </div>
+
+    <div class="form-group">
+        <label for="steps">迭代步數：</label>
+        <input type="number" id="steps" class="enter-submit" value="20" min="0" max="500">
+    </div>
+
+    <button onclick="solvePolynomial()">開始求解所有根</button>
+</div>
+
+<div class="card" id="outputCard" style="display:none;">
+    <h3>目標多項式：</h3>
+    <div id="polyDisplay" class="poly-display"></div>
+
+    <h3>最後一次迭代驗算 (代回原多項式 P(z))：</h3>
+    <div id="verificationContainer"></div>
+
+    <h3>迭代歷程表格：</h3>
+    <div id="resultTableContainer"></div>
+</div>
+
+<script>
+/**
+ * 複數類別 (Complex Number Class)
+ */
+class Complex {
+    constructor(re, im = 0) {
+        this.re = re;
+        this.im = im;
+    }
+
+    add(other) {
+        return new Complex(this.re + other.re, this.im + other.im);
+    }
+
+    sub(other) {
+        return new Complex(this.re - other.re, this.im - other.im);
+    }
+
+    mul(other) {
+        return new Complex(
+            this.re * other.re - this.im * other.im,
+            this.re * other.im + this.im * other.re
+        );
+    }
+
+    div(other) {
+        const denom = other.re * other.re + other.im * other.im;
+        if (denom === 0) throw new Error("Division by zero in Complex numbers.");
+        return new Complex(
+            (this.re * other.re + this.im * other.im) / denom,
+            (this.im * other.re - this.re * other.im) / denom
+        );
+    }
+
+    abs() {
+        return Math.hypot(this.re, this.im);
+    }
+
+    toString(precision = 6) {
+        const r = this.re.toFixed(precision);
+        const i = Math.abs(this.im).toFixed(precision);
+        if (Math.abs(this.im) < 1e-12) return `${r}`;
+        if (Math.abs(this.re) < 1e-12) return `${this.im < 0 ? '-' : ''}${i}i`;
+        return `${r} ${this.im >= 0 ? '+' : '-'} ${i}i`;
+    }
+
+    static parse(str) {
+        str = str.replace(/\s+/g, '');
+        if (!str) return null;
+        
+        let re = 0, im = 0;
+        if (str.endsWith('i')) {
+            str = str.slice(0, -1);
+            if (str === '' || str === '+') im = 1;
+            else if (str === '-') im = -1;
+            else {
+                const lastPlus = str.lastIndexOf('+');
+                const lastMinus = str.lastIndexOf('-');
+                const splitIdx = Math.max(lastPlus, lastMinus);
+
+                if (splitIdx > 0) {
+                    re = parseFloat(str.substring(0, splitIdx));
+                    let imStr = str.substring(splitIdx);
+                    im = imStr === '+' ? 1 : (imStr === '-' ? -1 : parseFloat(imStr));
+                } else {
+                    im = parseFloat(str);
+                }
+            }
+        } else {
+            re = parseFloat(str);
+        }
+        return new Complex(isNaN(re) ? 0 : re, isNaN(im) ? 0 : im);
+    }
+}
+
+/**
+ * 計算多項式 P(z) 在複數 z 點的值 (Horner's Method 霍納法則)
+ */
+function evaluatePolynomial(coeffs, z) {
+    let result = coeffs[0];
+    for (let i = 1; i < coeffs.length; i++) {
+        result = result.mul(z).add(coeffs[i]);
+    }
+    return result;
+}
+
+/**
+ * 主求解函數：執行 Durand-Kerner 演算法
+ */
+function solvePolynomial() {
+    // 1. 讀取並解析輸入係數 (使用 Complex.parse 支援複數)
+    const coeffsInput = document.getElementById('coeffs').value;
+    const rawCoeffs = coeffsInput.split(',')
+        .map(s => Complex.parse(s.trim()))
+        .filter(c => c !== null);
+
+    if (rawCoeffs.length < 2) {
+        alert("請輸入至少兩個有效的係數（至少為 1 次方程）");
+        return;
+    }
+
+    const leadCoeff = rawCoeffs[0];
+    if (leadCoeff.abs() < 1e-12) {
+        alert("最高次項係數不能為 0");
+        return;
+    }
+
+    const n = rawCoeffs.length - 1;
+
+    // 內部計算轉換為首一多項式 (Monic Polynomial) 供 Durand-Kerner 公式使用
+    const monicCoeffs = rawCoeffs.map(c => c.div(leadCoeff));
+
+    // 2. 處理初始值
+    let z = [];
+    const initialsInput = document.getElementById('initials').value.trim();
+
+    if (initialsInput !== "") {
+        const parsed = initialsInput.split(',').map(s => Complex.parse(s.trim())).filter(c => c !== null);
+        if (parsed.length !== n) {
+            alert(`多項式為 ${n} 次，需要提供 ${n} 個初始值。\n已為您自動生成預設初值。`);
+            z = generateDefaultInitials(n, monicCoeffs);
+        } else {
+            z = parsed;
+        }
+    } else {
+        z = generateDefaultInitials(n, monicCoeffs);
+    }
+
+    // 3. 檢查初始值是否有重複
+    for (let i = 0; i < z.length; i++) {
+        for (let j = i + 1; j < z.length; j++) {
+            if (z[i].sub(z[j]).abs() < 1e-9) {
+                alert(`初始值存在重複點：第 ${i + 1} 個與第 ${j + 1} 個初始值相同 (${z[i].toString(4)})。\n演算法要求所有初始值必須互不相同，請重新輸入。`);
+                return;
+            }
+        }
+    }
+
+    // 4. 顯示原始多項式
+    displayRawPolynomial(rawCoeffs);
+
+    // 5. 讀取迭代步數 (允許為 0)
+    const stepsInput = document.getElementById('steps').value;
+    let steps = parseInt(stepsInput);
+    if (isNaN(steps) || steps < 0) {
+        steps = 0;
+    }
+
+    // 6. 執行 Durand-Kerner 同時迭代法
+    const history = [];
+    history.push(z.map(c => new Complex(c.re, c.im))); // Step 0 (初值)
+
+    for (let step = 0; step < steps; step++) {
+        const nextZ = [];
+        for (let i = 0; i < n; i++) {
+            const zi = z[i];
+            const pVal = evaluatePolynomial(monicCoeffs, zi);
+
+            let denom = new Complex(1, 0);
+            for (let j = 0; j < n; j++) {
+                if (i !== j) {
+                    denom = denom.mul(zi.sub(z[j]));
+                }
+            }
+
+            const delta = pVal.div(denom);
+            nextZ.push(zi.sub(delta));
+        }
+        z = nextZ;
+        history.push(z.map(c => new Complex(c.re, c.im)));
+    }
+
+    // 7. 代回原多項式進行殘差驗算
+    const finalRoots = history[history.length - 1];
+    renderVerification(rawCoeffs, finalRoots);
+
+    // 8. 渲染歷程表格
+    renderTable(history, n);
+    document.getElementById('outputCard').style.display = 'block';
+}
+
+/**
+ * 驗算最後一次迭代結果
+ */
+function renderVerification(rawCoeffs, finalRoots) {
+    let html = `<table class="verify-table">
+        <thead>
+            <tr>
+                <th>根編號</th>
+                <th>求解根 z<sub>i</sub> (最後迭代值)</th>
+                <th>代回原方程 P(z<sub>i</sub>) 的值 (殘差)</th>
+                <th>絕對誤差 |P(z<sub>i</sub>)|</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    finalRoots.forEach((root, idx) => {
+        const pVal = evaluatePolynomial(rawCoeffs, root);
+        const absErr = pVal.abs().toExponential(4);
+
+        html += `<tr>
+            <td>z<sub>${idx + 1}</sub></td>
+            <td><b>${root.toString(8)}</b></td>
+            <td>${pVal.toString(8)}</td>
+            <td><code>${absErr}</code></td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    document.getElementById('verificationContainer').innerHTML = html;
+}
+
+/**
+ * 自動生成穩健的初始值
+ */
+function generateDefaultInitials(n, monicCoeffs) {
+    const initials = [];
+    let maxCoeff = 0;
+    for (let i = 1; i <= n; i++) {
+        maxCoeff = Math.max(maxCoeff, monicCoeffs[i].abs());
+    }
+    const R = 1 + maxCoeff;
+    const offsetAngle = 0.4; 
+
+    for (let k = 0; k < n; k++) {
+        const angle = (2 * Math.PI * k / n) + offsetAngle;
+        initials.push(new Complex(R * Math.cos(angle), R * Math.sin(angle)));
+    }
+    return initials;
+}
+
+/**
+ * 格式化並顯示原始輸入的多項式 P(z) (自變數改為 z，支援複數)
+ */
+function displayRawPolynomial(rawCoeffs) {
+    const n = rawCoeffs.length - 1;
+    let terms = [];
+    for (let i = 0; i <= n; i++) {
+        const p = n - i;
+        const c = rawCoeffs[i];
+        if (c.abs() < 1e-12) continue;
+        
+        let coeffText = "";
+        const isComplex = Math.abs(c.im) >= 1e-12;
+        
+        if (isComplex) {
+            coeffText = `(${c.toString(4)})`;
+        } else {
+            const r = c.re;
+            if (p > 0) {
+                if (r === 1) coeffText = "";
+                else if (r === -1) coeffText = "-";
+                else coeffText = `${r}`;
+            } else {
+                coeffText = `${r}`;
+            }
+        }
+
+        const termText = p === 1 ? 'z' : (p === 0 ? '' : `z<sup>${p}</sup>`);
+        
+        if (i === 0) {
+            terms.push(`${coeffText}${termText}`);
+        } else {
+            if (!isComplex && c.re < 0) {
+                terms.push(` - ${coeffText.replace('-', '')}${termText}`);
+            } else {
+                terms.push(` + ${coeffText}${termText}`);
+            }
+        }
+    }
+    document.getElementById('polyDisplay').innerHTML = `P(z) = ${terms.join('')} = 0`;
+}
+
+/**
+ * 渲染迭代歷程表格
+ */
+function renderTable(history, n) {
+    let html = `<table><thead><tr><th>步數 (Step)</th>`;
+    for (let i = 0; i < n; i++) {
+        html += `<th>近似根 z<sub>${i+1}</sub></th>`;
+    }
+    html += `</tr></thead><tbody>`;
+
+    history.forEach((stepZ, idx) => {
+        html += `<tr><td>${idx === 0 ? '0 (初值)' : idx}</td>`;
+        stepZ.forEach(zVal => {
+            html += `<td>${zVal.toString(6)}</td>`;
+        });
+        html += `</tr>`;
+    });
+
+    html += `</tbody></table>`;
+    document.getElementById('resultTableContainer').innerHTML = html;
+}
+
+// 綁定 Enter 鍵觸發事件
+document.addEventListener("DOMContentLoaded", () => {
+    const inputs = document.querySelectorAll('.enter-submit');
+    inputs.forEach(input => {
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                solvePolynomial();
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>

@@ -1,434 +1,1445 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>棋鐘</title>
-<style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
-    user-select: none; touch-action: manipulation;
-    background: #111;
-    -webkit-text-size-adjust: 100%;
-  }
-  #app {
-    display: flex; flex-direction: column;
-    width: 100vw;
-    height: 100vh; /* 會被 JS 覆寫成精確 px */
-    position: relative;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>棋鐘</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+            user-select: none;
+            touch-action: manipulation;
+            background: #111;
+            -webkit-text-size-adjust: 100%;
+        }
+        #app {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
 
-  .player {
-    flex: 1 1 0;
-    min-height: 0;
-    width: 100%;
-    overflow: hidden;
-    position: relative;
-    display: flex; align-items: center; justify-content: center;
-    transition: background-color .15s;
-    background: #ecf0f1; color: #333;
-  }
-  .player.active { background-color: #2ecc71; color: #fff; }
-  .player.active.byoyomi { background-color: #e67e22; }
-  .player.flagfallen { background-color: #e74c3c !important; color: #fff; }
+        .player {
+            flex: 1 1 0;
+            min-height: 0;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color .15s;
+            background: #ecf0f1;
+            color: #333;
+        }
+        .player.active {
+            background-color: #2ecc71;
+            color: #fff;
+        }
+        .player.active.byoyomi {
+            background-color: #e67e22;
+        }
+        .player.flagfallen {
+            background-color: #e74c3c !important;
+            color: #fff;
+        }
 
-  .content {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transform: rotate(90deg);
-    transform-origin: center center;
-    flex-shrink: 0;
-  }
-  .label { font-size: calc(var(--tsize) * 0.38); opacity: .75; margin-bottom: calc(var(--tsize) * 0.18); white-space: nowrap; }
-  .time  { font-size: var(--tsize); font-weight: bold; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
-  .time .frac { font-size: 55%; opacity: 0.8; }
-  .info  { font-size: calc(var(--tsize) * 0.30); opacity: .85; margin-top: calc(var(--tsize) * 0.18); min-height: calc(var(--tsize) * 0.35); white-space: nowrap; }
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(90deg);
+            transform-origin: center center;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        .label {
+            font-size: calc(var(--tsize) * 0.38);
+            opacity: .75;
+            margin-bottom: calc(var(--tsize) * 0.12);
+            white-space: nowrap;
+        }
+        .time {
+            font-size: var(--tsize);
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .time .frac {
+            font-size: 55%;
+            opacity: 0.8;
+        }
+        .info {
+            font-size: calc(var(--tsize) * 0.28);
+            opacity: .85;
+            margin-top: calc(var(--tsize) * 0.08);
+            min-height: calc(var(--tsize) * 0.3);
+            white-space: nowrap;
+        }
+        .moves {
+            font-size: calc(var(--tsize) * 0.24);
+            opacity: 0.7;
+            margin-top: calc(var(--tsize) * 0.04);
+            white-space: nowrap;
+        }
 
-  #controls {
-    position: fixed; top: 50%; left: 0; right: 0; transform: translateY(-50%);
-    display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
-    gap: clamp(6px, 2vw, 14px);
-    z-index: 10; pointer-events: none;
-  }
-  #controls button {
-    pointer-events: auto; border: none; border-radius: 999px;
-    background: rgba(52,73,94,0.92); color: #fff;
-    display: flex; align-items: center; gap: 6px;
-    font-size: clamp(13px, 3.2vmin, 20px);
-    padding: clamp(8px, 1.6vmin, 14px) clamp(12px, 2.6vmin, 20px);
-    white-space: nowrap;
-  }
-  #controls button:active { opacity: 0.6; }
+        #controls {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: clamp(6px, 2vw, 14px);
+            z-index: 10;
+            pointer-events: none;
+        }
+        #controls button {
+            pointer-events: auto;
+            border: none;
+            border-radius: 999px;
+            background: rgba(52, 73, 94, 0.92);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: clamp(13px, 3.2vmin, 20px);
+            padding: clamp(8px, 1.6vmin, 14px) clamp(12px, 2.6vmin, 20px);
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        #controls button:active {
+            opacity: 0.6;
+        }
 
-  #settingsPanel {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.94); color: #fff;
-    z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: flex-start;
-    gap: 14px; padding: 20px; overflow-y: auto;
-  }
-  #settingsPanel.show { display: flex; }
-  #settingsPanel h2 { margin: 10px 0 0 0; }
-  #settingsPanel h3 { margin: 6px 0 0 0; font-size: 15px; opacity: .8; align-self: flex-start; max-width:320px; width:100%;}
-  #settingsPanel label {
-    width: 100%; max-width: 320px; display: flex; flex-direction: column; font-size: 16px; gap: 6px;
-  }
-  #settingsPanel input {
-    font-size: 20px; padding: 8px; border-radius: 8px; border: none;
-  }
-  #settingsPanel .btnRow { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 20px; }
-  #settingsPanel button {
-    padding: 12px 22px; font-size: 16px; border-radius: 10px; border: none; color: #fff;
-  }
-  #btnSave { background: #2ecc71; }
-  #btnClose { background: #7f8c8d; }
+        /* ---- 面板通用 ---- */
+        .panel {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.94);
+            color: #fff;
+            z-index: 20;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 14px;
+            padding: 20px 20px 30px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .panel.show {
+            display: flex;
+        }
+        .panel h2 {
+            margin: 10px 0 0 0;
+            font-size: 22px;
+        }
+        .panel h3 {
+            margin: 6px 0 0 0;
+            font-size: 15px;
+            opacity: .8;
+            text-align: center;
+            width: 100%;
+            max-width: 320px;
+        }
+        .panel .btnRow {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .panel .btnRow button {
+            padding: 12px 22px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+        }
 
-  .presetGrid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-    width: 100%; max-width: 320px;
-  }
-  .presetGrid button {
-    background: #34495e; padding: 10px 4px; font-size: 14px; border-radius: 8px; border: none; color: #fff;
-  }
-  .presetGrid button:active { background: #4f6b85; }
-</style>
+        /* ---- 設定面板 ---- */
+        #settingsPanel label {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            font-size: 16px;
+            gap: 6px;
+        }
+        #settingsPanel input,
+        #settingsPanel select {
+            font-size: 20px;
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            background: #2c3e50;
+            color: #fff;
+        }
+        #settingsPanel select option {
+            background: #2c3e50;
+            color: #fff;
+        }
+        #btnSave {
+            background: #2ecc71;
+        }
+        #btnCloseSettings {
+            background: #7f8c8d;
+        }
+
+        .presetGrid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 320px;
+        }
+        .presetGrid button {
+            background: #34495e;
+            padding: 10px 4px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+        }
+        .presetGrid button:active {
+            background: #4f6b85;
+        }
+
+        /* ---- 說明面板 ---- */
+        .help-content {
+            max-width: 360px;
+            width: 100%;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #ddd;
+            padding: 4px 0 10px;
+        }
+        .help-content p {
+            margin: 10px 0;
+        }
+        .help-content ul {
+            margin: 6px 0 12px 0;
+            padding-left: 22px;
+        }
+        .help-content ul li {
+            margin-bottom: 6px;
+        }
+        .help-content .highlight {
+            color: #2ecc71;
+            font-weight: 600;
+        }
+        .help-content .warn {
+            color: #e67e22;
+            font-weight: 600;
+        }
+        .help-content .danger {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        .help-content hr {
+            border: none;
+            border-top: 1px solid #444;
+            margin: 16px 0;
+        }
+        .help-content .badge {
+            display: inline-block;
+            background: #2c3e50;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #fff;
+            margin-right: 4px;
+        }
+
+        /* ===== 統計面板 ===== */
+        #statsPanel .stats-summary {
+            width: 100%;
+            max-width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            padding: 4px 12px;
+            margin-bottom: 2px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        #statsPanel .stats-summary .stats-col {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1px;
+        }
+        #statsPanel .stats-summary .stats-col.right {
+            align-items: flex-end;
+        }
+        #statsPanel .stats-summary .stats-col span {
+            font-size: 13px;
+            white-space: nowrap;
+            line-height: 1.5;
+        }
+        #statsPanel .stats-summary .p1color {
+            color: #ff6b6b;
+        }
+        #statsPanel .stats-summary .p2color {
+            color: #4dabf7;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 100%;
+            flex: 1;
+            min-height: 120px;
+            max-height: calc(100vh - 210px);
+            overflow-x: hidden;
+            overflow-y: auto;
+            background: #1a2530;
+            border-radius: 12px;
+            padding: 10px 6px 6px 6px;
+            margin-bottom: 6px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-container canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: transparent;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .chart-container .chart-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0 6px 0;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #2a3a4a;
+            flex-shrink: 0;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .chart-container .chart-label .p1tag {
+            text-align: left;
+            flex: 1;
+            color: #ff6b6b;
+        }
+        .chart-container .chart-label .p2tag {
+            text-align: right;
+            flex: 1;
+            color: #4dabf7;
+        }
+
+        #btnCloseStats {
+            background: #7f8c8d;
+        }
+
+        /* ---- 詳細彈窗 ---- */
+        .detail-popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 30;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .detail-popup-overlay.show {
+            display: flex;
+        }
+        .detail-popup {
+            background: #1e2a36;
+            border-radius: 16px;
+            padding: 24px 28px 20px 28px;
+            max-width: 360px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: popIn 0.2s ease;
+        }
+        @keyframes popIn {
+            0% {
+                transform: scale(0.92);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .detail-popup h3 {
+            margin: 0 0 12px 0;
+            font-size: 19px;
+            color: #fff;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 10px;
+        }
+        .detail-popup .popup-body {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #ddd;
+        }
+        .detail-popup .popup-body .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+        }
+        .detail-popup .popup-body .row .label {
+            opacity: 0.7;
+        }
+        .detail-popup .popup-body .row .value {
+            font-weight: 500;
+        }
+        .detail-popup .popup-body .row .value.p1 {
+            color: #ff6b6b;
+        }
+        .detail-popup .popup-body .row .value.p2 {
+            color: #4dabf7;
+        }
+        .detail-popup .popup-body .row .value.avg1 {
+            color: #ff6b6b;
+        }
+        .detail-popup .popup-body .row .value.avg2 {
+            color: #4dabf7;
+        }
+        .detail-popup .popup-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .detail-popup .popup-footer button {
+            background: #2c3e50;
+            border: none;
+            color: #fff;
+            padding: 8px 28px;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .detail-popup .popup-footer button:hover {
+            background: #3d566e;
+        }
+        .detail-popup .popup-footer button:active {
+            opacity: 0.7;
+        }
+
+        /* ---- 響應式 ---- */
+        @media (max-width: 480px) {
+            .panel {
+                padding: 14px 14px 20px;
+                gap: 10px;
+            }
+            .panel h2 {
+                font-size: 19px;
+                margin-top: 4px;
+            }
+            .help-content {
+                font-size: 14px;
+            }
+            .presetGrid button {
+                font-size: 12px;
+                padding: 8px 2px;
+            }
+            .chart-container {
+                max-height: calc(100vh - 180px);
+                padding: 6px 4px 4px 4px;
+            }
+            #statsPanel .stats-summary {
+                font-size: 12px;
+                padding: 2px 8px;
+                gap: 4px;
+            }
+            #statsPanel .stats-summary .stats-col span {
+                font-size: 12px;
+            }
+            .detail-popup {
+                padding: 18px 16px 16px 16px;
+            }
+            .detail-popup .popup-body {
+                font-size: 14px;
+                gap: 3px;
+            }
+        }
+        @media (max-height: 600px) {
+            .panel h2 {
+                margin-top: 2px;
+            }
+            .panel h3 {
+                margin-top: 2px;
+                font-size: 13px;
+            }
+            #settingsPanel label {
+                font-size: 14px;
+                gap: 4px;
+            }
+            #settingsPanel input {
+                font-size: 17px;
+                padding: 5px 8px;
+            }
+            .presetGrid {
+                gap: 5px;
+            }
+            .presetGrid button {
+                padding: 6px 2px;
+                font-size: 12px;
+            }
+            .help-content {
+                font-size: 13px;
+                line-height: 1.5;
+            }
+            .help-content p {
+                margin: 6px 0;
+            }
+            .help-content ul {
+                margin: 4px 0 8px 0;
+            }
+            .help-content ul li {
+                margin-bottom: 3px;
+            }
+            .chart-container {
+                max-height: calc(100vh - 160px);
+                padding: 4px 2px 2px 2px;
+            }
+            #statsPanel .stats-summary {
+                font-size: 11px;
+                padding: 2px 6px;
+            }
+            #statsPanel .stats-summary .stats-col span {
+                font-size: 11px;
+            }
+            .detail-popup {
+                padding: 14px 12px 12px 12px;
+            }
+            .detail-popup .popup-body {
+                font-size: 13px;
+                gap: 2px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div id="app">
-  <div class="player" id="player1">
-    <div class="content" id="content1" style="--tsize: 40px;">
-      <div class="label">先手</div>
-      <div class="time" id="time1">10:00<span class="frac">.00</span></div>
-      <div class="info" id="info1"></div>
+    <div id="app">
+        <div class="player" id="player1">
+            <div class="content" id="content1" style="--tsize: 40px;">
+                <div class="label">先手</div>
+                <div class="time" id="time1">10:00<span class="frac">.00</span></div>
+                <div class="moves" id="moves1">已下 0 手棋</div>
+				<div class="info" id="info1"></div>
+            </div>
+        </div>
+
+        <div id="controls">
+            <button id="btnStats">📊 統計</button>
+            <button id="btnSettings">⚙️ 設定</button>
+            <button id="btnStartPause">▶️ 計時</button>
+            <button id="btnReset">🔄 重置</button>
+            <button id="btnHelp">❓ 說明</button>
+        </div>
+
+        <div class="player" id="player2">
+            <div class="content" id="content2" style="--tsize: 40px;">
+                <div class="label">後手</div>
+                <div class="time" id="time2">10:00<span class="frac">.00</span></div>
+                <div class="moves" id="moves2">已下 0 手棋</div>
+				<div class="info" id="info2"></div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div id="controls">
-    <button id="btnSettings">⚙️ 設定</button>
-    <button id="btnStartPause">▶️ 開始</button>
-    <button id="btnReset">🔄 重置</button>
-  </div>
+    <!-- ===== 設定面板 ===== -->
+    <div id="settingsPanel" class="panel">
+        <h2>⚙️ 棋鐘設定</h2>
 
-  <div class="player" id="player2">
-    <div class="content" id="content2" style="--tsize: 40px;">
-      <div class="label">後手</div>
-      <div class="time" id="time2">10:00<span class="frac">.00</span></div>
-      <div class="info" id="info2"></div>
+        <label>🖐 慣用手
+            <select id="setHandedness">
+                <option value="1">右手（預設）</option>
+                <option value="-1">左手</option>
+            </select>
+        </label>
+
+        <label>快速選項
+            <div class="presetGrid" id="presetGrid">
+                <button data-t="5" data-i="5" data-p="5">5,5,5</button>
+                <button data-t="10" data-i="10" data-p="10">10,10,10</button>
+                <button data-t="15" data-i="15" data-p="15">15,15,15</button>
+                <button data-t="30" data-i="10" data-p="30">30,10,30</button>
+                <button data-t="45" data-i="5" data-p="30">45,5,30</button>
+                <button data-t="60" data-i="5" data-p="30">60,5,30</button>
+                <button data-t="0" data-i="0" data-p="5">5秒/步</button>
+                <button data-t="0" data-i="0" data-p="10">10秒/步</button>
+                <button data-t="0" data-i="0" data-p="15">15秒/步</button>
+                <button data-t="0" data-i="0" data-p="30">30秒/步</button>
+                <button data-t="0" data-i="0" data-p="45">45秒/步</button>
+                <button data-t="0" data-i="0" data-p="60">1分/步</button>
+            </div>
+        </label>
+
+        <label>總時限（分鐘）
+            <input type="number" id="setTotalMin" min="0" step="0.5" value="10" inputmode="decimal">
+        </label>
+        <label>每步加秒
+            <input type="number" id="setIncrement" min="0" step="1" value="0" inputmode="numeric">
+        </label>
+        <label>讀秒（0 = 不啟用）
+            <input type="number" id="setPerMove" min="0" step="1" value="0" inputmode="numeric">
+        </label>
+
+        <div class="btnRow">
+            <button id="btnSave">💾 儲存並重置</button>
+            <button id="btnCloseSettings">取消</button>
+        </div>
     </div>
-  </div>
-</div>
 
-<div id="settingsPanel">
-  <h2>棋鐘設定</h2>
+    <!-- ===== 說明面板 ===== -->
+    <div id="helpPanel" class="panel">
+        <h2>❓ 說明</h2>
+        <div class="help-content">
+            <p><strong>工作人員</strong></p>
+            <ul>
+                <li>coded by ~tyovery~</li>
+                <li>2026-08</li>
+            </ul>
+        </div>
+        <button id="btnCloseHelp" style="background:#7f8c8d; padding:12px 36px; font-size:18px; border-radius:10px; border:none; color:#fff; margin-top:4px; cursor:pointer;">關閉</button>
+    </div>
 
-  <h3>快速選項</h3>
-  <div class="presetGrid" id="presetGrid">
-    <button data-t="5"  data-i="5"  data-p="5">5,5,5</button>
-    <button data-t="10"  data-i="10"  data-p="10">10,10,10</button>
-    <button data-t="15"  data-i="15"  data-p="15">15,15,15</button>
-    <button data-t="30"  data-i="10"  data-p="30">30,10,30</button>
-    <button data-t="45"  data-i="5"  data-p="30">45,5,30</button>
-    <button data-t="60"  data-i="5"  data-p="30">60,5,30</button>
-	<button data-t="0" data-i="0"  data-p="5">5秒/步</button>
-	<button data-t="0" data-i="0"  data-p="10">10秒/步</button>
-    <button data-t="0" data-i="0"  data-p="15">15秒/步</button>
-    <button data-t="0"  data-i="0" data-p="30">30秒/步</button>
-	<button data-t="0"  data-i="0" data-p="45">45秒/步</button>
-	<button data-t="0"  data-i="0" data-p="60">1分/步</button>
-  </div>
+    <!-- ===== 統計面板 ===== -->
+    <div id="statsPanel" class="panel">
+        <h2>📊 用時統計</h2>
+        <div class="stats-summary" id="statsSummary">
+            <div class="stats-col">
+                <span class="p1color">🔴 <span id="statsP1Count">0</span> 手</span>
+                <span>總用時: <span id="statsP1Total">0.00</span> 秒</span>
+                <span>平均用時: <span id="statsP1Avg">0.00</span> 秒</span>
+            </div>
+            <div class="stats-col right">
+                <span class="p2color">🔵 <span id="statsP2Count">0</span> 手</span>
+                <span>總用時: <span id="statsP2Total">0.00</span> 秒</span>
+                <span>平均用時: <span id="statsP2Avg">0.00</span> 秒</span>
+            </div>
+        </div>
+        <div class="chart-container" id="chartContainer">
+            <div class="chart-label">
+                <span class="p1tag">◀ 先手</span>
+                <span class="p2tag">後手 ▶</span>
+            </div>
+            <canvas id="chartCanvas"></canvas>
+        </div>
+        <div class="btnRow">
+            <button id="btnCloseStats" style="background:#7f8c8d;">關閉</button>
+        </div>
+    </div>
 
-  <label>總時限（分鐘）
-    <input type="number" id="setTotalMin" min="0" step="0.5" value="10" inputmode="decimal">
-  </label>
-  <label>每步加秒
-    <input type="number" id="setIncrement" min="0" step="1" value="0" inputmode="numeric">
-  </label>
-  <label>讀秒（0 = 不啟用）
-    <input type="number" id="setPerMove" min="0" step="1" value="0" inputmode="numeric">
-  </label>
-  <div class="btnRow">
-    <button id="btnSave">儲存並重置</button>
-    <button id="btnClose">取消</button>
-  </div>
-</div>
+    <!-- ===== 詳細用時彈窗 ===== -->
+    <div class="detail-popup-overlay" id="detailPopupOverlay">
+        <div class="detail-popup">
+            <h3 id="popupTitle">第 1 手</h3>
+            <div class="popup-body" id="popupBody">
+                <div class="row"><span class="label">🔴 先手用時</span><span class="value p1" id="popupP1Time">0.00s</span></div>
+                <div class="row"><span class="label">🔵 後手用時</span><span class="value p2" id="popupP2Time">0.00s</span></div>
+				
+                <div class="row" style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);padding-top:4px;">
+                    <span class="label">🔴 先手累計用時</span><span class="value p1" id="popupP1Cum">0.00s</span>
+                </div>
+                <div class="row">
+					<span class="label">🔵 後手累計用時</span><span class="value p2" id="popupP2Cum">0.00s</span>
+				</div>
 
-<script>
-(function(){
-  // ---------- 設定值 ----------
-  let totalMin = 15; // 總時限（分鐘）
-  let incrementSec = 5; // 每步加秒
-  let perMoveLimit = 10; // 讀秒
+                <div class="row" style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);padding-top:4px;">
+					<span class="label">🔴 先手累計平均用時</span><span class="value avg1" id="popupP1Avg">0.00s</span>
+				</div>
+                <div class="row">
+					<span class="label">🔵 後手累計平均用時</span><span class="value avg2" id="popupP2Avg">0.00s</span>
+				</div>
+            </div>
+            <div class="popup-footer">
+                <button id="popupCloseBtn">關閉</button>
+            </div>
+        </div>
+    </div>
 
-  // ---------- 元素 ----------
-  const appEl = document.getElementById('app');
-  const el1 = document.getElementById('player1');
-  const el2 = document.getElementById('player2');
-  const content1 = document.getElementById('content1');
-  const content2 = document.getElementById('content2');
-  const timeEl1 = document.getElementById('time1');
-  const timeEl2 = document.getElementById('time2');
-  const infoEl1 = document.getElementById('info1');
-  const infoEl2 = document.getElementById('info2');
-  const btnStartPause = document.getElementById('btnStartPause');
-  const btnReset = document.getElementById('btnReset');
-  const btnSettings = document.getElementById('btnSettings');
-  const settingsPanel = document.getElementById('settingsPanel');
-  const setTotalMin = document.getElementById('setTotalMin');
-  const setPerMove = document.getElementById('setPerMove');
-  const setIncrement = document.getElementById('setIncrement');
-  const btnSave = document.getElementById('btnSave');
-  const btnClose = document.getElementById('btnClose');
-  const presetGrid = document.getElementById('presetGrid');
+    <script>
+        (function() {
+            "use strict";
 
-  // ---------- 版面：精準等分 + 響應式字體 ----------
-  function setAppHeight(){
-    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-    appEl.style.height = h + 'px';
-  }
+            // ---------- 設定值 ----------
+            let totalMin = 10;
+            let incrementSec = 0;
+            let perMoveLimit = 0;
+            let handedness = 1;
 
-  function layoutPlayer(playerEl, contentEl){
-    const w = playerEl.clientWidth;
-    const h = playerEl.clientHeight;
-    if(w === 0 || h === 0) return;
-    // content 旋轉 90 度前，先把寬高互換，旋轉後才會剛好貼合 playerEl 的方框，不會溢出/裁切
-    contentEl.style.width = h + 'px';
-    contentEl.style.height = w + 'px';
+            // ---------- DOM 參考 ----------
+            const appEl = document.getElementById('app');
+            const el1 = document.getElementById('player1');
+            const el2 = document.getElementById('player2');
+            const content1 = document.getElementById('content1');
+            const content2 = document.getElementById('content2');
+            const timeEl1 = document.getElementById('time1');
+            const timeEl2 = document.getElementById('time2');
+            const infoEl1 = document.getElementById('info1');
+            const infoEl2 = document.getElementById('info2');
+            const movesEl1 = document.getElementById('moves1');
+            const movesEl2 = document.getElementById('moves2');
+            const btnStartPause = document.getElementById('btnStartPause');
+            const btnReset = document.getElementById('btnReset');
+            const btnSettings = document.getElementById('btnSettings');
+            const btnHelp = document.getElementById('btnHelp');
+            const btnStats = document.getElementById('btnStats');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const helpPanel = document.getElementById('helpPanel');
+            const statsPanel = document.getElementById('statsPanel');
+            const setTotalMin = document.getElementById('setTotalMin');
+            const setPerMove = document.getElementById('setPerMove');
+            const setIncrement = document.getElementById('setIncrement');
+            const setHandedness = document.getElementById('setHandedness');
+            const btnSave = document.getElementById('btnSave');
+            const btnCloseSettings = document.getElementById('btnCloseSettings');
+            const btnCloseHelp = document.getElementById('btnCloseHelp');
+            const btnCloseStats = document.getElementById('btnCloseStats');
+            const presetGrid = document.getElementById('presetGrid');
+            const chartCanvas = document.getElementById('chartCanvas');
+            const statsP1Count = document.getElementById('statsP1Count');
+            const statsP2Count = document.getElementById('statsP2Count');
+            const statsP1Total = document.getElementById('statsP1Total');
+            const statsP2Total = document.getElementById('statsP2Total');
+            const statsP1Avg = document.getElementById('statsP1Avg');
+            const statsP2Avg = document.getElementById('statsP2Avg');
+            // 彈窗元素
+            const popupOverlay = document.getElementById('detailPopupOverlay');
+            const popupTitle = document.getElementById('popupTitle');
+            const popupP1Time = document.getElementById('popupP1Time');
+            const popupP2Time = document.getElementById('popupP2Time');
+            const popupP1Cum = document.getElementById('popupP1Cum');
+            const popupP2Cum = document.getElementById('popupP2Cum');
+            const popupP1Avg = document.getElementById('popupP1Avg');
+            const popupP2Avg = document.getElementById('popupP2Avg');
+            const popupCloseBtn = document.getElementById('popupCloseBtn');
 
-    // 依「旋轉後可讀寬度(=h)」與「旋轉後可讀高度(=w)」兩者中較嚴格者，計算時間文字字級
-    const byWrapWidth = h / 4.6;   // 時間文字約 8 個字元，需要的寬度限制
-    const byStackHeight = w / 2.1; // label+time+info 三行需要的高度限制
-    let t = Math.min(byWrapWidth, byStackHeight) * 0.94;
-    t = Math.max(14, t);
-    contentEl.style.setProperty('--tsize', t + 'px');
-  }
+            // ---------- 聲音引擎 ----------
+            let audioCtx = null;
 
-  function layoutAll(){
-    setAppHeight();
-    requestAnimationFrame(()=>{
-      layoutPlayer(el1, content1);
-      layoutPlayer(el2, content2);
-    });
-  }
+            function ensureAudio() {
+                if (!audioCtx) {
+                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }
 
-  window.addEventListener('resize', layoutAll);
-  window.addEventListener('orientationchange', ()=>{
-    layoutAll();
-    setTimeout(layoutAll, 300); // 部分手機瀏覽器轉向後尺寸延遲更新
-  });
-  if(window.visualViewport){
-    window.visualViewport.addEventListener('resize', layoutAll);
-  }
+            function beep(freq, duration, type, vol) {
+                if (!audioCtx) return;
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.frequency.value = freq;
+                    osc.type = type || 'sine';
+                    gain.gain.value = vol == null ? 0.3 : vol;
+                    osc.connect(gain).connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + duration);
+                } catch (_) {}
+            }
 
-  // ---------- 狀態 ----------
-  let players = [
-    { main: 0, byo: 0, inByo: false, lastDisplayed: null, flagged: false },
-    { main: 0, byo: 0, inByo: false, lastDisplayed: null, flagged: false }
-  ];
-  let active = 0;
-  let running = false;
-  let gameOver = false;
-  let timerHandle = null;
-  let lastTimestamp = null;
+            function beepCountdown() { beep(1000, 0.1, 'square', 0.3); }
 
-  // ---------- 聲音 ----------
-  let audioCtx = null;
-  function ensureAudio(){
-    if(!audioCtx){
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if(audioCtx.state === 'suspended') audioCtx.resume();
-  }
-  function beep(freq, duration, type, vol){
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.frequency.value = freq;
-    osc.type = type || 'sine';
-    gain.gain.value = vol == null ? 0.3 : vol;
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  }
-  function beepCountdown(){ beep(1000, 0.1, 'square', 0.3); }
-  function beepEnterByoyomi(){
-    beep(650, 0.15, 'sine', 0.4);
-    setTimeout(()=>beep(650, 0.15, 'sine', 0.4), 200);
-  }
-  function beepFlagFall(){ beep(300, 0.6, 'sawtooth', 0.5); }
+            function beepEnterByoyomi() {
+                beep(650, 0.15, 'sine', 0.4);
+                setTimeout(() => beep(650, 0.15, 'sine', 0.4), 200);
+            }
 
-  // ---------- 工具 ----------
-  function formatTimeParts(ms){
-    if(ms < 0) ms = 0;
-    let totalSeconds = ms / 1000;
-    let m = Math.floor(totalSeconds / 60);
-    let s = totalSeconds - m * 60;
-    s = Math.floor(s * 100) / 100;
-    if(s >= 60){ s -= 60; m += 1; }
-    let sInt = Math.floor(s);
-    let sFracHundredths = Math.round((s - sInt) * 100);
-    if(sFracHundredths >= 100){ sFracHundredths -= 100; sInt += 1; }
-    if(sInt >= 60){ sInt -= 60; m += 1; }
-    const mainStr = String(m).padStart(2,'0') + ':' + String(sInt).padStart(2,'0');
-    const fracStr = '.' + String(sFracHundredths).padStart(2,'0');
-    return { main: mainStr, frac: fracStr };
-  }
+            function beepFlagFall() { beep(300, 0.6, 'sawtooth', 0.5); }
 
-  function setTimeDisplay(el, ms){
-    const parts = formatTimeParts(ms);
-    el.innerHTML = parts.main + '<span class="frac">' + parts.frac + '</span>';
-  }
+            // ---------- 工具函數 ----------
+            function formatTimeParts(ms) {
+                if (ms < 0) ms = 0;
+                let totalSeconds = ms / 1000;
+                let m = Math.floor(totalSeconds / 60);
+                let s = totalSeconds - m * 60;
+                s = Math.floor(s * 100) / 100;
+                if (s >= 60) { s -= 60;
+                    m += 1; }
+                let sInt = Math.floor(s);
+                let sFracHundredths = Math.round((s - sInt) * 100);
+                if (sFracHundredths >= 100) { sFracHundredths -= 100;
+                    sInt += 1; }
+                if (sInt >= 60) { sInt -= 60;
+                    m += 1; }
+                const mainStr = String(m).padStart(2, '0') + ':' + String(sInt).padStart(2, '0');
+                const fracStr = '.' + String(sFracHundredths).padStart(2, '0');
+                return { main: mainStr, frac: fracStr };
+            }
 
-  function loadSettingsToState(){
-    const totalMs = totalMin * 60 * 1000;
-    players[0] = { main: totalMs, byo: 0, inByo: false, lastDisplayed: null, flagged: false };
-    players[1] = { main: totalMs, byo: 0, inByo: false, lastDisplayed: null, flagged: false };
-  }
+            function setTimeDisplay(el, ms) {
+                const parts = formatTimeParts(ms);
+                el.innerHTML = parts.main + '<span class="frac">' + parts.frac + '</span>';
+            }
 
-  function render(){
-    const p1 = players[0], p2 = players[1];
-    setTimeDisplay(timeEl1, p1.inByo ? p1.byo : p1.main);
-    setTimeDisplay(timeEl2, p2.inByo ? p2.byo : p2.main);
-    infoEl1.textContent = p1.flagged ? '超時！' : (p1.inByo ? '讀秒中' : '');
-    infoEl2.textContent = p2.flagged ? '超時！' : (p2.inByo ? '讀秒中' : '');
+            // ---------- 佈局 ----------
+            function getContentAngle() {
+                return 90 * handedness;
+            }
 
-    el1.classList.toggle('active', active === 0 && running);
-    el2.classList.toggle('active', active === 1 && running);
-    el1.classList.toggle('byoyomi', p1.inByo);
-    el2.classList.toggle('byoyomi', p2.inByo);
-    el1.classList.toggle('flagfallen', p1.flagged);
-    el2.classList.toggle('flagfallen', p2.flagged);
-  }
+            function layoutPlayer(playerEl, contentEl) {
+                const w = playerEl.clientWidth;
+                const h = playerEl.clientHeight;
+                if (w === 0 || h === 0) return;
+                contentEl.style.width = h + 'px';
+                contentEl.style.height = w + 'px';
+                const angle = getContentAngle();
+                contentEl.style.transform = 'rotate(' + angle + 'deg)';
+                const byWrapWidth = h / 4.6;
+                const byStackHeight = w / 2.8;
+                let t = Math.min(byWrapWidth, byStackHeight) * 0.94;
+                t = Math.max(14, t);
+                contentEl.style.setProperty('--tsize', t + 'px');
+            }
 
-  function flagFall(idx){
-    running = false;
-    gameOver = true;
-    players[idx].flagged = true;
-    beepFlagFall();
-    clearInterval(timerHandle);
-    timerHandle = null;
-    render();
-  }
+            function layoutAll() {
+                const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+                appEl.style.height = h + 'px';
+                requestAnimationFrame(() => {
+                    layoutPlayer(el1, content1);
+                    layoutPlayer(el2, content2);
+                });
+            }
 
-  function tick(){
-    if(!running || gameOver) return;
-    const now = Date.now();
-    const delta = now - lastTimestamp;
-    lastTimestamp = now;
-    const p = players[active];
+            window.addEventListener('resize', layoutAll);
+            window.addEventListener('orientationchange', () => {
+                layoutAll();
+                setTimeout(layoutAll, 300);
+            });
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', layoutAll);
+            }
 
-    if(p.inByo){
-      p.byo -= delta;
-      if(p.byo <= 0){
-        p.byo = 0;
-        flagFall(active);
-        return;
-      }
-    } else {
-      p.main -= delta;
-      if(p.main <= 0){
-        p.main = 0;
-        if(perMoveLimit > 0){
-          p.inByo = true;
-          p.byo = perMoveLimit * 1000;
-          p.lastDisplayed = null;
-          beepEnterByoyomi();
-        } else {
-          flagFall(active);
-          return;
-        }
-      }
-    }
+            // ---------- 狀態 ----------
+            let players = [
+                { main: 0, byo: 0, inByo: false, lastDisplayed: null, flagged: false, stepTimes: [], lastRemaining: null },
+                { main: 0, byo: 0, inByo: false, lastDisplayed: null, flagged: false, stepTimes: [], lastRemaining: null }
+            ];
+            let active = 0;
+            let running = false;
+            let gameOver = false;
+            let timerHandle = null;
+            let lastTimestamp = null;
 
-    const currentVal = p.inByo ? p.byo : p.main;
-    const currentSec = Math.ceil(currentVal / 1000);
-    if(currentSec !== p.lastDisplayed){
-      p.lastDisplayed = currentSec;
-      if(currentSec <= 10 && currentSec >= 1){
-        beepCountdown();
-      }
-    }
-    render();
-  }
+            // 新增：遊戲累計運行時間（毫秒），僅在計時運行時累加
+            let gameElapsed = 0;
+            let lastSwitchElapsed = 0; // 上次切換時的 gameElapsed
 
-  function switchTurn(fromIdx){
-    if(!running || gameOver) return;
-    if(active !== fromIdx) return;
-    const p = players[fromIdx];
-    if(p.inByo){
-      p.byo = perMoveLimit * 1000;
-    } else {
-      p.main += incrementSec * 1000;
-    }
-    p.lastDisplayed = null;
-    active = 1 - active;
-    lastTimestamp = Date.now();
-    render();
-  }
+            // ---------- 核心邏輯 ----------
+            function loadSettingsToState() {
+                const totalMs = totalMin * 60 * 1000;
+                players[0] = {
+                    main: totalMs,
+                    byo: 0,
+                    inByo: false,
+                    lastDisplayed: null,
+                    flagged: false,
+                    stepTimes: [],
+                    lastRemaining: null
+                };
+                players[1] = {
+                    main: totalMs,
+                    byo: 0,
+                    inByo: false,
+                    lastDisplayed: null,
+                    flagged: false,
+                    stepTimes: [],
+                    lastRemaining: null
+                };
+                gameElapsed = 0;
+                lastSwitchElapsed = 0;
+            }
 
-  function startPause(){
-    ensureAudio();
-    if(gameOver) return;
-    if(!running){
-      running = true;
-      lastTimestamp = Date.now();
-      if(!timerHandle) timerHandle = setInterval(tick, 50);
-      btnStartPause.textContent = '⏸ 暫停';
-    } else {
-      running = false;
-      btnStartPause.textContent = '▶️ 開始';
-    }
-    render();
-  }
+            function render() {
+                const p1 = players[0],
+                    p2 = players[1];
+                setTimeDisplay(timeEl1, p1.inByo ? p1.byo : p1.main);
+                setTimeDisplay(timeEl2, p2.inByo ? p2.byo : p2.main);
+                infoEl1.textContent = p1.flagged ? '超時！' : (p1.inByo ? '讀秒中' : '');
+                infoEl2.textContent = p2.flagged ? '超時！' : (p2.inByo ? '讀秒中' : '');
+                movesEl1.textContent = '已下 ' + p1.stepTimes.length + ' 手棋';
+                movesEl2.textContent = '已下 ' + p2.stepTimes.length + ' 手棋';
 
-  function resetGame(){
-    running = false;
-    gameOver = false;
-    if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
-    active = 0;
-    loadSettingsToState();
-    btnStartPause.textContent = '▶️ 開始';
-    render();
-  }
+                el1.classList.toggle('active', active === 0 && running);
+                el2.classList.toggle('active', active === 1 && running);
+                el1.classList.toggle('byoyomi', p1.inByo);
+                el2.classList.toggle('byoyomi', p2.inByo);
+                el1.classList.toggle('flagfallen', p1.flagged);
+                el2.classList.toggle('flagfallen', p2.flagged);
+            }
 
-  // ---------- 事件 ----------
-  el1.addEventListener('click', ()=> switchTurn(0));
-  el2.addEventListener('click', ()=> switchTurn(1));
+            function flagFall(idx) {
+                running = false;
+                gameOver = true;
+                players[idx].flagged = true;
+                beepFlagFall();
+                clearInterval(timerHandle);
+                timerHandle = null;
+                render();
+            }
 
-  btnStartPause.addEventListener('click', (e)=>{ e.stopPropagation(); startPause(); });
-  btnReset.addEventListener('click', (e)=>{ e.stopPropagation(); resetGame(); });
+            // 不再需要 recordStepTime，改由 switchTurn 直接使用 gameElapsed
 
-  btnSettings.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    setTotalMin.value = totalMin;
-    setPerMove.value = perMoveLimit;
-    setIncrement.value = incrementSec;
-    settingsPanel.classList.add('show');
-  });
-  btnClose.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    settingsPanel.classList.remove('show');
-  });
-  btnSave.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    totalMin = parseFloat(setTotalMin.value) || 0;
-    perMoveLimit = parseFloat(setPerMove.value) || 0;
-    incrementSec = parseFloat(setIncrement.value) || 0;
-    settingsPanel.classList.remove('show');
-    resetGame();
-  });
+            // ---------- tick ----------
+            function tick() {
+                if (!running || gameOver) return;
+                const now = Date.now();
+                const delta = now - lastTimestamp;
+                lastTimestamp = now;
+                // 累加遊戲時間
+                gameElapsed += delta;
 
-  presetGrid.addEventListener('click', (e)=>{
-    const btn = e.target.closest('button');
-    if(!btn) return;
-    setTotalMin.value = btn.dataset.t;
-    setPerMove.value = btn.dataset.p;
-    setIncrement.value = btn.dataset.i;
-  });
+                const p = players[active];
 
-  // 初始化
-  layoutAll();
-  resetGame();
-})();
-</script>
+                if (p.inByo) {
+                    p.byo -= delta;
+                    if (p.byo <= 0) {
+                        p.byo = 0;
+                        flagFall(active);
+                        return;
+                    }
+                } else {
+                    p.main -= delta;
+                    if (p.main <= 0) {
+                        p.main = 0;
+                        if (perMoveLimit > 0) {
+                            p.inByo = true;
+                            p.byo = perMoveLimit * 1000;
+                            p.lastDisplayed = null;
+                            beepEnterByoyomi();
+                        } else {
+                            flagFall(active);
+                            return;
+                        }
+                    }
+                }
+
+                const currentVal = p.inByo ? p.byo : p.main;
+                const currentSec = Math.ceil(currentVal / 1000);
+                if (currentSec !== p.lastDisplayed) {
+                    p.lastDisplayed = currentSec;
+                    if (currentSec <= 10 && currentSec >= 1) {
+                        beepCountdown();
+                    }
+                }
+                render();
+            }
+
+            // ---------- 切換回合 ----------
+            function switchTurn(fromIdx) {
+                if (!running || gameOver) return;
+                if (active !== fromIdx) return;
+
+                // 記錄該玩家的步時（基於累計遊戲時間）
+                const now = gameElapsed;
+                const delta = now - lastSwitchElapsed;
+                if (delta >= 0) {
+                    players[fromIdx].stepTimes.push(delta);
+                } else {
+                    players[fromIdx].stepTimes.push(0);
+                }
+                lastSwitchElapsed = now;
+
+                // 處理加秒或讀秒重置
+                const p = players[fromIdx];
+                if (p.inByo) {
+                    p.byo = perMoveLimit * 1000;
+                } else {
+                    p.main += incrementSec * 1000;
+                }
+                p.lastDisplayed = null;
+
+                // 切換活躍玩家
+                active = 1 - active;
+                const newP = players[active];
+                newP.lastRemaining = newP.inByo ? newP.byo : newP.main;
+
+                // 更新時間戳（雖然 tick 會更新，但確保基準）
+                lastTimestamp = Date.now();
+                render();
+            }
+
+            // ---------- 控制按鈕 ----------
+            function startPause() {
+                ensureAudio();
+                if (gameOver) return;
+                if (!running) {
+                    running = true;
+                    // 設定剩餘時間參考
+                    const p = players[active];
+                    p.lastRemaining = p.inByo ? p.byo : p.main;
+                    lastTimestamp = Date.now();
+                    // 注意：我們不重置 lastSwitchElapsed，因為 gameElapsed 在暫停時保持不變，繼續後累加，所以切換計算正確
+                    if (!timerHandle) timerHandle = setInterval(tick, 50);
+                    btnStartPause.textContent = '⏸ 暫停';
+                } else {
+                    running = false;
+                    btnStartPause.textContent = '▶️ 計時';
+                }
+                render();
+            }
+
+            function resetGame(confirmShown = true) {
+                if (confirmShown) {
+                    if (!confirm('確定要重置所有時間和統計資料嗎？')) {
+                        return;
+                    }
+                }
+                running = false;
+                gameOver = false;
+                if (timerHandle) { clearInterval(timerHandle);
+                    timerHandle = null; }
+                active = 0;
+                loadSettingsToState();
+                btnStartPause.textContent = '▶️ 計時';
+                render();
+                layoutAll();
+                closeDetailPopup();
+            }
+
+            // ============================================================
+            //  對比圖繪製：動態計算邊距防止標籤溢出
+            // ============================================================
+            function drawComparisonChart(canvas, p1Times, p2Times, containerWidth) {
+                const ctx = canvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+
+                const t1 = p1Times.map(ms => ms / 1000);
+                const t2 = p2Times.map(ms => ms / 1000);
+
+                const n1 = t1.length;
+                const n2 = t2.length;
+                const maxN = Math.max(n1, n2);
+
+                // 構建 rowData
+                const rowData = [];
+                let cumP1 = 0,
+                    cumP2 = 0;
+                let countP1 = 0,
+                    countP2 = 0;
+                for (let i = 0; i < maxN; i++) {
+                    const v1 = i < n1 ? t1[i] : null;
+                    const v2 = i < n2 ? t2[i] : null;
+                    if (v1 !== null) { cumP1 += v1;
+                        countP1++; }
+                    if (v2 !== null) { cumP2 += v2;
+                        countP2++; }
+                    rowData.push({
+                        step: i + 1,
+                        p1Time: v1,
+                        p2Time: v2,
+                        cumP1: cumP1,
+                        cumP2: cumP2,
+                        avgP1: countP1 > 0 ? cumP1 / countP1 : 0,
+                        avgP2: countP2 > 0 ? cumP2 / countP2 : 0
+                    });
+                }
+
+                // 無資料
+                if (maxN === 0) {
+                    canvas.width = containerWidth * dpr;
+                    canvas.height = 60 * dpr;
+                    canvas.style.width = containerWidth + 'px';
+                    canvas.style.height = '60px';
+                    ctx.scale(dpr, dpr);
+                    ctx.fillStyle = '#888';
+                    ctx.font = '16px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('尚無步時資料', containerWidth / 2, 30);
+                    return rowData;
+                }
+
+                // 測量所有標籤的最大寬度
+                const testFont = '11px sans-serif';
+                ctx.font = testFont;
+                let maxLabelWidth = 0;
+                const allValues = [...t1, ...t2];
+                for (let v of allValues) {
+                    if (v !== null) {
+                        const txt = v.toFixed(2) + 's';
+                        const m = ctx.measureText(txt);
+                        if (m.width > maxLabelWidth) maxLabelWidth = m.width;
+                    }
+                }
+                // 加上一些間距
+                const sidePad = Math.max(45, maxLabelWidth + 10);
+
+                const allTimes = [...t1, ...t2];
+                const maxTime = Math.max(...allTimes, 0.001);
+
+                const rowHeight = 28;
+                const gap = 4;
+                const totalRowHeight = rowHeight + gap;
+                const topPad = 6;
+                const bottomPad = 6;
+
+                const leftPad = sidePad;
+                const rightPad = sidePad;
+
+                const chartWidth = containerWidth - leftPad - rightPad;
+                const halfChart = chartWidth / 2;
+
+                const totalHeight = topPad + maxN * totalRowHeight + bottomPad;
+
+                canvas.width = containerWidth * dpr;
+                canvas.height = totalHeight * dpr;
+                canvas.style.width = containerWidth + 'px';
+                canvas.style.height = totalHeight + 'px';
+                ctx.scale(dpr, dpr);
+
+                ctx.clearRect(0, 0, containerWidth, totalHeight);
+
+                for (let i = 0; i < maxN; i++) {
+                    const y = topPad + i * totalRowHeight;
+                    const rowCenterY = y + rowHeight / 2;
+                    const baseX = containerWidth / 2;
+
+                    const hasP1 = i < n1;
+                    const hasP2 = i < n2;
+                    let p1Sec = hasP1 ? t1[i] : 0;
+                    let p2Sec = hasP2 ? t2[i] : 0;
+
+                    // 先手 (紅色，向左)
+                    if (hasP1) {
+                        const barW = (p1Sec / maxTime) * halfChart;
+                        if (barW > 0.5) {
+                            const x1 = baseX - barW;
+                            ctx.fillStyle = '#ff6b6b';
+                            ctx.fillRect(x1, y + 2, barW, rowHeight - 4);
+                            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                            ctx.lineWidth = 0.5;
+                            ctx.strokeRect(x1, y + 2, barW, rowHeight - 4);
+                        }
+                        ctx.fillStyle = '#ff6b6b';
+                        ctx.font = '11px sans-serif';
+                        ctx.textAlign = 'right';
+                        ctx.textBaseline = 'middle';
+                        const labelX = baseX - (barW > 0.5 ? barW : 0) - 4;
+                        if (barW < 6) {
+                            ctx.textAlign = 'right';
+                            ctx.fillText(p1Sec.toFixed(2) + 's', baseX - 6, rowCenterY);
+                        } else {
+                            ctx.textAlign = 'right';
+                            ctx.fillText(p1Sec.toFixed(2) + 's', labelX, rowCenterY);
+                        }
+                    }
+
+                    // 後手 (藍色，向右)
+                    if (hasP2) {
+                        const barW = (p2Sec / maxTime) * halfChart;
+                        if (barW > 0.5) {
+                            const x1 = baseX;
+                            ctx.fillStyle = '#4dabf7';
+                            ctx.fillRect(x1, y + 2, barW, rowHeight - 4);
+                            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                            ctx.lineWidth = 0.5;
+                            ctx.strokeRect(x1, y + 2, barW, rowHeight - 4);
+                        }
+                        ctx.fillStyle = '#4dabf7';
+                        ctx.font = '11px sans-serif';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                        const labelX = baseX + (barW > 0.5 ? barW : 0) + 4;
+                        if (barW < 6) {
+                            ctx.textAlign = 'left';
+                            ctx.fillText(p2Sec.toFixed(2) + 's', baseX + 6, rowCenterY);
+                        } else {
+                            ctx.textAlign = 'left';
+                            ctx.fillText(p2Sec.toFixed(2) + 's', labelX, rowCenterY);
+                        }
+                    }
+
+                    // 基準線
+                    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(baseX, y + 2);
+                    ctx.lineTo(baseX, y + rowHeight - 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // 分隔線
+                    if (i < maxN - 1) {
+                        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(leftPad, y + rowHeight);
+                        ctx.lineTo(containerWidth - rightPad, y + rowHeight);
+                        ctx.stroke();
+                    }
+                }
+
+                canvas._rowData = rowData;
+                canvas._topPad = topPad;
+                canvas._totalRowHeight = totalRowHeight;
+                canvas._dpr = dpr;
+                canvas._maxN = maxN;
+
+                return rowData;
+            }
+
+            // ---------- 更新統計 ----------
+            function updateStats() {
+                const p1 = players[0],
+                    p2 = players[1];
+                const t1 = p1.stepTimes;
+                const t2 = p2.stepTimes;
+
+                statsP1Count.textContent = t1.length;
+                statsP2Count.textContent = t2.length;
+
+                const sum1 = t1.reduce((a, b) => a + b, 0) / 1000;
+                const sum2 = t2.reduce((a, b) => a + b, 0) / 1000;
+                statsP1Total.textContent = sum1.toFixed(2);
+                statsP2Total.textContent = sum2.toFixed(2);
+
+                const avg1 = t1.length > 0 ? sum1 / t1.length : 0;
+                const avg2 = t2.length > 0 ? sum2 / t2.length : 0;
+                statsP1Avg.textContent = avg1.toFixed(2);
+                statsP2Avg.textContent = avg2.toFixed(2);
+
+                const container = document.getElementById('chartContainer');
+                const containerWidth = container.clientWidth || 320;
+                drawComparisonChart(chartCanvas, t1, t2, containerWidth);
+            }
+
+            // ---------- 詳細彈窗 ----------
+            function showDetailPopup(rowData) {
+                if (!rowData) return;
+                popupTitle.textContent = '第 ' + rowData.step + ' 手';
+                popupP1Time.textContent = (rowData.p1Time !== null ? rowData.p1Time.toFixed(2) : '- ') + ' 秒';
+                popupP2Time.textContent = (rowData.p2Time !== null ? rowData.p2Time.toFixed(2) : '- ') + ' 秒';
+                popupP1Cum.textContent = rowData.cumP1.toFixed(2) + ' 秒';
+                popupP2Cum.textContent = rowData.cumP2.toFixed(2) + ' 秒';
+                popupP1Avg.textContent = rowData.avgP1.toFixed(2) + ' 秒';
+                popupP2Avg.textContent = rowData.avgP2.toFixed(2) + ' 秒';
+                popupOverlay.classList.add('show');
+            }
+
+            function closeDetailPopup() {
+                popupOverlay.classList.remove('show');
+            }
+
+            // ---------- 統計面板點擊事件 ----------
+            function handleChartClick(e) {
+                const canvas = chartCanvas;
+                const rect = canvas.getBoundingClientRect();
+                const dpr = canvas._dpr || 1;
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                const x = (e.clientX - rect.left) * scaleX / dpr;
+                const y = (e.clientY - rect.top) * scaleY / dpr;
+
+                const topPad = canvas._topPad || 6;
+                const totalRowHeight = canvas._totalRowHeight || 32;
+                const maxN = canvas._maxN || 0;
+                const rowData = canvas._rowData || [];
+
+                if (maxN === 0 || rowData.length === 0) return;
+
+                const idx = Math.floor((y - topPad) / totalRowHeight);
+                if (idx < 0 || idx >= maxN) return;
+
+                const rowY = topPad + idx * totalRowHeight;
+                if (y < rowY || y > rowY + totalRowHeight) return;
+
+                const data = rowData[idx];
+                if (data) {
+                    showDetailPopup(data);
+                }
+            }
+
+            // ---------- 面板控制 ----------
+            function closeAllPanels() {
+                settingsPanel.classList.remove('show');
+                helpPanel.classList.remove('show');
+                statsPanel.classList.remove('show');
+                closeDetailPopup();
+            }
+
+            function toggleSettings() {
+                if (settingsPanel.classList.contains('show')) {
+                    settingsPanel.classList.remove('show');
+                    return;
+                }
+                helpPanel.classList.remove('show');
+                statsPanel.classList.remove('show');
+                closeDetailPopup();
+                setTotalMin.value = totalMin;
+                setPerMove.value = perMoveLimit;
+                setIncrement.value = incrementSec;
+                setHandedness.value = handedness;
+                settingsPanel.classList.add('show');
+            }
+
+            function toggleHelp() {
+                if (helpPanel.classList.contains('show')) {
+                    helpPanel.classList.remove('show');
+                    return;
+                }
+                settingsPanel.classList.remove('show');
+                statsPanel.classList.remove('show');
+                closeDetailPopup();
+                helpPanel.classList.add('show');
+            }
+
+            function toggleStats() {
+                if (statsPanel.classList.contains('show')) {
+                    statsPanel.classList.remove('show');
+                    closeDetailPopup();
+                    return;
+                }
+                settingsPanel.classList.remove('show');
+                helpPanel.classList.remove('show');
+                statsPanel.classList.add('show');
+                setTimeout(updateStats, 50);
+            }
+
+            // ---------- 事件綁定 ----------
+            el1.addEventListener('mouseup', () => switchTurn(0));
+            el2.addEventListener('mouseup', () => switchTurn(1));
+            el1.addEventListener('touchend', (e) => { e.preventDefault();
+                switchTurn(0); });
+            el2.addEventListener('touchend', (e) => { e.preventDefault();
+                switchTurn(1); });
+
+            btnStartPause.addEventListener('click', (e) => { e.stopPropagation();
+                startPause(); });
+            btnReset.addEventListener('click', (e) => { e.stopPropagation();
+                resetGame(true); });
+
+            btnSettings.addEventListener('click', (e) => { e.stopPropagation();
+                toggleSettings(); });
+            btnHelp.addEventListener('click', (e) => { e.stopPropagation();
+                toggleHelp(); });
+            btnStats.addEventListener('click', (e) => { e.stopPropagation();
+                toggleStats(); });
+
+            btnCloseSettings.addEventListener('click', (e) => { e.stopPropagation();
+                settingsPanel.classList.remove('show'); });
+            btnCloseHelp.addEventListener('click', (e) => { e.stopPropagation();
+                helpPanel.classList.remove('show'); });
+            btnCloseStats.addEventListener('click', (e) => { e.stopPropagation();
+                statsPanel.classList.remove('show');
+                closeDetailPopup(); });
+
+            popupCloseBtn.addEventListener('click', (e) => { e.stopPropagation();
+                closeDetailPopup(); });
+            popupOverlay.addEventListener('click', (e) => {
+                if (e.target === popupOverlay) closeDetailPopup();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && popupOverlay.classList.contains('show')) {
+                    closeDetailPopup();
+                    e.preventDefault();
+                }
+            });
+
+            chartCanvas.addEventListener('click', handleChartClick);
+            chartCanvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                if (touch) {
+                    const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
+                    handleChartClick(fakeEvent);
+                }
+            });
+
+            btnSave.addEventListener('click', (e) => {
+                e.stopPropagation();
+                totalMin = parseFloat(setTotalMin.value) || 0;
+                perMoveLimit = parseFloat(setPerMove.value) || 0;
+                incrementSec = parseFloat(setIncrement.value) || 0;
+                handedness = setHandedness.value;
+                settingsPanel.classList.remove('show');
+                resetGame(false);
+            });
+
+            presetGrid.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                setTotalMin.value = btn.dataset.t;
+                setPerMove.value = btn.dataset.p;
+                setIncrement.value = btn.dataset.i;
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (settingsPanel.classList.contains('show')) {
+                        settingsPanel.classList.remove('show');
+                        e.preventDefault();
+                    } else if (helpPanel.classList.contains('show')) {
+                        helpPanel.classList.remove('show');
+                        e.preventDefault();
+                    } else if (statsPanel.classList.contains('show')) {
+                        statsPanel.classList.remove('show');
+                        closeDetailPopup();
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            const resizeObserver = new ResizeObserver(() => {
+                if (statsPanel.classList.contains('show')) {
+                    updateStats();
+                }
+            });
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer) {
+                resizeObserver.observe(chartContainer);
+            }
+
+            // ---------- 初始化 ----------
+            totalMin = 15;
+            incrementSec = 10;
+            perMoveLimit = 0;
+            handedness = 1;
+            setTotalMin.value = totalMin;
+            setPerMove.value = perMoveLimit;
+            setIncrement.value = incrementSec;
+            setHandedness.value = handedness;
+
+            layoutAll();
+            resetGame(false);
+        })();
+    </script>
 </body>
 </html>

@@ -1810,6 +1810,7 @@
         </div>
     </div>
 	<center>
+		ver 0.9&emsp;~tyovery~&emsp;2026-09<br />
 		ver 0.8&emsp;~tyovery~&emsp;2026-08<br />
 		ver 0.7&emsp;~tyovery~&emsp;2026-05<br />
 		ver 0.6&emsp;~tyovery~&emsp;2026-03<br />
@@ -4187,22 +4188,26 @@
 						
 						selectedItems = selectedItems.slice(0, itemCount);
 						break;
-					case 'highestHotness':
-						// 熱度最高模式：按新熱度值降序排序
-						// 熱度 = 當前分數 * 最近30日票次 / 30 * 最近30日加權勝率
-						// 若最近30日無投票，則票次以0.5、勝率以0.5計
+					case 'highestHotness': {
+						// 熱度最高模式：預先計算所有項目的熱度，再排序
+						const hotnessMap = new Map();
+						selectedItems.forEach(item => {
+							const recentVotes = calculateRecentVotes(item.id, currentGame, 30) || 0; // 真實票次（可能0）
+							const recentWinRate = calculateRecentWinRate(item.id, currentGame, 30);
+							const effectiveWinRate = recentWinRate !== null ? recentWinRate : 0.5;
+							// 熱度計算：若票次為0則用0.5替代，避免歸零
+							const hotness = item.score * ((recentVotes || 0.5) / 30) * effectiveWinRate;
+							hotnessMap.set(item.id, hotness);
+						});
+
+						// 依熱度降序排序
 						selectedItems.sort((a, b) => {
-							const recentVotesA = calculateRecentVotes(a.id, currentGame, 30) || 0.5;
-							const recentVotesB = calculateRecentVotes(b.id, currentGame, 30) || 0.5;
-							const recentWinRateA = calculateRecentWinRate(a.id, currentGame, 30);
-							const recentWinRateB = calculateRecentWinRate(b.id, currentGame, 30);
-							const effectiveWinRateA = recentWinRateA !== null ? recentWinRateA : 0.5;
-							const effectiveWinRateB = recentWinRateB !== null ? recentWinRateB : 0.5;
-							const hotnessA = a.score * recentVotesA / 30 * effectiveWinRateA;
-							const hotnessB = b.score * recentVotesB / 30 * effectiveWinRateB;
-							return hotnessB - hotnessA; // 降序
+							const hA = hotnessMap.get(a.id) || 0;
+							const hB = hotnessMap.get(b.id) || 0;
+							return hB - hA;
 						});
 						break;
+					}
 					case 'quickConverge':
 						// 快速收斂：取出名次最高的前 itemCount 個項目
 						selectedItems = sortItemsByRank(selectedItems).slice(0, itemCount);
@@ -4841,8 +4846,8 @@
 				syncData();
 				
 				document.getElementById('currentVoteCount').textContent = voteHistory.length;
-				updateExpectedWinrateLine();
-				
+				updateExpectedWinrateLine(true);
+
 				let replacePosition;
 				if (currentGameExtractMode === 'quickConverge') {
 					if (lockedLeft && lockedRight) replacePosition = 'both';
@@ -7188,34 +7193,118 @@
 		// 6. 渲染排行榜列表
 		function renderRankingList(game, stats) {
 			const sortBy = document.getElementById('sortBy').value;
-			
-			// 检查项目是否存在
-			if (!game.items || game.items.length === 0) {
-				const rankingList = document.getElementById('rankingList');
-				rankingList.innerHTML = '<div class="no-history-data">此遊戲目前沒有項目</div>';
-				document.getElementById('rankingTitle').textContent = '排行榜 (0/0)';
-				return;
-			}
-			
+
+			// ---- 預計算所有項目所需的顯示數據 ----
+			const hotnessMap = new Map();
+			const volatilityMap = new Map();
+			const trendSymbolMap = new Map();
+			const recentVotesMap = new Map();   // 真實票次（可能為0）
+			const recentWinRateMap = new Map(); // 真實勝率（可能為null）
+
+			game.items.forEach(item => {
+				// 真實最近30日票次（可能為0）
+				const recentVotes = calculateRecentVotes(item.id, game, 30) || 0;
+				recentVotesMap.set(item.id, recentVotes);
+
+				// 真實最近30日勝率
+				const recentWinRate = calculateRecentWinRate(item.id, game, 30);
+				const effectiveWinRate = recentWinRate !== null ? recentWinRate : 0.5;
+				recentWinRateMap.set(item.id, effectiveWinRate);
+
+				// 熱度計算：若票次為0則用0.5替代，避免歸零
+				const hotness = item.score * ((recentVotes || 0.5) / 30) * effectiveWinRate;
+				hotnessMap.set(item.id, hotness);
+
+				// 波動值與符號
+				const volatility = calculateRecentVolatility(item);
+				volatilityMap.set(item.id, volatility);
+				trendSymbolMap.set(item.id, getRecentVolatilitySymbol(item));
+			});
+
+			// ---- 排序 ----
 			let sortedItems = [...game.items];
+
+			// 心情與關鍵字篩選（保留原有邏輯）
 			const currentStatsMoodLogic = document.getElementById('statsMoodLogic').value;
-			
-			// 应用心情筛选
 			if (statsMoodFilters.length > 0) {
 				sortedItems = applyMoodFilter(sortedItems, statsMoodFilters, currentStatsMoodLogic);
 			}
-			
-			// 排序
-			sortedItems = sortRankingItems(sortedItems, sortBy, game);
-			
-			// 只在"依名次"或"依分數"排序時顯示分隔線
-			const showSeparators = sortBy === 'rank' || sortBy === 'score';
-			
-			// 渲染列表，傳入統計數據和顯示分隔線的標誌
-			renderRankingItems(sortedItems, game, stats, showSeparators);
-			
-			// 更新标题
-			updateRankingTitle(sortedItems, game);
+			/*
+			const searchText = document.getElementById('rankingSearch').value.toLowerCase();
+			if (searchText) {
+				sortedItems = sortedItems.filter(item => item.name.toLowerCase().includes(searchText));
+			}
+			*/
+
+			// 排序（使用預計算值）
+			switch(sortBy) {
+				case 'rank':
+					sortedItems = sortItemsByRank(sortedItems);
+					break;
+				case 'score':
+					sortedItems.sort((a, b) => b.score - a.score);
+					break;
+				case 'winRate':
+					sortedItems.sort((a, b) => {
+						const winRateA = calculateWinRate(a);
+						const winRateB = calculateWinRate(b);
+						return winRateB - winRateA;
+					});
+					break;
+				case 'votes':
+					sortedItems.sort((a, b) => b.votes - a.votes);
+					break;
+				case 'time':
+					sortedItems.sort((a, b) => (b.addedTime || 0) - (a.addedTime || 0));
+					break;
+				case 'error':
+					sortedItems.sort((a, b) => {
+						const errorA = calculateError(a);
+						const errorB = calculateError(b);
+						if (errorA === Infinity && errorB !== Infinity) return 1;
+						if (errorA !== Infinity && errorB === Infinity) return -1;
+						return errorA - errorB;
+					});
+					break;
+				case 'volatility':
+					sortedItems.sort((a, b) => {
+						const volA = volatilityMap.get(a.id) || 0;
+						const volB = volatilityMap.get(b.id) || 0;
+						return volB - volA;
+					});
+					break;
+				case 'trend':
+					sortedItems.sort((a, b) => {
+						const symbolA = trendSymbolMap.get(a.id) || '?';
+						const symbolB = trendSymbolMap.get(b.id) || '?';
+						const order = { '↑': 0, '≈': 1, '?': 2, '↓': 3 };
+						const orderA = order[symbolA] ?? 4;
+						const orderB = order[symbolB] ?? 4;
+						if (orderA !== orderB) return orderA - orderB;
+						const incA = getRecentScoreIncrease(a);
+						const incB = getRecentScoreIncrease(b);
+						return incB - incA;
+					});
+					break;
+				case 'hotness':
+					sortedItems.sort((a, b) => {
+						const hA = hotnessMap.get(a.id) || 0;
+						const hB = hotnessMap.get(b.id) || 0;
+						return hB - hA;
+					});
+					break;
+				default:
+					break;
+			}
+
+			// ---- 渲染列表（傳入預計算 Maps） ----
+			renderRankingItems(sortedItems, game, stats, sortBy, {
+				hotnessMap,
+				volatilityMap,
+				trendSymbolMap,
+				recentVotesMap,
+				recentWinRateMap
+			});
 		}
 
 		// 7. 排序排行榜项目
@@ -7355,7 +7444,7 @@
 		}
 
 		// 8. 渲染排行榜项目
-		function renderRankingItems(sortedItems, game, stats, showSeparators) {
+		function renderRankingItems(sortedItems, game, stats, sortBy, precomputedMaps) {
 			const rankingList = document.getElementById('rankingList');
 			rankingList.innerHTML = '';
 
@@ -7365,7 +7454,11 @@
 				rankMap.set(item.id, index + 1);
 			});
 
-			const separatorPositions = showSeparators ? calculateSeparatorPositions(sortedItems, stats) : null;
+			const showSeparators = (sortBy === 'rank' || sortBy === 'score');
+			let separatorPositions = null;
+			if (showSeparators) {
+				separatorPositions = calculateSeparatorPositions(sortedItems, stats);
+			}
 
 			let upperSeparator2Added = false;
 			let upperSeparatorAdded = false;
@@ -7376,60 +7469,51 @@
 			sortedItems.forEach((item, index) => {
 				if (showSeparators && separatorPositions) {
 					if (!upperSeparator2Added && index === separatorPositions.upperSeparator2Index) {
-						const separator = createSeparator(`μ + 2σ = ${separatorPositions.upperThreshold2.toFixed(2)}`, 'separator-upper-2');
-						rankingList.appendChild(separator);
+						const sep = createSeparator(`μ + 2σ = ${separatorPositions.upperThreshold2.toFixed(2)}`, 'separator-upper-2');
+						rankingList.appendChild(sep);
 						upperSeparator2Added = true;
 					}
 					if (!upperSeparatorAdded && index === separatorPositions.upperSeparatorIndex) {
-						const separator = createSeparator(`μ + σ = ${separatorPositions.upperThreshold.toFixed(2)}`, 'separator-upper');
-						rankingList.appendChild(separator);
+						const sep = createSeparator(`μ + σ = ${separatorPositions.upperThreshold.toFixed(2)}`, 'separator-upper');
+						rankingList.appendChild(sep);
 						upperSeparatorAdded = true;
 					}
 					if (!avgSeparatorAdded && index === separatorPositions.avgSeparatorIndex) {
-						const separator = createSeparator(`μ = ${separatorPositions.avgScore.toFixed(2)}`, 'separator-avg');
-						rankingList.appendChild(separator);
+						const sep = createSeparator(`μ = ${separatorPositions.avgScore.toFixed(2)}`, 'separator-avg');
+						rankingList.appendChild(sep);
 						avgSeparatorAdded = true;
 					}
 					if (!lowerSeparatorAdded && index === separatorPositions.lowerSeparatorIndex) {
-						const separator = createSeparator(`μ - σ = ${separatorPositions.lowerThreshold.toFixed(2)}`, 'separator-lower');
-						rankingList.appendChild(separator);
+						const sep = createSeparator(`μ - σ = ${separatorPositions.lowerThreshold.toFixed(2)}`, 'separator-lower');
+						rankingList.appendChild(sep);
 						lowerSeparatorAdded = true;
 					}
 					if (!lowerSeparator2Added && index === separatorPositions.lowerSeparator2Index) {
-						const separator = createSeparator(`μ - 2σ = ${separatorPositions.lowerThreshold2.toFixed(2)}`, 'separator-lower-2');
-						rankingList.appendChild(separator);
+						const sep = createSeparator(`μ - 2σ = ${separatorPositions.lowerThreshold2.toFixed(2)}`, 'separator-lower-2');
+						rankingList.appendChild(sep);
 						lowerSeparator2Added = true;
 					}
 				}
 
+				// --- 渲染單一項目 ---
 				const displayRank = rankMap.get(item.id);
 				const winRate = (calculateWinRate(item) * 100).toFixed(1);
-				const recentVolatility = calculateRecentVolatility(item);
-				const volatilitySymbol = getRecentVolatilitySymbol(item);
-				let error = calculateError(item);
-				let errorColor = getErrorColor(error);
-				error = error == Infinity ? '∞' : Math.round(error);
-				let errorDisplay = `<span style="color:${errorColor}">${error}</span>`;
+				const error = calculateError(item);
+				const errorColor = getErrorColor(error);
+				const errorDisplay = error === Infinity ? '∞' : Math.round(error);
 
-				// 热度公式：當前分數 * 最近30日票次(若无则0.5) / 30 * 最近30日胜率(若无则0.5)
-				const recentVotes = calculateRecentVotes(item.id, game, 30);
-				const recentWinRate = calculateRecentWinRate(item.id, game, 30);
-				const effectiveVotes = recentVotes || 0.5;
-				const effectiveWinRate = recentWinRate !== null ? recentWinRate : 0.5;
-				const hotness = Math.round(item.score * effectiveVotes / 30 * effectiveWinRate);
+				// 從預計算 Maps 取值（熱度、波動、符號、真實票次）
+				const hotness = Math.round(precomputedMaps.hotnessMap.get(item.id) || 0);
+				const recentVolatility = precomputedMaps.volatilityMap.get(item.id) || 0;
+				const volatilitySymbol = precomputedMaps.trendSymbolMap.get(item.id) || '?';
+				const recentVotes = precomputedMaps.recentVotesMap.get(item.id) || 0; // 真實票次（0 或正整數）
+
+				const moodDisplay = (item.moods && item.moods.length > 0) ? `<div class="mood-display">${item.moods.join('')}</div>` : '';
 
 				const rankingItem = document.createElement('div');
 				rankingItem.className = 'list-item ranking-item';
 				rankingItem.id = `ranking-item-${item.id}`;
-
-				if (item.frozen) {
-					rankingItem.classList.add('frozen');
-				}
-
-				let moodDisplay = '';
-				if (item.moods && item.moods.length > 0) {
-					moodDisplay = `<div class="mood-display">${item.moods.join('')}</div>`;
-				}
+				if (item.frozen) rankingItem.classList.add('frozen');
 
 				rankingItem.innerHTML = `
 					<div style="display: flex; flex-direction: column; width: 100%;">
@@ -7441,7 +7525,7 @@
 							<div style="display: flex; align-items: center;">
 								${moodDisplay}
 								<span style="font-size: 1.0em; color: hsl(180,100%,40%);">
-									分數: ${item.score}±${errorDisplay} |
+									分數: ${item.score}±<span style="color:${errorColor}">${errorDisplay}</span> |
 									勝率: ${winRate}% |
 									熱度: ${hotness} |
 									波動: ${recentVolatility}${volatilitySymbol} |
@@ -7455,7 +7539,6 @@
 				rankingItem.onclick = function() {
 					toggleScoreChart(item.id);
 				};
-
 				rankingItem.addEventListener('contextmenu', function(e) {
 					e.preventDefault();
 					showItemContextMenu(e, item.id, game.id);
@@ -7478,6 +7561,8 @@
 					lowerThreshold2: separatorPositions.lowerThreshold2
 				});
 			}
+
+			document.getElementById('rankingTitle').textContent = `排行榜 (${sortedItems.length}/${game.items.length})`;
 		}
 		
 		// 9. 计算分隔线位置
@@ -9238,7 +9323,7 @@
 		}
 		
 		// 更新预期胜率线
-        function updateExpectedWinrateLine() {
+        function updateExpectedWinrateLine(forceShow = false) {
 			// 获取滑动条容器和滑块
 			const sliderContainer = document.querySelector('.vote-slider-container');
 			const slider = document.getElementById('voteSlider');
@@ -9248,7 +9333,8 @@
 			const oldLine = sliderContainer.querySelector('.expected-winrate-line');
 			if (oldLine) oldLine.remove();
 
-			if ( !currentPair || !statsVisible ) return;
+			// if ( !currentPair || !statsVisible ) return;
+			if ( !currentPair || !( forceShow || statsVisible ) ) return;
 
 			const item1 = currentPair[0];
 			const item2 = currentPair[1];

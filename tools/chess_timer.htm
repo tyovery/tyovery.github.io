@@ -65,12 +65,38 @@
             flex-shrink: 0;
             transition: transform 0.2s ease;
         }
+
+        /* ---- 標籤列：加秒（左） | 先手/後手（中） | 讀秒（右） ---- */
         .label {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            width: 100%;
             font-size: calc(var(--tsize) * 0.38);
-            opacity: .75;
+            opacity: .78;
             margin-bottom: calc(var(--tsize) * 0.12);
             white-space: nowrap;
         }
+        .label .setting {
+            font-size: 0.62em;
+            font-weight: 500;
+            opacity: .95;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .label .setting.left {
+            text-align: center;
+        }
+        .label .setting.right {
+            text-align: center;
+        }
+        .label .name {
+            text-align: center;
+            padding: 0 0.4em;
+            font-weight: 500;
+        }
+
         .time {
             font-size: var(--tsize);
             font-weight: bold;
@@ -322,6 +348,8 @@
             position: relative;
             display: flex;
             flex-direction: column;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
         }
         .chart-container canvas {
             display: block;
@@ -330,6 +358,7 @@
             background: transparent;
             cursor: pointer;
             flex-shrink: 0;
+            touch-action: pan-y;
         }
 
         .chart-container .chart-label {
@@ -555,7 +584,11 @@
     <div id="app">
         <div class="player" id="player1">
             <div class="content" id="content1" style="--tsize: 40px;">
-                <div class="label">先手</div>
+                <div class="label">
+                    <span class="setting left" id="incLabel1"></span>
+                    <span class="name">先手</span>
+                    <span class="setting right" id="byoLabel1"></span>
+                </div>
                 <div class="time" id="time1">10:00<span class="frac">.00</span></div>
                 <div class="moves" id="moves1">已下 0 手棋</div>
 				<div class="info" id="info1"></div>
@@ -572,7 +605,11 @@
 
         <div class="player" id="player2">
             <div class="content" id="content2" style="--tsize: 40px;">
-                <div class="label">後手</div>
+                <div class="label">
+					<span class="setting left" id="incLabel2"></span>
+                    <span class="name">後手</span>
+					<span class="setting right" id="byoLabel2"></span>
+                </div>
                 <div class="time" id="time2">10:00<span class="frac">.00</span></div>
                 <div class="moves" id="moves2">已下 0 手棋</div>
 				<div class="info" id="info2"></div>
@@ -584,7 +621,7 @@
     <div id="settingsPanel" class="panel">
         <h2>⚙️ 棋鐘設定</h2>
 
-        <label>🖐 慣用手
+        <label>🖐 後手方慣用手
             <select id="setHandedness">
                 <option value="1">右手（預設）</option>
                 <option value="-1">左手</option>
@@ -593,14 +630,14 @@
 
         <label>快速選項
             <div class="presetGrid" id="presetGrid">
-                <button data-t="5" data-i="5" data-p="5">5,5,5</button>
-                <button data-t="10" data-i="10" data-p="10">10,10,10</button>
-                <button data-t="15" data-i="15" data-p="15">15,15,15</button>
-                <button data-t="30" data-i="10" data-p="30">30,10,30</button>
-                <button data-t="45" data-i="5" data-p="30">45,5,30</button>
-                <button data-t="60" data-i="5" data-p="30">60,5,30</button>
-                <button data-t="0" data-i="0" data-p="5">5秒/步</button>
-                <button data-t="0" data-i="0" data-p="10">10秒/步</button>
+                <button data-t="5" data-i="3" data-p="0">5分 +3秒</button>
+                <button data-t="10" data-i="10" data-p="0">10分 +10秒</button>
+				<button data-t="15" data-i="5" data-p="0">15分 +5秒</button>
+                <button data-t="15" data-i="10" data-p="0">15分 +10秒</button>
+                <button data-t="20" data-i="5" data-p="0">20分 +5秒</button>
+                <button data-t="30" data-i="5" data-p="0">30分 +5秒</button>
+				<button data-t="40" data-i="20" data-p="0">40分 +20秒</button>
+                <button data-t="60" data-i="30" data-p="0">60分 +30秒</button>
                 <button data-t="0" data-i="0" data-p="15">15秒/步</button>
                 <button data-t="0" data-i="0" data-p="30">30秒/步</button>
                 <button data-t="0" data-i="0" data-p="45">45秒/步</button>
@@ -609,7 +646,7 @@
         </label>
 
         <label>總時限（分鐘）
-            <input type="number" id="setTotalMin" min="0" step="0.5" value="10" inputmode="decimal">
+            <input type="number" id="setTotalMin" min="0" step="0.5" value="0" inputmode="decimal">
         </label>
         <label>每步加秒
             <input type="number" id="setIncrement" min="0" step="1" value="0" inputmode="numeric">
@@ -631,6 +668,10 @@
             <p><strong>工作人員</strong></p>
             <ul>
                 <li>coded by ~tyovery~</li>
+            </ul>
+			<p><strong>更新</strong></p>
+            <ul>
+				<li>2026-09</li>
                 <li>2026-08</li>
             </ul>
         </div>
@@ -697,7 +738,7 @@
             "use strict";
 
             // ---------- 設定值 ----------
-            let totalMin = 10;
+            let totalMin = 0;
             let incrementSec = 0;
             let perMoveLimit = 0;
             let handedness = 1;
@@ -714,6 +755,10 @@
             const infoEl2 = document.getElementById('info2');
             const movesEl1 = document.getElementById('moves1');
             const movesEl2 = document.getElementById('moves2');
+            const incLabel1 = document.getElementById('incLabel1');
+            const incLabel2 = document.getElementById('incLabel2');
+            const byoLabel1 = document.getElementById('byoLabel1');
+            const byoLabel2 = document.getElementById('byoLabel2');
             const btnStartPause = document.getElementById('btnStartPause');
             const btnReset = document.getElementById('btnReset');
             const btnSettings = document.getElementById('btnSettings');
@@ -807,6 +852,21 @@
                 el.innerHTML = parts.main + '<span class="frac">' + parts.frac + '</span>';
             }
 
+            function formatSettingNumber(n) {
+                if (Number.isInteger(n)) return String(n);
+                return String(Math.round(n * 100) / 100);
+            }
+
+            // ---------- 標籤列（加秒 / 讀秒）：永遠顯示 ----------
+            function updateSettingLabels() {
+                const incText = '+' + formatSettingNumber(incrementSec) + '秒';
+                const byoText = '讀 ' + formatSettingNumber(perMoveLimit) + '秒';
+                if (incLabel1.textContent !== incText) incLabel1.textContent = incText;
+                if (incLabel2.textContent !== incText) incLabel2.textContent = incText;
+                if (byoLabel1.textContent !== byoText) byoLabel1.textContent = byoText;
+                if (byoLabel2.textContent !== byoText) byoLabel2.textContent = byoText;
+            }
+
             // ---------- 佈局 ----------
             function getContentAngle() {
                 return 90 * handedness;
@@ -894,6 +954,8 @@
                 infoEl2.textContent = p2.flagged ? '超時！' : (p2.inByo ? '讀秒中' : '');
                 movesEl1.textContent = '已下 ' + p1.stepTimes.length + ' 手棋';
                 movesEl2.textContent = '已下 ' + p2.stepTimes.length + ' 手棋';
+
+                updateSettingLabels();
 
                 el1.classList.toggle('active', active === 0 && running);
                 el2.classList.toggle('active', active === 1 && running);
@@ -1373,15 +1435,53 @@
                 }
             });
 
-            chartCanvas.addEventListener('click', handleChartClick);
-            chartCanvas.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                const touch = e.changedTouches[0];
-                if (touch) {
-                    const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
-                    handleChartClick(fakeEvent);
-                }
+            // ============================================================
+            //  圖表點擊：區分「點擊」與「滾動」，避免手機滑動時誤觸長條
+            // ============================================================
+            let chartTouchX = 0,
+                chartTouchY = 0,
+                chartTouchTime = 0;
+            let chartTouchMoved = false;
+            let suppressChartClickUntil = 0;
+            const TAP_MOVE_THRESHOLD = 8;   // 位移超過 8px 視為滑動
+            const TAP_MAX_DURATION = 700;   // 按住超過 700ms 視為長按，不觸發
+
+            chartCanvas.addEventListener('click', (e) => {
+                if (Date.now() < suppressChartClickUntil) return;
+                handleChartClick(e);
             });
+
+            chartCanvas.addEventListener('touchstart', (e) => {
+                const t = e.changedTouches[0];
+                if (!t) return;
+                chartTouchX = t.clientX;
+                chartTouchY = t.clientY;
+                chartTouchTime = Date.now();
+                chartTouchMoved = false;
+            }, { passive: true });
+
+            chartCanvas.addEventListener('touchmove', (e) => {
+                const t = e.changedTouches[0];
+                if (!t) return;
+                if (Math.abs(t.clientX - chartTouchX) > TAP_MOVE_THRESHOLD ||
+                    Math.abs(t.clientY - chartTouchY) > TAP_MOVE_THRESHOLD) {
+                    chartTouchMoved = true;
+                }
+            }, { passive: true });
+
+            chartCanvas.addEventListener('touchend', (e) => {
+                if (chartTouchMoved) return;                        // 有滑動 → 視為捲動，忽略
+                if (Date.now() - chartTouchTime > TAP_MAX_DURATION) return; // 長按 → 忽略
+                const t = e.changedTouches[0];
+                if (!t) return;
+                e.preventDefault();                                 // 阻止瀏覽器補發 click
+                suppressChartClickUntil = Date.now() + 500;
+                handleChartClick({ clientX: t.clientX, clientY: t.clientY });
+            }, { passive: false });
+
+            chartCanvas.addEventListener('touchcancel', () => {
+                chartTouchMoved = true;
+            }, { passive: true });
 
             btnSave.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1429,7 +1529,7 @@
 
             // ---------- 初始化 ----------
             totalMin = 15;
-            incrementSec = 10;
+            incrementSec = 5;
             perMoveLimit = 0;
             handedness = 1;
             setTotalMin.value = totalMin;

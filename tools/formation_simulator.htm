@@ -1,0 +1,3290 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>排陣模擬器</title>
+<style>
+  * { box-sizing: border-box; }
+
+  :root {
+    --header-h: 52px;
+    --accent: #5b7cfa;
+    --accent2: #8b5cf6;
+  }
+
+  html { height: 100%; }
+
+  body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, -apple-system, sans-serif;
+    color: #e8eaf0;
+    background:
+      radial-gradient(circle at 14% 0%, rgba(91,124,250,.13), transparent 55%),
+      radial-gradient(circle at 88% 10%, rgba(139,92,246,.11), transparent 50%),
+      #0e1015;
+  }
+
+  body[data-shape="square"] .slot { aspect-ratio: 1 / 1; }
+  body[data-shape="rect"]   .slot { aspect-ratio: 3 / 4; }
+
+  /* ============ 頂部工具列 ============ */
+  header {
+    position: relative; z-index: 100;
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 8px 16px;
+    background: rgba(14,16,21,.9);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .spacer { flex: 1 1 auto; }
+
+  button { font-family: inherit; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; border: 0;
+    padding: 7px 15px; border-radius: 9px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    box-shadow: 0 3px 14px rgba(91,124,250,.28);
+    transition: filter .15s, transform .15s;
+  }
+  .btn-primary:hover { filter: brightness(1.14); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.15);
+    color: #c3c9d8;
+    padding: 6px 12px; border-radius: 9px;
+    font-size: 12.5px; cursor: pointer; white-space: nowrap;
+    transition: .15s;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,.42); color: #fff; }
+  .btn-ghost:active { background: rgba(255,255,255,.07); }
+
+  .btn-ghost.danger {
+    border-color: rgba(255,92,92,.32);
+    color: #ff9b9b;
+  }
+  .btn-ghost.danger:hover {
+    border-color: rgba(255,92,92,.7);
+    color: #ffd0d0;
+    background: rgba(255,92,92,.12);
+  }
+
+  .seg {
+    display: flex;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 9px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .seg button {
+    background: transparent; border: 0;
+    color: #98a0b3;
+    padding: 6px 10px;
+    font-size: 12px; cursor: pointer;
+    white-space: nowrap;
+    transition: .15s;
+  }
+  .seg button + button { border-left: 1px solid rgba(255,255,255,.07); }
+  .seg button:hover { color: #fff; background: rgba(255,255,255,.06); }
+  .seg button.active {
+    background: linear-gradient(135deg, var(--accent), #7c6cf0);
+    color: #fff;
+  }
+
+  .field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #98a0b3; }
+  .field > label[for="totalInput"] {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e2e7f5;
+    letter-spacing: .03em;
+  }
+  .num {
+    width: 58px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.13);
+    color: #fff; border-radius: 8px;
+    padding: 5px 7px; font-size: 12.5px; font-family: inherit;
+    outline: none; transition: border-color .15s;
+  }
+  .num:focus { border-color: rgba(124,156,255,.85); }
+
+  .total-display {
+    font-size: 12px; color: #9db0ff;
+    background: rgba(91,124,250,.12);
+    border: 1px solid rgba(91,124,250,.25);
+    padding: 5px 10px; border-radius: 8px;
+    white-space: nowrap;
+  }
+
+  /* ============ 工作區 ============ */
+  .workspace {
+    display: flex;
+    gap: 14px;
+    padding: 12px;
+    height: calc(100% - var(--header-h));
+    overflow: hidden;
+  }
+
+  /* ---------- 候選區 ---------- */
+  .pool {
+    position: relative;
+    flex: 0 0 auto;
+    width: 168px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px;
+    padding: 10px;
+    overflow: hidden;
+    transition: width .15s ease;
+  }
+  .pool-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .pool-title {
+    font-size: 14px; font-weight: 700; color: #dbe0ec;
+    letter-spacing: .05em; white-space: nowrap;
+  }
+  .pool-head-actions {
+    display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .mini-btn {
+    background: rgba(124,156,255,.14);
+    border: 1px solid rgba(124,156,255,.32);
+    color: #b9c6ff;
+    font-size: 13px; line-height: 1;
+    padding: 5px 8px; border-radius: 7px;
+    cursor: pointer; transition: .15s;
+    flex-shrink: 0;
+    font-family: inherit;
+  }
+  .mini-btn:hover { background: rgba(124,156,255,.3); color: #fff; }
+  .mini-btn:active { background: rgba(124,156,255,.5); }
+
+  .pool-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .pool-body::-webkit-scrollbar { width: 6px; }
+  .pool-body::-webkit-scrollbar-track { background: transparent; }
+  .pool-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.16); border-radius: 3px;
+  }
+  .pool-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.28); }
+
+  .pool-slots {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 2px;
+  }
+  .pool-slots .slot { width: 100%; }
+
+  .pool-foot {
+    display: flex; flex-wrap: wrap;
+    align-items: center; justify-content: center;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    flex-shrink: 0;
+  }
+  .pool-count-wrap {
+    font-size: 13px; color: #9aa3b8;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .pool-count-wrap .num { width: 50px; padding: 4px 5px; font-size: 13px; }
+
+  .pool-resize {
+    position: absolute;
+    top: 0; right: -3px; bottom: 0;
+    width: 9px;
+    cursor: col-resize;
+    z-index: 20;
+  }
+  .pool-resize::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px; height: 36px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.14);
+    transition: background .15s;
+  }
+  .pool-resize:hover::after,
+  .pool-resize.active::after { background: rgba(124,156,255,.85); }
+
+  /* ---------- 舞台 ---------- */
+  #stage {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    gap: 20px;
+    padding: 8px;
+    overflow: hidden;
+    --slot-w: 100px;
+    --slot-gap: 9px;
+  }
+
+  #stage[data-dir="ttb"] { flex-direction: column; justify-content: center; align-items: center; }
+  #stage[data-dir="btt"] { flex-direction: column-reverse; justify-content: center; align-items: center; }
+  #stage[data-dir="ltr"] { flex-direction: row; justify-content: center; align-items: center; }
+  #stage[data-dir="rtl"] { flex-direction: row-reverse; justify-content: center; align-items: center; }
+
+  /* ---------- 每一排 ---------- */
+  .rank {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    border-radius: 14px;
+    transition: background .18s, box-shadow .18s;
+  }
+  .rank.dragging { opacity: .35; }
+  .rank.drop-target {
+    background: rgba(124,156,255,.12);
+    box-shadow: 0 0 0 2px rgba(124,156,255,.55);
+  }
+
+  .rank-slots { display: flex; gap: var(--slot-gap); }
+  #stage[data-dir="ttb"] .rank-slots,
+  #stage[data-dir="btt"] .rank-slots { flex-direction: row; }
+  #stage[data-dir="ltr"] .rank-slots,
+  #stage[data-dir="rtl"] .rank-slots { flex-direction: column; }
+
+  /* 設定卡片：預設在右側（垂直堆疊、極簡） */
+  .rank-panel {
+    order: 2;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0 4px;
+    font-size: 11px;
+    color: #98a0b3;
+  }
+
+  .rank:hover .rank-panel {
+    display: flex;
+  }
+
+  #stage[data-dir="ltr"] .rank,
+  #stage[data-dir="rtl"] .rank { flex-direction: column; }
+  #stage[data-dir="ltr"] .rank-panel,
+  #stage[data-dir="rtl"] .rank-panel {
+    order: -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-self: stretch;
+    justify-content: center;
+    align-items: center;
+    gap: 4px 7px;
+    padding: 4px 6px;
+    width: var(--slot-w, 100px);
+    max-width: var(--slot-w, 100px);
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: #6b7385;
+    font-size: 13px;
+    line-height: 1;
+    padding: 1px 3px;
+    border-radius: 4px;
+    user-select: none;
+    transition: color .15s, background .15s;
+    flex-shrink: 0;
+  }
+  .drag-handle:hover { color: #b9c6ff; background: rgba(124,156,255,.14); }
+  .drag-handle:active { cursor: grabbing; }
+
+  .rank-num {
+    font-size: 15px;
+    line-height: 1;
+    color: #b9c6ff;
+    font-weight: 600;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .count-ctl {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: transparent;
+    border-radius: 6px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .count-btn {
+    width: 18px; height: 18px;
+    border: 0;
+    border-radius: 4px;
+    background: rgba(255,255,255,.08);
+    color: #d7dbe6;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: .15s;
+    font-family: inherit;
+  }
+  .count-btn:hover { background: rgba(124,156,255,.3); color: #fff; }
+  .count-btn:active { background: rgba(124,156,255,.5); }
+
+  .count-val {
+    display: none;
+  }
+
+  .del-row {
+    background: transparent;
+    border: 1px solid rgba(255,92,92,.28);
+    color: #ff8b8b;
+    padding: 2px 7px; border-radius: 6px;
+    font-size: 11px; cursor: pointer;
+    transition: .15s; white-space: nowrap;
+    line-height: 1.2;
+  }
+  .del-row:hover { background: rgba(255,92,92,.16); border-color: rgba(255,92,92,.6); }
+
+  /* ============ 角色框 ============ */
+  .slot {
+    position: relative;
+    width: var(--slot-w, 100px);
+    flex-shrink: 0;
+    cursor: grab;
+  }
+  .slot:active { cursor: grabbing; }
+  .slot.dragging { opacity: .25; }
+
+  .frame {
+    --bc: rgba(255,255,255,.2);
+    position: absolute; inset: 0;
+    border-radius: 12px;
+    border: 1.5px dashed var(--bc);
+    background: rgba(255,255,255,.035);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    cursor: inherit;
+    outline: none;
+    transition: background .18s, box-shadow .18s, border-color .18s;
+	will-change: background, box-shadow;
+    transform: translateZ(0);      /* 獨立圖層 */
+  }
+  .frame:hover, .frame:focus-visible {
+    background: rgba(124,156,255,.09);
+    box-shadow: 0 0 0 3px rgba(124,156,255,.16);
+  }
+  .frame:not([data-bc]):hover,
+  .frame:not([data-bc]):focus-visible {
+    border-color: rgba(124,156,255,.78);
+  }
+  .frame[data-bc] {
+    border-style: solid;
+    border-width: 3px;
+  }
+
+  .frame.menu-active,
+  .frame.menu-active[data-bc] {
+    border-color: var(--hl, rgba(124,156,255,.95)) !important;
+    border-style: solid !important;
+    background: var(--hl-bg, rgba(124,156,255,.14)) !important;
+    box-shadow:
+      0 0 0 3px var(--hl-ring, rgba(124,156,255,.5)),
+      0 0 18px var(--hl-ring, rgba(124,156,255,.4)) !important;
+  }
+
+  .slot.drop-target .frame {
+    border-color: #8ea6ff !important;
+    border-style: solid;
+    background: rgba(124,156,255,.2);
+    box-shadow: 0 0 0 3px rgba(124,156,255,.4);
+  }
+
+  .frame.has-image {
+    --bc: rgba(255,255,255,.13);
+    border-style: solid;
+    background: #14161d;
+  }
+
+   .photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: none;
+    user-select: none;
+    pointer-events: none;
+
+    /* 強制 GPU 合成，避免圓角裁切被二次反鋸齒 */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    /* 優先品質的縮放（Safari / 部分 Chromium 有效） */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: auto;
+  }
+  
+  .frame.has-image .photo { display: block; }
+  .frame.img-error .photo { display: none; }
+
+  .frame.img-error::after {
+    content: "⚠ 圖片無法載入";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #1a1113;
+    color: #ff8b8b; font-size: 10px;
+    text-align: center; padding: 6px;
+    z-index: 2;
+  }
+
+  .empty {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: rgba(255,255,255,.3);
+    font-size: 10px;
+    pointer-events: none; user-select: none;
+    text-align: center;
+  }
+  .empty .plus { font-size: 17px; line-height: 1; font-weight: 300; }
+  .frame.has-image .empty { display: none; }
+
+  .caption {
+    position: absolute;
+    left: 5px; right: 5px; bottom: 5px;
+    background: rgba(10,12,18,.62);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #fff;
+    font: inherit; font-size: 11px;
+    text-align: center;
+    padding: 3px 5px;
+    outline: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s, border-color .18s, background .18s;
+    z-index: 2;
+  }
+  .caption::placeholder { color: rgba(255,255,255,.4); }
+
+  .frame:hover .caption,
+  .caption:focus,
+  .caption.has-text {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .caption:focus {
+    border-color: rgba(124,156,255,.85);
+    background: rgba(10,12,18,.94);
+  }
+
+  /* ============ 彈出選單 ============ */
+  .slot-menu {
+    position: fixed;
+    z-index: 400;
+    display: flex; flex-direction: column;
+    background: #1b1e28;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 12px;
+    padding: 5px;
+    min-width: 172px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.6);
+    animation: pop .13s ease both;
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .slot-menu button {
+    background: transparent; border: 0;
+    color: #d7dbe6;
+    text-align: left;
+    padding: 8px 11px;
+    font-size: 12.5px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background .13s;
+    white-space: nowrap;
+  }
+  .slot-menu button:hover { background: rgba(124,156,255,.16); color: #fff; }
+  .slot-menu button.danger { color: #ff8b8b; }
+  .slot-menu button.danger:hover { background: rgba(255,92,92,.16); }
+
+  .menu-sep {
+    height: 1px;
+    background: rgba(255,255,255,.1);
+    margin: 5px 4px;
+  }
+  .swatch-row {
+    display: grid;
+    grid-template-columns: repeat(6, 18px);
+    gap: 6px;
+    justify-content: center;
+    padding: 6px 8px 5px;
+  }
+  .swatch {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 0;
+    cursor: pointer;
+    padding: 0;
+    outline: none;
+    transition: transform .12s, box-shadow .12s;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.28);
+  }
+  .swatch:hover { transform: scale(1.2); }
+  .swatch.active {
+    box-shadow: 0 0 0 2px #1b1e28, 0 0 0 4px #8ea6ff;
+  }
+  .swatch.none {
+    background: rgba(255,255,255,.07);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.25);
+    color: rgba(255,255,255,.5);
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ============ 彈窗 ============ */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(6,7,11,.68);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: fadeIn .15s ease both;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: #171a23;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px;
+    padding: 22px;
+    width: min(460px, 100%);
+    box-shadow: 0 24px 60px rgba(0,0,0,.65);
+    animation: pop .18s ease both;
+  }
+  .modal h3 {
+    margin: 0 0 8px;
+    font-size: 14.5px; font-weight: 600; color: #e8eaf0;
+  }
+  .modal p {
+    margin: 0 0 12px;
+    font-size: 12px; color: #8b93a6;
+    line-height: 1.5;
+  }
+  .url-input {
+    width: 100%;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.14);
+    color: #fff; border-radius: 10px;
+    padding: 10px 12px; font-size: 13px; font-family: inherit;
+    outline: none; transition: border-color .15s;
+  }
+  .url-input:focus { border-color: rgba(124,156,255,.85); }
+  .url-input::placeholder { color: rgba(255,255,255,.32); }
+
+  textarea.url-input {
+    min-height: 150px;
+    resize: vertical;
+    line-height: 1.6;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+  }
+
+  .modal-actions {
+    display: flex; justify-content: flex-end; gap: 9px;
+    margin-top: 16px;
+  }
+
+  /* ============ 角色庫管理 ============ */
+  .gallery-modal { width: min(560px, 100%); }
+  .gallery-list {
+    max-height: 52vh;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 2px;
+    margin-top: 4px;
+  }
+  .gallery-list::-webkit-scrollbar { width: 6px; }
+  .gallery-list::-webkit-scrollbar-track { background: transparent; }
+  .gallery-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.16); border-radius: 3px;
+  }
+  .gallery-list::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.28); }
+
+  .gallery-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 9px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+  }
+  .gallery-row .g-index {
+    width: 18px; flex-shrink: 0;
+    font-size: 11px; color: #6b7385; text-align: center;
+  }
+  .gallery-row .g-name {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: #dbe0ec;
+  }
+  .gallery-row .g-label {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gallery-row .g-tag {
+    flex-shrink: 0;
+    font-size: 10px; color: #8b93a6;
+    border: 1px solid rgba(255,255,255,.15);
+    padding: 0 5px; border-radius: 5px;
+  }
+  .gallery-row .g-count {
+    flex-shrink: 0; font-size: 11px; color: #8b93a6;
+  }
+  .gallery-ops { display: flex; gap: 3px; flex-shrink: 0; }
+  .gallery-ops button {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #c3c9d8; border-radius: 6px;
+    font-size: 12px; line-height: 1;
+    cursor: pointer; padding: 0;
+    transition: .15s; font-family: inherit;
+  }
+  .gallery-ops button:hover {
+    background: rgba(124,156,255,.28); color: #fff;
+    border-color: rgba(124,156,255,.5);
+  }
+  .gallery-ops button:disabled { opacity: .28; cursor: default; }
+  .gallery-ops button:disabled:hover {
+    background: rgba(255,255,255,.06); color: #c3c9d8;
+    border-color: rgba(255,255,255,.1);
+  }
+  .gallery-ops button.danger:hover {
+    background: rgba(255,92,92,.25);
+    border-color: rgba(255,92,92,.55); color: #ff8b8b;
+  }
+  .gallery-empty {
+    padding: 20px; text-align: center;
+    color: #6b7385; font-size: 12px;
+  }
+
+  /* ============ 圖片放大檢視 ============ */
+  .img-backdrop { z-index: 600; cursor: zoom-out; }
+  .img-viewer {
+    position: relative;
+    display: flex;
+    animation: pop .16s ease both;
+  }
+  .img-viewer img {
+    max-width: min(88vw, 1100px);
+    max-height: 86vh;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #14161d;
+    box-shadow: 0 26px 80px rgba(0,0,0,.75);
+    display: block;
+  }
+  .img-viewer .img-close {
+    position: absolute;
+    top: -14px; right: -14px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.2);
+    background: #1b1e28;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: .15s;
+  }
+  .img-viewer .img-close:hover {
+    background: #2b3040;
+    border-color: rgba(255,255,255,.45);
+  }
+
+  /* ============ Toast ============ */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 28px;
+    transform: translateX(-50%) translateY(12px);
+    background: rgba(30,34,46,.96);
+    border: 1px solid rgba(124,156,255,.42);
+    color: #e8eaf0;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    z-index: 900;
+    opacity: 0;
+    transition: opacity .25s, transform .25s;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,.55);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ============ 響應式 ============ */
+  @media (max-width: 860px) {
+    header { padding: 7px 10px; gap: 6px 8px; }
+    .workspace { padding: 8px; gap: 8px; }
+    .pool { width: 150px; padding: 8px; }
+    .pool-title { font-size: 13px; }
+    .pool-slots { gap: 5px; }
+    #stage { gap: 14px; --slot-gap: 6px; }
+    .rank { gap: 6px; padding: 3px; }
+    .rank-panel { padding: 4px 5px; gap: 3px; }
+  }
+</style>
+</head>
+<body data-shape="rect">
+
+<header id="header">
+  <div class="seg" id="dirSeg">
+    <button type="button" data-val="btt">↓</button>
+    <button type="button" data-val="ttb">↑</button>
+    <button type="button" data-val="rtl">→</button>
+    <button type="button" data-val="ltr">←</button>
+  </div>
+
+  <div class="seg" id="shapeSeg">
+    <button type="button" data-val="rect">長方</button>
+    <button type="button" data-val="square">正方</button>
+  </div>
+
+  <div class="field">
+    <label for="totalInput">總格數</label>
+    <input type="number" id="totalInput" class="num" min="1" max="60" value="16">
+    <button type="button" class="btn-ghost" id="applyTotal">套用</button>
+  </div>
+
+  <span class="total-display" id="totalDisplay">現 ? 格</span>
+
+  <div class="spacer"></div>
+
+  <button class="btn-ghost danger" id="resetBtn" title="清除本機資料並回到初始狀態">還原預設</button>
+  <button class="btn-ghost" id="exportBtn" title="匯出上陣區與候選區（不含角色庫）">匯出</button>
+  <button class="btn-ghost" id="importBtn" title="匯入上陣區與候選區（不影響角色庫）">匯入</button>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
+  <input type="file" id="galleryImportFile" accept="application/json,.json" hidden>
+  <button class="btn-ghost" id="clearPool">清空候選</button>
+  <button class="btn-ghost" id="clearStage">清空陣容</button>
+  <button class="btn-primary" id="addRow">加排</button>
+</header>
+
+<div class="workspace">
+  <aside class="pool" id="pool">
+    <div class="pool-head">
+      <span class="pool-title">候選</span>
+      <div class="pool-head-actions">
+        <button type="button" class="mini-btn" id="tidyPoolBtn" title="把角色集中到前面">整</button>
+        <button type="button" class="mini-btn" id="bulkUrlBtn" title="批量輸入圖片網址">加</button>
+		<button type="button" class="mini-btn" id="galleryBtn" title="從角色庫加入角色">庫</button>
+      </div>
+    </div>
+    <div class="pool-body">
+      <div class="pool-slots" id="poolSlots"></div>
+    </div>
+    <div class="pool-foot">
+		<button type="button" class="mini-btn" id="poolSizeDown" title="縮小格子">小</button>
+		<button type="button" class="mini-btn" id="poolSizeUp" title="放大格子">大</button>
+      <label class="pool-count-wrap">格數
+        <input type="number" id="poolCount" class="num" min="1" max="300" value="30">
+      </label>
+    </div>
+    <div class="pool-resize" id="poolResize" title="拖拉調整寬度"></div>
+  </aside>
+
+  <main id="stage" data-dir="btt"></main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ==================== 常數 ==================== */
+  const MAX_ROW_SLOTS = 12;
+  const MAX_ROWS = 6;                 // 上陣排數上限
+  const MAX_POOL_SLOTS = 300; // 候選區上限
+  const MAX_STAGE_SLOTS = 60;  // 上陣區上限
+  const DEFAULT_POOL_COUNT = 60; // 候選區預設格數
+  const DEFAULT_POOL_SLOT_SIZE = 58; // 候選區每格目標寬度 (px)
+  const MIN_POOL_SLOT_SIZE = 36;
+  const MAX_POOL_SLOT_SIZE = 120;
+  const MAX_CUSTOM_GALLERIES = 50;   // 自訂角色庫數量上限
+  const STORAGE_KEY = 'roleFormation.v8';
+  const DIRECTIONS = ['btt', 'ttb', 'rtl', 'ltr'];
+  const SHAPES = ['rect', 'square'];
+
+  /* ============================================================
+     角色庫：預設角色庫（以連結方式加入）
+     ============================================================ */
+  const GALLERIES = [
+    {
+      "name": "乃木坂46 現役成員",
+      "items": [
+        {
+          "url": "https://www.nogizaka46.com/images/46/e94/f1e863935213cd18a7c25e87795f6.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/605/fde6153cac131c43a2e8e0ac0bfcb.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/3cd/248094368f7aab375f1900195098a.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/0b4/6e7b29737ae59929b3b5d54901df9.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/1b6/eb145a98c28698e68696ed7deeab0.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/86b/0333e9148ad78d217822ccde31db8.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/9e1/b4f576fdc288cc8cc68320f657a5d.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/540/61c907a38e56dced12a57ab544fd3.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/c09/dfacda505809637c8214da8a8432f.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/d21/1d87f2203680137df7346b7551ed0.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/4b1/dbd952eb8141c36fae23b5b3b6098.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/e27/66bd6c894d1a96288bb9dfaf8809f.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/880/87280a20095abdde1ffcd122d8d42.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/d90/5ca63b14dde51e680517af2216408.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/ec1/9c670b4ade367a2f551f26eef4450.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/e8f/d4b6b2c5802a42f04de0b62f4ab7f.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/9db/414579921f85d8dd289e573c96dc3.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/f75/2ec1740de010cde723653a4794af2.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/4a8/fa2fc4b3c75b9568ce9adbc16d4bd.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/9f0/a5e7a663deb87b228ebded01540be.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/b4e/2a4faecdf5e257fa5e8aae4672f82.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/c2f/3eeaa463de1b7c93ce62b62270ec8.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/59c/974b3199023a021b45c9d1b5a7635.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/035/aca8b6dccc829b810d24d6fbfc7c3.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/6d8/4643f09fc585a92576513888606c2.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/cb1/f34ad14ecbf7be125b2f2f243f841.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/de5/915861e02d78a55180a5d58ea5c80.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/c95/5958d930809c5a57bf2e1b29a8354.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/143/57bc0bef04a325148a8a7c62541e1.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/4f9/78599b601e4a5abe702f5c84241ae.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/1d1/b0f71982a410acda6e979d41cfb51.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/c1d/2368d8afc850d797155f7d93d0569.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://www.nogizaka46.com/images/46/abd/4779c6d304e1c50c16d3f08e6e818.jpg",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "name": "櫻坂46 現役成員",
+      "items": [
+        {
+          "url": "https://sakurazaka46.com/images/14/9bb/57eda06681d1196b670e9f9776014/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/454/0b264cdd8aec47829d446cc154b7c/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/24d/11122fe2212aa33484139fe7e68e8/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/d7e/ff291bacda3396d67792cd3daf483/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/eb0/302a5aabebbb5706aef96e39371cd/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/090/367c780b126304f4486318677d774/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/7fb/b278deb8d1a8e958f7eb85a7137ec/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/403/298c88eac80d3660c0bd35300b254/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/7c9/86cebbd9dbb0bf692804cc1e2f33e/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/29b/8629dc5d75a13f5b6e1f5fcad2fc9/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/875/d45491a2b1fc5620c14859c758859/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/b22/397481cd580ddc74276f5405b9bc8/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/848/1f5d4c01f201c79e32c0b12bad82e/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/225/1e264145ebc7cbdd20372b45b5d28/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/30e/11ca42ed41f265391a1355c538632/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/582/6570b90fdf5aee2543e9b8b3413e1/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/68b/4a226b8766edc8389c2b911c2a3b2/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/728/f34e4291edfc270261b7380ee5836/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/6b1/2d37577da0937e121d6cd9d5fe89d/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/9e7/09cd4f14acbfcffa97253e38d07af/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/067/b19bbf4fd6c6ae45fb1730b859d02/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/cdd/d4fdb82afec99ed613aab6540e6b0/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/c31/ce32b08beaae01d45a4df348d5509/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/8a5/1d6030c25a86927625295ca528458/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/67a/41b41e50ef98ec4b9332cb2a78695/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/650/b20bec41d145f7ef63344791a488f/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/ebd/9cfd8d5056fb9f34ba9214615a85c/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/fa4/1584c23f5577bb13c751292d7fe5f/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/d06/e45c5b93cc109e5c8cdd118b0d04d/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/1dc/e66ab7b6427674ef51699a7e65117/400_320_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://sakurazaka46.com/images/14/6e2/6dd28e9796fbf681a1ff873cc2093/400_320_102400.jpg",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "id": "cmv7dtesm-2-edom",
+      "name": "日向坂46 現役成員",
+      "items": [
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/70b/8ff6af247f3b0beabe5f904d2bc6d/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/807/4467152cacf8446204af3749292b2/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/48e/508598b5d7108f2bea3262ee0b44e/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/1ad/883dabd5463ee879a6bfcf06a1523/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/33e/3501014613a628c5697c13f7c2204/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/54d/34c42b16ca5ae469ffe1b6515310b/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/513/ec33d049a89c4a608a399ed0542ab/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/f4c/3dcd3d6bd29da9a6a7cbaf072e278/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/b5a/4c1a7493699ab29cafc970f70d483/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/da0/273ae9b088ce87fd1797a62642ba2/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/f03/4ee2d041d10c1eb27c12295ef2ecc/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/b83/5b307f3b864f5fbf709fd91a59e15/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/ce5/326680934fe2ac69d07c7ef07a79f/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/5a7/f56c86258ab4109b8adeb4db4718c/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/596/c32642d066fd3ef01436d97dc55a9/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/9be/c22f2dccd08af9fe99c12d364be5e/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/392/319977c689d0bbae7521011b7b397/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/baf/8fe2c5d336d27363f646fed0c33fa/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/a3b/4aeb6f54d183137e9c33b4b5c899f/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/374/d0879e4b20413173576caef2de321/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/147/5f87f513e37af45bcadf71dae3703/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/8bb/c8c37ad1656f6aa5070db52dc652c/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/2a9/4b220ce73717958ab62534b4b6f51/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/b25/f47fbe5895c32b443b89dc2a342ad/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/d39/1822eb2c26f28fb9912fe60a51f68/800_800_102400.jpg",
+          "text": ""
+        },
+        {
+          "url": "https://cdn.hinatazaka46.com/images/14/454/ae7a70ff2399d7b106fd015e072fb/800_800_102400.jpg",
+          "text": ""
+        }
+      ]
+    }
+  ];
+
+  const CIRCLE_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+  function circleNum(n) {
+    return (n >= 1 && n <= 20) ? CIRCLE_NUMS[n - 1] : String(n);
+  }
+
+  /* ==================== DOM ==================== */
+  const header        = document.getElementById('header');
+  const stage         = document.getElementById('stage');
+  const dirSeg        = document.getElementById('dirSeg');
+  const shapeSeg      = document.getElementById('shapeSeg');
+  const totalInput    = document.getElementById('totalInput');
+  const totalDisplay  = document.getElementById('totalDisplay');
+  const poolEl        = document.getElementById('pool');
+  const poolSlotsEl   = document.getElementById('poolSlots');
+  const poolBody      = poolEl.querySelector('.pool-body');
+  const poolCountEl   = document.getElementById('poolCount');
+  const poolResize    = document.getElementById('poolResize');
+  const importFile    = document.getElementById('importFile');
+  const galleryImportFile = document.getElementById('galleryImportFile');
+  const galleryBtnEl  = document.getElementById('galleryBtn');
+
+  /* ==================== 狀態 ==================== */
+  const state = {
+    dir: 'btt',
+    shape: 'rect',
+    rows: [],
+    hiddenRows: [],
+    customGalleries: [],   // [{ id, name, items:[{url,text}] }]
+    galleryOrder: [],      // ['p0','p1',...,'c...'] 角色庫排序
+    pool: { width: 168, count: DEFAULT_POOL_COUNT, slotSize: DEFAULT_POOL_SLOT_SIZE, slots: [] }
+  };
+
+  /* ==================== 工具 ==================== */
+  const clampNum = (v, lo, hi) => {
+    const n = parseInt(v, 10);
+    if (isNaN(n)) return lo;
+    return Math.max(lo, Math.min(hi, n));
+  };
+
+  function blankSlot() { return { src: null, text: '', color: null }; }
+  function newSlots(n) { return Array.from({ length: n }, blankSlot); }
+
+  function hexToRgba(hex, alpha) {
+    if (!hex) return null;
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!m) return null;
+    return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`;
+  }
+
+  /* ---------- 角色庫：id / 排序 / 完整性 ---------- */
+  let customIdSeq = 0;
+  function newCustomId() {
+    customIdSeq++;
+    return 'c' + Date.now().toString(36) + '-' +
+           customIdSeq.toString(36) + '-' +
+           Math.random().toString(36).slice(2, 6);
+  }
+
+  /* 修補 id、剔除失效項目、補齊缺少的角色庫，回傳是否有變更 */
+  function ensureGalleryIntegrity() {
+    let changed = false;
+
+    if (!Array.isArray(state.galleryOrder)) {
+      state.galleryOrder = [];
+      changed = true;
+    }
+
+    const usedIds = new Set();
+    state.customGalleries.forEach((g) => {
+      if (typeof g.id !== 'string' || !g.id || usedIds.has(g.id)) {
+        g.id = newCustomId();
+        changed = true;
+      }
+      usedIds.add(g.id);
+    });
+
+    const valid = new Set();
+    GALLERIES.forEach((_, i) => valid.add('p' + i));
+    state.customGalleries.forEach((g) => valid.add(g.id));
+
+    const next = [];
+    const seen = new Set();
+    state.galleryOrder.forEach((id) => {
+      if (valid.has(id) && !seen.has(id)) { seen.add(id); next.push(id); }
+    });
+    GALLERIES.forEach((_, i) => {
+      const id = 'p' + i;
+      if (!seen.has(id)) { seen.add(id); next.push(id); }
+    });
+    state.customGalleries.forEach((g) => {
+      if (!seen.has(g.id)) { seen.add(g.id); next.push(g.id); }
+    });
+
+    if (next.length !== state.galleryOrder.length ||
+        next.some((v, i) => v !== state.galleryOrder[i])) {
+      state.galleryOrder = next;
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  /* 依排序回傳角色庫清單 */
+  function orderedGalleries() {
+    const order = Array.isArray(state.galleryOrder) ? state.galleryOrder : [];
+    return order.map((id) => {
+      if (id[0] === 'p') {
+        const i = parseInt(id.slice(1), 10);
+        const g = GALLERIES[i];
+        if (g) return { id, name: g.name, items: g.items, isCustom: false };
+      } else {
+        const g = state.customGalleries.find((x) => x.id === id);
+        if (g) return { id, name: g.name, items: g.items, isCustom: true };
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
+  function moveGallery(id, delta) {
+    const order = state.galleryOrder.slice();
+    const idx = order.indexOf(id);
+    if (idx < 0) return false;
+    const to = idx + delta;
+    if (to < 0 || to >= order.length) return false;
+    order.splice(idx, 1);
+    order.splice(to, 0, id);
+    state.galleryOrder = order;
+    scheduleSave();
+    return true;
+  }
+
+  function readImageFile(file, cb) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => cb(reader.result);
+    reader.readAsDataURL(file);
+  }
+
+  function pickImage(cb) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', () => {
+      readImageFile(input.files[0], cb);
+      input.remove();
+    });
+    input.click();
+  }
+
+  /* ==================== Toast ==================== */
+  let toastEl = null;
+  function toast(msg) {
+    if (toastEl) toastEl.remove();
+    toastEl = document.createElement('div');
+    toastEl.className = 'toast';
+    toastEl.textContent = msg;
+    document.body.appendChild(toastEl);
+    requestAnimationFrame(() => toastEl.classList.add('show'));
+    setTimeout(() => {
+      if (!toastEl) return;
+      toastEl.classList.remove('show');
+      const t = toastEl;
+      toastEl = null;
+      setTimeout(() => t.remove(), 300);
+    }, 1800);
+  }
+
+  /* ==================== 網址輸入彈窗 ==================== */
+  function promptUrl(cb, defaultValue) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>🔗 輸入圖片網址</h3>
+        <input type="url" class="url-input" placeholder="https://example.com/image.png" spellcheck="false">
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost cancel">取消</button>
+          <button type="button" class="btn-primary ok">確定</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    const input = backdrop.querySelector('.url-input');
+    if (defaultValue) input.value = defaultValue;
+    setTimeout(() => { input.focus(); input.select(); }, 30);
+
+    function close(ok) {
+      if (ok) {
+        const url = input.value.trim();
+        if (url) cb(url);
+      }
+      backdrop.remove();
+      document.removeEventListener('keydown', onKey, true);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+    }
+
+    backdrop.querySelector('.cancel').addEventListener('click', () => close(false));
+    backdrop.querySelector('.ok').addEventListener('click', () => close(true));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); close(true); }
+    });
+    document.addEventListener('keydown', onKey, true);
+  }
+
+  /* ==================== 角色庫命名彈窗 ==================== */
+  function promptGalleryName(cb, defaultValue, opts) {
+    opts = opts || {};
+    const title = opts.title || '💾 把現有角色存成庫';
+    const desc  = opts.desc  || '已上陣與候選池的角色都會保存。';
+    const okText = opts.okText || '儲存';
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3></h3>
+        <p></p>
+        <input type="text" class="url-input" placeholder="角色庫名稱" maxlength="20" spellcheck="false">
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost cancel">取消</button>
+          <button type="button" class="btn-primary ok"></button>
+        </div>
+      </div>`;
+    backdrop.querySelector('h3').textContent = title;
+    backdrop.querySelector('p').textContent = desc;
+    backdrop.querySelector('.ok').textContent = okText;
+    document.body.appendChild(backdrop);
+
+    const input = backdrop.querySelector('.url-input');
+    if (defaultValue) input.value = defaultValue;
+    setTimeout(() => { input.focus(); input.select(); }, 30);
+
+    function close(ok) {
+      if (ok) {
+        const name = input.value.trim().slice(0, 20);
+        if (name) cb(name);
+      }
+      backdrop.remove();
+      document.removeEventListener('keydown', onKey, true);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+    }
+
+    backdrop.querySelector('.cancel').addEventListener('click', () => close(false));
+    backdrop.querySelector('.ok').addEventListener('click', () => close(true));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); close(true); }
+    });
+    document.addEventListener('keydown', onKey, true);
+  }
+
+  /* ==================== 批量網址彈窗 ==================== */
+  function promptBulkUrl(cb) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>🔗 批量輸入圖片網址</h3>
+        <p>每行一個網址（Ctrl / ⌘ + Enter 快速確定）</p>
+        <textarea class="url-input" spellcheck="false"
+          placeholder="https://example.com/1.png
+https://example.com/2.png
+https://example.com/3.png"></textarea>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost cancel">取消</button>
+          <button type="button" class="btn-primary ok">確定</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    const input = backdrop.querySelector('textarea');
+    setTimeout(() => input.focus(), 30);
+
+    function close(ok) {
+      if (ok) {
+        const lines = input.value.split('\n').map(s => s.trim()).filter(Boolean);
+        if (lines.length) cb(lines);
+      }
+      backdrop.remove();
+      document.removeEventListener('keydown', onKey, true);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+    }
+
+    backdrop.querySelector('.cancel').addEventListener('click', () => close(false));
+    backdrop.querySelector('.ok').addEventListener('click', () => close(true));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        close(true);
+      }
+    });
+    document.addEventListener('keydown', onKey, true);
+  }
+
+  /* ==================== 圖片放大檢視 ==================== */
+  function viewImage(src) {
+    if (!src) return;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop img-backdrop';
+
+    const viewer = document.createElement('div');
+    viewer.className = 'img-viewer';
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'img-close';
+    closeBtn.textContent = '✕';
+    closeBtn.title = '關閉 (Esc)';
+
+    viewer.append(img, closeBtn);
+    backdrop.appendChild(viewer);
+    document.body.appendChild(backdrop);
+
+    function close() {
+      backdrop.remove();
+      document.removeEventListener('keydown', onKey, true);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+    }
+
+    closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    document.addEventListener('keydown', onKey, true);
+  }
+
+  /* ==================== 彈出選單 ==================== */
+  let currentMenu = null;
+  let highlightedFrame = null;
+
+  function closeMenu() {
+    if (!currentMenu) return;
+    currentMenu.remove();
+    currentMenu = null;
+    if (highlightedFrame) {
+      highlightedFrame.classList.remove('menu-active');
+      highlightedFrame = null;
+    }
+    document.removeEventListener('mousedown', onDocDown, true);
+    document.removeEventListener('keydown', onMenuKey, true);
+    window.removeEventListener('resize', closeMenu);
+    window.removeEventListener('scroll', closeMenu, true);
+  }
+  function onDocDown(e) {
+    if (currentMenu && !currentMenu.contains(e.target)) closeMenu();
+  }
+  function onMenuKey(e) { if (e.key === 'Escape') closeMenu(); }
+
+  /* 3. 色票 */
+  const SWATCH_COLORS = [
+    { hex: null,      name: '無' },
+    { hex: '#ff6b6b', name: '紅' },
+    { hex: '#ff922b', name: '橙' },
+    { hex: '#fcc419', name: '黃' },
+    { hex: '#51cf66', name: '綠' },
+	{ hex: '#00ccff', name: '青' },
+    { hex: '#3333ff', name: '藍' },
+    { hex: '#845ef7', name: '紫' },
+    { hex: '#f06595', name: '粉' },
+    { hex: '#e8eaf0', name: '白' },
+    { hex: '#868e96', name: '灰' }
+  ];
+
+  function openMenu(anchorEl, config) {
+    closeMenu();
+
+    if (anchorEl && anchorEl.classList) {
+      anchorEl.classList.add('menu-active');
+      highlightedFrame = anchorEl;
+    }
+
+    const menu = document.createElement('div');
+    menu.className = 'slot-menu';
+
+    (config.items || []).forEach((item) => {
+      if (item.type === 'separator') {
+        const sep = document.createElement('div');
+        sep.className = 'menu-sep';
+        menu.appendChild(sep);
+        return;
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = item.label;
+      if (item.danger) btn.classList.add('danger');
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMenu();
+        item.action();
+      });
+      menu.appendChild(btn);
+    });
+
+    if (config.swatches) {
+      const sep = document.createElement('div');
+      sep.className = 'menu-sep';
+      menu.appendChild(sep);
+
+      const row = document.createElement('div');
+      row.className = 'swatch-row';
+      const current = config.swatches.current || null;
+
+      SWATCH_COLORS.forEach(({ hex: c, name }) => {
+        const sw = document.createElement('button');
+        sw.type = 'button';
+        sw.className = 'swatch';
+        sw.dataset.color = c === null ? 'null' : c;
+        /* 3. 指住顏色時顯示「顏色名稱」 */
+        sw.title = name;
+        sw.setAttribute('aria-label', name);
+
+        if (c) {
+          sw.style.background = c;
+        } else {
+          sw.classList.add('none');
+          sw.textContent = '∅';
+        }
+        if (current === c) sw.classList.add('active');
+        sw.addEventListener('click', (e) => {
+          e.stopPropagation();
+          config.swatches.onPick(c);
+          menu.querySelectorAll('.swatch').forEach((btn) => {
+            const val = btn.dataset.color === 'null' ? null : btn.dataset.color;
+            btn.classList.toggle('active', val === c);
+          });
+        });
+        row.appendChild(sw);
+      });
+      menu.appendChild(row);
+    }
+
+    document.body.appendChild(menu);
+
+    const r  = anchorEl.getBoundingClientRect();
+    const mw = menu.offsetWidth;
+    const mh = menu.offsetHeight;
+    let left = r.left + r.width / 2 - mw / 2;
+    let top  = r.bottom + 7;
+
+    left = Math.max(10, Math.min(window.innerWidth - mw - 10, left));
+    if (top + mh > window.innerHeight - 10) {
+      top = Math.max(10, r.top - mh - 7);
+    }
+    menu.style.left = left + 'px';
+    menu.style.top  = top + 'px';
+
+    currentMenu = menu;
+    setTimeout(() => {
+      document.addEventListener('mousedown', onDocDown, true);
+      document.addEventListener('keydown', onMenuKey, true);
+      window.addEventListener('resize', closeMenu);
+      window.addEventListener('scroll', closeMenu, true);
+    }, 0);
+  }
+
+  /* ==================== 拖曳狀態 ==================== */
+  let dragKind = null;
+  let draggedSlot = null;
+  let draggedRowIndex = -1;
+  const slotRegistry = new WeakMap();
+
+  function clearDropHints() {
+    document.querySelectorAll('.drop-target, .dragging').forEach((el) => {
+      el.classList.remove('drop-target', 'dragging');
+    });
+  }
+
+  function swapSlotData(a, b, withColor) {
+    const tmpSrc = a.src, tmpTxt = a.text, tmpColor = a.color;
+    a.src = b.src; a.text = b.text;
+    b.src = tmpSrc; b.text = tmpTxt;
+    if (withColor) {
+      a.color = b.color;
+      b.color = tmpColor;
+    }
+    slotRegistry.get(a)?.sync();
+    slotRegistry.get(b)?.sync();
+    scheduleSave();
+  }
+
+  /* ==================== 候選區輔助 ==================== */
+  /* 取得下一個可用的候選格（不觸發重繪） */
+  function nextPoolSlot() {
+    const slots = state.pool.slots;
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      if (s && !s.src && !s.text) {
+        if (i >= state.pool.count) {
+          state.pool.count = i + 1;
+          poolCountEl.value = state.pool.count;
+        }
+        return s;
+      }
+    }
+    if (slots.length >= MAX_POOL_SLOTS) return null;
+    const s = blankSlot();
+    slots.push(s);
+    state.pool.count = slots.length;
+    poolCountEl.value = state.pool.count;
+    return s;
+  }
+
+  function countFreePoolSlots() {
+    let free = 0;
+    for (let i = 0; i < state.pool.slots.length; i++) {
+      const s = state.pool.slots[i];
+      if (s && !s.src && !s.text) free++;
+    }
+    free += Math.max(0, MAX_POOL_SLOTS - state.pool.slots.length);
+    return free;
+  }
+
+  function findOrCreatePoolSlot() {
+    return nextPoolSlot();
+  }
+
+  /* 把一個格子的內容下陣到候選區；成功回傳 true */
+  function retreatToPool(data) {
+    if (!data || (!data.src && !data.text)) return true;
+    const poolSlot = nextPoolSlot();
+    if (!poolSlot) return false;
+    poolSlot.src = data.src;
+    poolSlot.text = data.text;
+    data.src = null;
+    data.text = '';
+    slotRegistry.get(data)?.sync();
+    slotRegistry.get(poolSlot)?.sync();
+    return true;
+  }
+
+  function findEmptyStageSlot() {
+    const currentTotal = state.rows.reduce((s, r) => s + r.count, 0);
+    if (currentTotal >= MAX_STAGE_SLOTS) return null;
+
+    for (let ri = 0; ri < state.rows.length; ri++) {
+      const row = state.rows[ri];
+      for (let si = 0; si < row.count; si++) {
+        const s = row.slots[si];
+        if (s && !s.src && !s.text) {
+          return { rowIndex: ri, slotIndex: si };
+        }
+      }
+    }
+    return null;
+  }
+
+  /* ==================== 上陣 / 下陣 / 移除 / 清空 ==================== */
+  function handleRetreat(rowIndex, slotIndex) {
+    const row = state.rows[rowIndex];
+    if (!row) return;
+    const data = row.slots[slotIndex];
+    if (!data) return;
+
+    if (!retreatToPool(data)) {
+      toast('候選區已達上限 (' + MAX_POOL_SLOTS + ')');
+      return;
+    }
+    renderPool();
+    scheduleSave();
+    toast('已下陣至候選區');
+  }
+
+  /* 移除上陣區格子：有內容者先下陣到候選區，再刪除該格 */
+  function handleRemove(rowIndex, slotIndex) {
+    const row = state.rows[rowIndex];
+    if (!row) return;
+    const data = row.slots[slotIndex];
+    if (!data) return;
+
+    const hasContent = !!(data.src || data.text);
+
+    if (hasContent) {
+      if (!retreatToPool(data)) {
+        toast('候選區已達上限 (' + MAX_POOL_SLOTS + ')');
+        return;
+      }
+    }
+
+    row.slots.splice(slotIndex, 1);
+    row.count = Math.max(0, row.count - 1);
+    if (row.count === 0) {
+      state.rows.splice(rowIndex, 1);
+      state.hiddenRows.push(row);
+      if (state.rows.length === 0) {
+        state.rows.push({ count: 3, slots: newSlots(3) });
+      }
+    }
+    renderStage();
+    renderPool();
+    updateTotalDisplay();
+    scheduleSave();
+    toast(hasContent ? '已下陣至候選區並移除格子' : '已移除格子');
+  }
+
+  function handleDeploy(poolSlotIndex) {
+    const poolData = state.pool.slots[poolSlotIndex];
+    if (!poolData) return;
+
+    const currentTotal = state.rows.reduce((s, r) => s + r.count, 0);
+    if (currentTotal >= MAX_STAGE_SLOTS) {
+      toast('上陣區已達上限 (' + MAX_STAGE_SLOTS + ')');
+      return;
+    }
+
+    const target = findEmptyStageSlot();
+    if (target) {
+      const { rowIndex, slotIndex } = target;
+      const row = state.rows[rowIndex];
+      const stageData = row.slots[slotIndex];
+      stageData.src = poolData.src;
+      stageData.text = poolData.text;
+      poolData.src = null; poolData.text = '';
+      slotRegistry.get(stageData)?.sync();
+      slotRegistry.get(poolData)?.sync();
+    } else {
+      const lastRow = state.rows[state.rows.length - 1];
+      if (lastRow && lastRow.count < MAX_ROW_SLOTS) {
+        lastRow.count++;
+        while (lastRow.slots.length < lastRow.count) lastRow.slots.push(blankSlot());
+        const stageData = lastRow.slots[lastRow.count - 1];
+        stageData.src = poolData.src;
+        stageData.text = poolData.text;
+        poolData.src = null; poolData.text = '';
+        slotRegistry.get(stageData)?.sync();
+        slotRegistry.get(poolData)?.sync();
+        renderStage();
+      } else if (state.rows.length < MAX_ROWS) {
+        const newRow = { count: 1, slots: [blankSlot()] };
+        const stageData = newRow.slots[0];
+        stageData.src = poolData.src;
+        stageData.text = poolData.text;
+        poolData.src = null; poolData.text = '';
+        state.rows.push(newRow);
+        renderStage();
+      } else {
+        toast('已達排數上限 (' + MAX_ROWS + ' 排)');
+        return;
+      }
+    }
+    renderPool();
+    updateTotalDisplay();
+    scheduleSave();
+    toast('已上陣');
+  }
+
+  function handleClearSlot(data) {
+    data.src = null; data.text = '';
+    slotRegistry.get(data)?.sync();
+    scheduleSave();
+  }
+
+  /* ==================== 建立角色框 ==================== */
+  function buildSlot(data, meta) {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.draggable = true;
+
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    frame.tabIndex = 0;
+
+    const img = document.createElement('img');
+    img.className = 'photo';
+    img.alt = '';
+    img.draggable = false;
+
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.innerHTML = '<span class="plus">＋</span><span>加入</span>';
+
+    const caption = document.createElement('input');
+    caption.className = 'caption';
+    caption.type = 'text';
+    caption.placeholder = '名稱';
+
+    frame.append(img, empty, caption);
+    slot.appendChild(frame);
+
+    function sync() {
+      if (data.src) {
+        if (img.getAttribute('src') !== data.src) {
+          frame.classList.remove('img-error');
+          img.src = data.src;
+        }
+        frame.classList.add('has-image');
+      } else {
+        frame.classList.remove('has-image', 'img-error');
+        img.removeAttribute('src');
+      }
+      if (caption.value !== (data.text || '')) caption.value = data.text || '';
+      caption.classList.toggle('has-text', !!(data.text && data.text.length));
+      if (data.color && meta.allowColor) {
+        frame.style.setProperty('--bc', data.color);
+        frame.dataset.bc = '1';
+      } else {
+        frame.style.removeProperty('--bc');
+        delete frame.dataset.bc;
+      }
+    }
+
+    slotRegistry.set(data, { el: slot, sync, allowColor: !!meta.allowColor });
+    slot._sync = sync;
+
+    img.addEventListener('load',  () => frame.classList.remove('img-error'));
+    img.addEventListener('error', () => { if (data.src) frame.classList.add('img-error'); });
+
+    caption.addEventListener('input', () => {
+      data.text = caption.value;
+      caption.classList.toggle('has-text', !!caption.value);
+      scheduleSave();
+    });
+    caption.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); caption.blur(); }
+    });
+    caption.addEventListener('mousedown', (e) => e.stopPropagation());
+    caption.addEventListener('click', (e) => e.stopPropagation());
+    caption.addEventListener('dragstart', (e) => { e.preventDefault(); e.stopPropagation(); });
+
+    function applyHighlightVars(color) {
+      if (color) {
+        frame.style.setProperty('--hl', color);
+        const bg = hexToRgba(color, 0.16);
+        const ring = hexToRgba(color, 0.45);
+        if (bg) frame.style.setProperty('--hl-bg', bg);
+        if (ring) frame.style.setProperty('--hl-ring', ring);
+      } else {
+        frame.style.removeProperty('--hl');
+        frame.style.removeProperty('--hl-bg');
+        frame.style.removeProperty('--hl-ring');
+      }
+    }
+
+    frame.addEventListener('click', (e) => {
+      if (e.target.closest('.caption')) return;
+
+      const items = [];
+      items.push({ label: '📁 上傳圖片', action: () => pickImage((src) => { data.src = src; sync(); scheduleSave(); }) });
+      /* 5. 已存在圖片連結時，輸入框帶入目前網址 */
+      items.push({ label: '🔗 輸入圖片網址', action: () => promptUrl((src) => { data.src = src; sync(); scheduleSave(); }, data.src || '') });
+
+      if (data.src) {
+        /* 4. 查看圖片 */
+        items.push({ label: '🔍 查看圖片', action: () => viewImage(data.src) });
+        items.push({ label: '✕ 移除圖片', danger: true, action: () => { if(!confirm('確定要移除圖片？')) return; data.src = null; sync(); scheduleSave(); } });
+      }
+
+      if (meta.type === 'stage') {
+        if (data.src || data.text) {
+          items.push({ type: 'separator' });
+          items.push({ label: '⬇ 下陣', action: () => handleRetreat(meta.rowIndex, meta.slotIndex) });
+        }
+        items.push({ label: '✕ 移除格子', danger: true, action: () => handleRemove(meta.rowIndex, meta.slotIndex) });
+      } else if (meta.type === 'pool') {
+        if (data.src || data.text) {
+          items.push({ type: 'separator' });
+          items.push({ label: '⬆ 上陣', action: () => handleDeploy(meta.slotIndex) });
+          items.push({ label: '🧹 清空格子', danger: true, action: () => {if(!confirm('確定要清空格子？')) return; handleClearSlot(data); } });
+        }
+      }
+
+      const menuConfig = { items };
+
+      if (meta.allowColor) {
+        applyHighlightVars(data.color);
+        menuConfig.swatches = {
+          current: data.color,
+          onPick: (c) => {
+            data.color = c;
+            sync();
+            applyHighlightVars(c);
+            scheduleSave();
+          }
+        };
+      }
+
+      openMenu(frame, menuConfig);
+    });
+
+    slot.addEventListener('dragstart', (e) => {
+      dragKind = 'slot';
+      draggedSlot = data;
+      slot.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', 'slot'); } catch (_) {}
+      closeMenu();
+    });
+    slot.addEventListener('dragend', () => {
+      dragKind = null; draggedSlot = null;
+      slot.classList.remove('dragging');
+      clearDropHints();
+    });
+    slot.addEventListener('dragover', (e) => {
+      if (dragKind !== 'slot' || !draggedSlot || draggedSlot === data) return;
+      e.preventDefault(); e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      slot.classList.add('drop-target');
+    });
+    slot.addEventListener('dragleave', () => slot.classList.remove('drop-target'));
+    slot.addEventListener('drop', (e) => {
+      if (dragKind !== 'slot' || !draggedSlot || draggedSlot === data) return;
+      e.preventDefault(); e.stopPropagation();
+      slot.classList.remove('drop-target');
+
+      const regA = slotRegistry.get(draggedSlot);
+      const regB = slotRegistry.get(data);
+      const withColor = e.ctrlKey && regA && regB && regA.allowColor && regB.allowColor;
+
+      swapSlotData(draggedSlot, data, withColor);
+    });
+
+    sync();
+    return slot;
+  }
+
+  /* ==================== 建立一整排 ==================== */
+  function buildRank(row, ri) {
+    const rankEl = document.createElement('div');
+    rankEl.className = 'rank';
+
+    const slotsEl = document.createElement('div');
+    slotsEl.className = 'rank-slots';
+    row.slots.slice(0, row.count).forEach((data, slotIndex) => {
+      slotsEl.appendChild(buildSlot(data, { type: 'stage', rowIndex: ri, slotIndex, allowColor: true }));
+    });
+
+    const panel = document.createElement('div');
+    panel.className = 'rank-panel';
+
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    handle.title = '拖曳調換排';
+    handle.draggable = true;
+
+    handle.addEventListener('dragstart', (e) => {
+      dragKind = 'row';
+      draggedRowIndex = ri;
+      rankEl.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', 'row'); } catch (_) {}
+      closeMenu();
+      e.stopPropagation();
+    });
+    handle.addEventListener('dragend', () => {
+      dragKind = null; draggedRowIndex = -1;
+      rankEl.classList.remove('dragging');
+      clearDropHints();
+    });
+
+    const numEl = document.createElement('span');
+    numEl.className = 'rank-num';
+    numEl.textContent = circleNum(ri + 1);
+
+    const ctl = document.createElement('div');
+    ctl.className = 'count-ctl';
+
+    const decBtn = document.createElement('button');
+    decBtn.type = 'button';
+    decBtn.className = 'count-btn';
+    decBtn.textContent = '−';
+    decBtn.title = '減少一格（內容會下陣至候選區）';
+    decBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setRowCount(ri, state.rows[ri].count - 1);
+    });
+
+    const incBtn = document.createElement('button');
+    incBtn.type = 'button';
+    incBtn.className = 'count-btn';
+    incBtn.textContent = '＋';
+    incBtn.title = '增加一格';
+    incBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setRowCount(ri, state.rows[ri].count + 1);
+    });
+
+    ctl.append(decBtn, incBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'del-row';
+    delBtn.textContent = '刪排';
+    delBtn.title = '刪除此排（角色會下陣至候選區）';
+    delBtn.addEventListener('click', (e) => {
+		if(!confirm('確定要刪除此排？\n排內角色會下陣至候選區。')) return;
+		e.stopPropagation();
+		removeRow(ri);
+    });
+
+    panel.append(handle, numEl, ctl, delBtn);
+    rankEl.append(slotsEl, panel);
+
+    rankEl.addEventListener('dragover', (e) => {
+      if (dragKind !== 'row' || draggedRowIndex === ri || draggedRowIndex < 0) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      rankEl.classList.add('drop-target');
+    });
+    rankEl.addEventListener('dragleave', (e) => {
+      if (!rankEl.contains(e.relatedTarget)) rankEl.classList.remove('drop-target');
+    });
+    rankEl.addEventListener('drop', (e) => {
+      if (dragKind !== 'row' || draggedRowIndex === ri || draggedRowIndex < 0) return;
+      e.preventDefault(); e.stopPropagation();
+      rankEl.classList.remove('drop-target');
+      const from = draggedRowIndex;
+      draggedRowIndex = -1;
+      swapRows(from, ri);
+    });
+
+    return rankEl;
+  }
+
+  /* ==================== 渲染 ==================== */
+  function renderStage() {
+    stage.dataset.dir = state.dir;
+    stage.innerHTML = '';
+    state.rows.forEach((row, ri) => stage.appendChild(buildRank(row, ri)));
+    scheduleFit();
+  }
+
+  function renderPool() {
+    poolSlotsEl.innerHTML = '';
+    state.pool.slots.slice(0, state.pool.count).forEach((data, slotIndex) => {
+      poolSlotsEl.appendChild(buildSlot(data, { type: 'pool', slotIndex, allowColor: false }));
+    });
+    layoutPool();
+  }
+
+  function renderAll() {
+    renderStage();
+    renderPool();
+    updateTotalDisplay();
+    scheduleFit();
+    layoutPool();
+  }
+
+  function updateTotalDisplay() {
+	const rowsCount = state.rows.map( x => x.count ) ;
+	const total = state.rows.reduce((s, r) => s + r.count, 0);
+    totalDisplay.textContent = `${rowsCount.join(' + ')} = ${total}`;
+  }
+
+  /* ==================== 排的操作 ==================== */
+  function ensureSlots(row, n) {
+    while (row.slots.length < n) row.slots.push(blankSlot());
+  }
+
+  function addRow(count) {
+    if (state.rows.length >= MAX_ROWS) {
+      toast('已達排數上限 (' + MAX_ROWS + ' 排)');
+      return;
+    }
+    if (state.hiddenRows.length > 0) {
+      const row = state.hiddenRows.pop();
+      state.rows.push(row);
+    } else {
+      const n = clampNum(count, 1, MAX_ROW_SLOTS);
+      state.rows.push({ count: n, slots: newSlots(n) });
+    }
+    renderStage();
+    updateTotalDisplay();
+    scheduleSave();
+  }
+
+  /* 1. 刪排時，整排角色下陣到候選區 */
+  function removeRow(ri) {
+    if (ri < 0 || ri >= state.rows.length) return;
+    const row = state.rows[ri];
+
+    /* 收集這排裡所有有內容的格子 */
+    const filled = [];
+    for (let i = 0; i < row.count; i++) {
+      const d = row.slots[i];
+      if (d && (d.src || d.text)) filled.push(d);
+    }
+
+    if (filled.length) {
+      if (countFreePoolSlots() < filled.length) {
+        toast('候選區空間不足，無法刪除此排');
+        return;
+      }
+      filled.forEach((d) => retreatToPool(d));
+    }
+
+    state.rows.splice(ri, 1);
+    state.hiddenRows.push(row);
+    if (state.rows.length === 0) {
+      state.rows.push({ count: 3, slots: newSlots(3) });
+    }
+    renderStage();
+    renderPool();
+    updateTotalDisplay();
+    scheduleSave();
+    toast(filled.length
+      ? '已刪除該排，' + filled.length + ' 個角色下陣至候選區'
+      : '已刪除該排');
+  }
+
+  /* 3. 減少排內格數時，被刪掉的內容先下陣到候選區 */
+  function setRowCount(ri, value) {
+    const row = state.rows[ri];
+    if (!row) return;
+    const n = clampNum(value, 1, MAX_ROW_SLOTS);
+    if (n === row.count) return;
+
+    if (n < row.count) {
+      const removals = [];
+      for (let i = n; i < row.count; i++) {
+        const d = row.slots[i];
+        if (d && (d.src || d.text)) removals.push(d);
+      }
+
+      if (removals.length) {
+        if (countFreePoolSlots() < removals.length) {
+          toast('候選區空間不足，無法減少格數');
+          return;
+        }
+        removals.forEach((d) => retreatToPool(d));
+        renderPool();
+        toast('已下陣 ' + removals.length + ' 個角色至候選區');
+      }
+    }
+
+    ensureSlots(row, n);
+    row.count = n;
+    renderStage();
+    updateTotalDisplay();
+    scheduleSave();
+  }
+
+  function swapRows(i, j) {
+    if (i === j || i < 0 || j < 0) return;
+    if (i >= state.rows.length || j >= state.rows.length) return;
+    const tmp = state.rows[i];
+    state.rows[i] = state.rows[j];
+    state.rows[j] = tmp;
+    renderStage();
+    scheduleSave();
+  }
+
+  /* ==================== 總人數 ==================== */
+  function bestRowCount(total) {
+    if (total <= 1) return 1;
+    let bestR = 1;
+    let bestDiff = Infinity;
+    const limit = Math.min(MAX_ROWS, total);
+    for (let R = 1; R <= limit; R++) {
+      const S = Math.ceil(total / R);
+      if (R < S) {
+        const diff = S - R;
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestR = R;
+        }
+      }
+    }
+    return bestR;
+  }
+
+  /* 3. 改變總格數時，被刪掉的內容也會下陣到候選區 */
+  function applyTotal(value) {
+    let total = parseInt(value, 10);
+    if (isNaN(total) || total < 1) return;
+    total = Math.min(total, MAX_STAGE_SLOTS);
+
+    const allSlots = [];
+    state.rows.forEach(row => row.slots.forEach(s => allSlots.push(s)));
+    state.hiddenRows.forEach(row => row.slots.forEach(s => allSlots.push(s)));
+    state.hiddenRows = [];
+
+    const R = bestRowCount(total);
+    const base = Math.floor(total / R);
+    const rem  = total % R;
+
+    const newRows = [];
+    for (let i = 0; i < R; i++) {
+      const count = base + (i >= R - rem ? 1 : 0);
+      newRows.push({ count, slots: [] });
+    }
+
+    let idx = 0;
+    for (const row of newRows) {
+      for (let j = 0; j < row.count; j++) {
+        if (idx < allSlots.length) {
+          row.slots.push(allSlots[idx++]);
+        } else {
+          row.slots.push(blankSlot());
+        }
+      }
+    }
+
+    /* 超出的格子：有內容者下陣到候選區 */
+    const leftover = allSlots.slice(idx);
+    const retained = [];
+    let retreated = 0;
+    for (const s of leftover) {
+      if (!s) continue;
+      if (s.src || s.text) {
+        if (retreatToPool(s)) {
+          retreated++;
+        } else {
+          retained.push(s);
+        }
+      }
+    }
+    if (retained.length) {
+      state.hiddenRows.push({ count: retained.length, slots: retained });
+    }
+
+    state.rows = newRows;
+    renderStage();
+    renderPool();
+    updateTotalDisplay();
+    scheduleSave();
+
+    let msg = '已套用 ' + total + ' 人（' + R + ' 排）';
+    if (retreated) msg += '，' + retreated + ' 個下陣至候選區';
+    toast(msg);
+  }
+
+  /* ==================== 候選區 ==================== */
+  function setPoolCount(value) {
+    const n = clampNum(value, 1, MAX_POOL_SLOTS);
+    while (state.pool.slots.length < n) state.pool.slots.push(blankSlot());
+    state.pool.count = n;
+    poolCountEl.value = n;
+    renderPool();
+    scheduleSave();
+  }
+
+  /* 1. 整理：把有內容的格子往前集中 */
+  function tidyPool() {
+    const n = state.pool.count;
+    const arr = [];
+    for (let i = 0; i < n; i++) arr.push(state.pool.slots[i]);
+
+    const filled = [];
+    const empty  = [];
+    for (const s of arr) {
+      if (s && (s.src || s.text)) filled.push(s);
+      else empty.push(s || blankSlot());
+    }
+    const merged = filled.concat(empty);
+    for (let i = 0; i < n; i++) state.pool.slots[i] = merged[i];
+
+    renderPool();
+    scheduleSave();
+    toast(filled.length ? '已整理候選區（' + filled.length + ' 個有內容）' : '候選區沒有需要整理的內容');
+  }
+
+  /* 2. 調整候選區每格顯示大小 */
+  function setPoolSlotSize(v) {
+    state.pool.slotSize = Math.max(MIN_POOL_SLOT_SIZE, Math.min(MAX_POOL_SLOT_SIZE, v));
+    layoutPool();
+    scheduleSave();
+  }
+
+  /* 7. 角色庫：批量加入指定角色庫的角色 */
+  function addFromGallery(items) {
+    if (!items || !items.length) {
+      toast('這個角色庫是空的');
+      return;
+    }
+    let added = 0;
+    for (const it of items) {
+      const ps = nextPoolSlot();
+      if (!ps) { toast('候選區已達上限 (' + MAX_POOL_SLOTS + ')'); break; }
+      ps.src = it.url || null;
+      ps.text = it.text || '';
+      slotRegistry.get(ps)?.sync();
+      added++;
+    }
+    renderPool();
+    scheduleSave();
+    if (added) toast('已從角色庫加入 ' + added + ' 張卡');
+  }
+
+  /* 收集目前所有角色：上陣區優先，其次候選區 */
+  function collectGalleryItems() {
+    const items = [];
+    const seen = new Set();
+
+    const add = (s) => {
+      if (!s || (!s.src && !s.text)) return;
+      const key = (s.src || '') + '\u0000' + (s.text || '');
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ url: s.src || null, text: s.text || '' });
+    };
+
+    /* 1) 上陣區（優先） */
+    state.rows.forEach((row) => {
+      for (let i = 0; i < row.count; i++) add(row.slots[i]);
+    });
+    /* 2) 候選區 */
+    state.pool.slots.slice(0, state.pool.count).forEach(add);
+
+    return items;
+  }
+
+  /* 把現有角色存成自訂角色庫 */
+  function saveCurrentAsGallery(rawName) {
+    const name = String(rawName || '').trim().slice(0, 20);
+    if (!name) return;
+
+    const items = collectGalleryItems();
+    if (!items.length) {
+      toast('上陣區與候選區都沒有角色');
+      return;
+    }
+
+    const existing = state.customGalleries.find((g) => g.name === name);
+    if (existing) {
+      if (!confirm('已有同名角色庫「' + name + '」，要覆蓋嗎？')) return;
+      existing.items = items;
+      ensureGalleryIntegrity();
+      scheduleSave();
+      toast('已覆蓋角色庫「' + name + '」（' + items.length + ' 張）');
+      return;
+    }
+
+    if (state.customGalleries.length >= MAX_CUSTOM_GALLERIES) {
+      toast('自訂角色庫已達上限 (' + MAX_CUSTOM_GALLERIES + ' 個)');
+      return;
+    }
+
+    const g = { id: newCustomId(), name, items };
+    state.customGalleries.push(g);
+    if (!Array.isArray(state.galleryOrder)) state.galleryOrder = [];
+    state.galleryOrder.push(g.id);
+    scheduleSave();
+    toast('已存成角色庫「' + name + '」（' + items.length + ' 張）');
+  }
+
+  /* ==================== 角色庫：匯出 / 匯入（僅作用於角色庫） ==================== */
+  function exportGalleries() {
+    if (!state.customGalleries.length) {
+      toast('目前沒有自訂角色庫可匯出');
+      return;
+    }
+    const data = galleryData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    a.href = url;
+    a.download = `角色庫${yyyy}${mm}${dd}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast('已匯出 ' + state.customGalleries.length + ' 個自訂角色庫');
+  }
+
+  function importGalleries(data) {
+    const list = (data && Array.isArray(data.customGalleries)) ? data.customGalleries : [];
+
+    const clean = list
+      .filter((g) => g && typeof g === 'object' && typeof g.name === 'string')
+      .map((g) => ({
+        id: (typeof g.id === 'string' && g.id) ? g.id : newCustomId(),
+        name: String(g.name).slice(0, 20),
+        items: (Array.isArray(g.items) ? g.items : [])
+          .filter((it) => it && (it.url || it.text))
+          .map((it) => ({
+            url: it.url ? String(it.url) : null,
+            text: it.text ? String(it.text) : ''
+          }))
+      }))
+      .filter((g) => g.name && g.items.length);
+
+    if (!clean.length) {
+      toast('檔案中沒有可匯入的角色庫');
+      return;
+    }
+
+    let added = 0, replaced = 0, skipped = 0;
+    clean.forEach((g) => {
+      const exist = state.customGalleries.find((x) => x.name === g.name);
+      if (exist) {
+        exist.items = g.items;
+        replaced++;
+      } else if (state.customGalleries.length < MAX_CUSTOM_GALLERIES) {
+        state.customGalleries.push({ id: g.id, name: g.name, items: g.items });
+        added++;
+      } else {
+        skipped++;
+      }
+    });
+
+    ensureGalleryIntegrity();
+    scheduleSave();
+
+    let msg = '已匯入角色庫：新增 ' + added + '、覆蓋 ' + replaced;
+    if (skipped) msg += '、略過 ' + skipped + '（已達上限）';
+    toast(msg);
+  }
+
+  /* ==================== 管理角色庫 ==================== */
+  function openGalleryManager() {
+    ensureGalleryIntegrity();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal gallery-modal" role="dialog" aria-modal="true">
+        <h3>📚 管理角色庫</h3>
+        <p>可調整順序、重新命名或刪除自訂角色庫；預設角色庫僅能排序。</p>
+        <div class="gallery-list"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" data-act="add">＋ 新增角色庫</button>
+          <div class="spacer"></div>
+          <button type="button" class="btn-primary" data-act="close">完成</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    const listEl = backdrop.querySelector('.gallery-list');
+
+    function renderList() {
+      ensureGalleryIntegrity();
+      const galleries = orderedGalleries();
+      listEl.innerHTML = '';
+
+      if (!galleries.length) {
+        const empty = document.createElement('div');
+        empty.className = 'gallery-empty';
+        empty.textContent = '目前沒有任何角色庫';
+        listEl.appendChild(empty);
+        return;
+      }
+
+      galleries.forEach((g, i) => {
+        const row = document.createElement('div');
+        row.className = 'gallery-row';
+        row.innerHTML = `
+          <span class="g-index">${i + 1}</span>
+          <span class="g-name">
+            <span class="g-label"></span>
+          </span>
+          <span class="g-count">${g.items.length} 張</span>
+          <div class="gallery-ops">
+            <button type="button" data-act="up" title="上移">↑</button>
+            <button type="button" data-act="down" title="下移">↓</button>
+            <button type="button" data-act="rename" title="重新命名">✎</button>
+            <button type="button" data-act="del" title="刪除" class="danger">🗑</button>
+          </div>`;
+
+        row.querySelector('.g-label').textContent = g.name;
+        if (!g.isCustom) {
+          const tag = document.createElement('span');
+          tag.className = 'g-tag';
+          tag.textContent = '預設';
+          row.querySelector('.g-name').appendChild(tag);
+        }
+
+        const upBtn = row.querySelector('[data-act="up"]');
+        const downBtn = row.querySelector('[data-act="down"]');
+        const renameBtn = row.querySelector('[data-act="rename"]');
+        const delBtn = row.querySelector('[data-act="del"]');
+
+        upBtn.disabled = (i === 0);
+        downBtn.disabled = (i === galleries.length - 1);
+        if (!g.isCustom) {
+          renameBtn.disabled = true;
+          delBtn.disabled = true;
+          renameBtn.title = '預設角色庫無法重新命名';
+          delBtn.title = '預設角色庫無法刪除';
+        }
+
+        row.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-act]');
+          if (!btn || btn.disabled) return;
+          e.stopPropagation();
+          const act = btn.dataset.act;
+
+          if (act === 'up' || act === 'down') {
+            moveGallery(g.id, act === 'up' ? -1 : 1);
+            renderList();
+            return;
+          }
+
+          if (act === 'rename') {
+            promptGalleryName((newName) => {
+              const target = state.customGalleries.find((x) => x.id === g.id);
+              if (!target) return;
+              if (state.customGalleries.some((x) => x.id !== g.id && x.name === newName)) {
+                toast('已有同名角色庫「' + newName + '」');
+                return;
+              }
+              target.name = newName;
+              scheduleSave();
+              renderList();
+              toast('已重新命名為「' + newName + '」');
+            }, g.name, {
+              title: '✎ 重新命名角色庫',
+              desc: '輸入新的名稱（最多 20 字）。',
+              okText: '確定'
+            });
+            return;
+          }
+
+          if (act === 'del') {
+            if (!confirm('確定要刪除角色庫「' + g.name + '」？\n此操作無法復原。')) return;
+            state.customGalleries = state.customGalleries.filter((x) => x.id !== g.id);
+            state.galleryOrder = state.galleryOrder.filter((x) => x !== g.id);
+            scheduleSave();
+            renderList();
+            toast('已刪除角色庫「' + g.name + '」');
+          }
+        });
+
+        listEl.appendChild(row);
+      });
+    }
+
+    function close() {
+      backdrop.remove();
+      document.removeEventListener('keydown', onKey, true);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+    }
+
+    backdrop.querySelector('[data-act="close"]').addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    document.addEventListener('keydown', onKey, true);
+
+    backdrop.querySelector('[data-act="add"]').addEventListener('click', () => {
+      promptGalleryName((name) => {
+        if (state.customGalleries.some((x) => x.name === name)) {
+          toast('已有同名角色庫「' + name + '」');
+          return;
+        }
+        saveCurrentAsGallery(name);
+        renderList();
+      }, '', {
+        title: '＋ 新增角色庫',
+        desc: '把目前上陣區與候選區的角色存成新的角色庫。',
+        okText: '建立'
+      });
+    });
+
+    renderList();
+  }
+
+  function handleBulkUrl(urls) {
+    const valid = urls.map(u => u.trim()).filter(Boolean);
+    if (!valid.length) return;
+
+    let idx = 0;
+
+    /* 1) 先依「當前顯示順序」填入既有空格 */
+    for (let i = 0; i < state.pool.count && idx < valid.length; i++) {
+      const s = state.pool.slots[i];
+      if (s && !s.src && !s.text) s.src = valid[idx++];
+    }
+
+    /* 2) 還有剩 → 才增加格數（不足多少就加多少） */
+    while (idx < valid.length) {
+      if (state.pool.count >= MAX_POOL_SLOTS) {
+        toast('候選區已達上限 (' + MAX_POOL_SLOTS + ')');
+        break;
+      }
+      const i = state.pool.count;
+      if (i < state.pool.slots.length) {
+        /* 遇到之前隱藏起來的格子 → 直接覆蓋 */
+        const s = state.pool.slots[i];
+        s.src = valid[idx++];
+        s.text = '';
+        s.color = null;
+      } else {
+        const s = blankSlot();
+        s.src = valid[idx++];
+        state.pool.slots.push(s);
+      }
+      state.pool.count++;
+    }
+
+    poolCountEl.value = state.pool.count;
+    renderPool();
+    scheduleSave();
+    toast('已加入 ' + idx + ' 張圖片');
+  }
+
+  function layoutPool() {
+    const bodyW = poolBody.clientWidth - 6;
+    if (bodyW <= 0) return;
+    const gap = 7;
+    const target = state.pool.slotSize || DEFAULT_POOL_SLOT_SIZE;
+    const cols = Math.max(1, Math.floor((bodyW + gap) / (target + gap)));
+    poolSlotsEl.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
+  }
+
+  let resizing = false, resizeStartX = 0, resizeStartW = 0;
+
+  poolResize.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    resizing = true;
+    resizeStartX = e.clientX;
+    resizeStartW = poolEl.offsetWidth;
+    poolResize.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!resizing) return;
+    const maxW = Math.max(120, Math.min(560, window.innerWidth * 0.55));
+    const w = clampNum(resizeStartW + (e.clientX - resizeStartX), 96, maxW);
+    state.pool.width = w;
+    poolEl.style.width = w + 'px';
+    layoutPool();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!resizing) return;
+    resizing = false;
+    poolResize.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    scheduleSave();
+  });
+
+  /* ==================== 自動縮放陣形 ==================== */
+  let fitRaf = null;
+
+  function scheduleFit() {
+    if (fitRaf) cancelAnimationFrame(fitRaf);
+    fitRaf = requestAnimationFrame(() => {
+      fitRaf = null;
+      fitStage();
+    });
+  }
+
+  function fitStage() {
+    const rows = state.rows;
+    if (!rows.length) return;
+
+    const stageW = stage.clientWidth;
+    const stageH = stage.clientHeight;
+    if (stageW < 80 || stageH < 80) return;
+
+    const availW = stageW - 20;
+    const availH = stageH - 20;
+
+    const rowCount = rows.length;
+    let maxCount = 1;
+    for (const r of rows) {
+      if (r.count > maxCount) maxCount = r.count;
+    }
+
+    const SLOT_GAP = 9;
+    const RANK_GAP = 18;
+    const PANEL_W = 74;
+    const PANEL_H = 52;
+    const rankPadding = 10;
+    const ratio = state.shape === 'rect' ? 4 / 3 : 1;
+
+    let w;
+
+    if (state.dir === 'ttb' || state.dir === 'btt') {
+      const wByW = (availW - PANEL_W - (maxCount - 1) * SLOT_GAP - rankPadding) / maxCount;
+      const wByH = (availH - (rowCount - 1) * RANK_GAP - rowCount * rankPadding) / (rowCount * ratio);
+      w = Math.min(wByW, wByH);
+    } else {
+      const wByW = (availW - (rowCount - 1) * RANK_GAP - rowCount * rankPadding) / rowCount;
+      const wByH = (availH - PANEL_H - (maxCount - 1) * SLOT_GAP - rankPadding) / (maxCount * ratio);
+      w = Math.min(wByW, wByH);
+    }
+
+    w = Math.max(22, Math.min(200, w));
+
+    /* 讓格子寬度落在整數像素，避免亞像素模糊 */
+    if (state.shape === 'rect') {
+      /* 3:4 比例：寬度取 3 的倍數 → 高度 = w*4/3 也必為整數 */
+      w = Math.max(24, Math.floor(w / 3) * 3);
+    } else {
+      w = Math.round(w);
+    }
+
+    stage.style.setProperty('--slot-w', w + 'px');
+  }
+
+  /* ==================== 自動保存 ==================== */
+  let saveTimer = null;
+
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(doSave, 600);
+  }
+
+  /* ---------- 資料收集：分成「陣容」與「角色庫」兩塊 ---------- */
+  function boardData() {
+    const mapSlots = (slots) => slots.map((s) => ({
+      src: s.src || null,
+      text: s.text || '',
+      color: s.color || null
+    }));
+    const mapRows = (rows) => rows.map((r) => ({
+      count: r.count,
+      slots: mapSlots(r.slots)
+    }));
+
+    return {
+      v: 8,
+      kind: 'board',
+      savedAt: new Date().toISOString(),
+      dir: state.dir,
+      shape: state.shape,
+      poolWidth: state.pool.width,
+      poolCount: state.pool.count,
+      poolSlotSize: state.pool.slotSize,
+      rows: mapRows(state.rows),
+      hiddenRows: mapRows(state.hiddenRows),
+      pool: mapSlots(state.pool.slots)
+    };
+  }
+
+  function galleryData() {
+    return {
+      v: 8,
+      kind: 'galleries',
+      savedAt: new Date().toISOString(),
+      customGalleries: state.customGalleries.map((g) => ({
+        id: g.id,
+        name: g.name,
+        items: g.items.map((it) => ({
+          url: it.url || null,
+          text: it.text || ''
+        }))
+      })),
+      galleryOrder: state.galleryOrder.slice()
+    };
+  }
+
+  function collectData() {
+    const d = boardData();
+    d.customGalleries = state.customGalleries.map((g) => ({
+      id: g.id,
+      name: g.name,
+      items: g.items.map((it) => ({
+        url: it.url || null,
+        text: it.text || ''
+      }))
+    }));
+    d.galleryOrder = state.galleryOrder.slice();
+    return d;
+  }
+
+  let storageWarned = false;
+
+  function doSave() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData()));
+    } catch (e) {
+      if (!storageWarned) {
+        storageWarned = true;
+        toast('⚠ 自動保存失敗（可能超過瀏覽器容量）');
+      }
+    }
+  }
+
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      applyData(data, true);
+      return true;
+    } catch (e) {
+      console.warn('讀取保存資料失敗', e);
+      return false;
+    }
+  }
+
+  /* opts.board / opts.galleries 可分別控制是否套用該區塊 */
+  function applyData(d, silent, opts) {
+    if (!d || typeof d !== 'object') throw new Error('資料格式錯誤');
+    opts = opts || {};
+    const useBoard     = opts.board !== false;
+    const useGalleries = opts.galleries !== false;
+
+    const mapSlots = (arr) => (Array.isArray(arr) ? arr : []).map((s) => ({
+      src: (s && s.src) ? s.src : null,
+      text: (s && s.text) ? String(s.text) : '',
+      color: (s && s.color) ? s.color : null
+    }));
+
+    const mapRow = (r) => {
+      const slots = mapSlots(r.slots);
+      let count = parseInt(r.count, 10);
+      if (isNaN(count)) count = slots.length || 1;
+      count = clampNum(count, 1, MAX_ROW_SLOTS);
+      while (slots.length < count) slots.push(blankSlot());
+      return { count, slots };
+    };
+
+    if (useBoard) {
+      state.dir   = DIRECTIONS.includes(d.dir) ? d.dir : 'btt';
+      state.shape = SHAPES.includes(d.shape) ? d.shape : 'rect';
+
+      const rowsAll = (Array.isArray(d.rows) ? d.rows : []).map(mapRow);
+      state.rows = rowsAll.slice(0, MAX_ROWS);
+      if (!state.rows.length) {
+        state.rows = [{ count: 4, slots: newSlots(4) }, { count: 5, slots: newSlots(5) }];
+      }
+
+      const hiddenIn = Array.isArray(d.hiddenRows) ? d.hiddenRows : [];
+      state.hiddenRows = hiddenIn.map(mapRow)
+        .concat(rowsAll.slice(MAX_ROWS));
+
+      const poolIn = Array.isArray(d.pool) ? d.pool : [];
+      const poolSlots = mapSlots(poolIn);
+      state.pool.slots = poolSlots.length ? poolSlots : newSlots(DEFAULT_POOL_COUNT);
+
+      let pc = parseInt(d.poolCount, 10);
+      if (isNaN(pc)) pc = state.pool.slots.length;
+      pc = clampNum(pc, 1, MAX_POOL_SLOTS);
+      while (state.pool.slots.length < pc) state.pool.slots.push(blankSlot());
+      state.pool.count = pc;
+
+      let pw = parseInt(d.poolWidth, 10);
+      if (isNaN(pw)) pw = 168;
+      state.pool.width = clampNum(pw, 96, 560);
+
+      let psz = parseInt(d.poolSlotSize, 10);
+      if (isNaN(psz)) psz = DEFAULT_POOL_SLOT_SIZE;
+      state.pool.slotSize = clampNum(psz, MIN_POOL_SLOT_SIZE, MAX_POOL_SLOT_SIZE);
+    }
+
+    if (useGalleries) {
+      /* 自訂角色庫（匯出／匯入一併生效） */
+      state.customGalleries = (Array.isArray(d.customGalleries) ? d.customGalleries : [])
+        .filter((g) => g && typeof g === 'object' && typeof g.name === 'string')
+        .map((g) => ({
+          id: (typeof g.id === 'string' && g.id) ? g.id : newCustomId(),
+          name: String(g.name).slice(0, 20),
+          items: (Array.isArray(g.items) ? g.items : [])
+            .filter((it) => it && (it.url || it.text))
+            .map((it) => ({
+              url: it.url ? String(it.url) : null,
+              text: it.text ? String(it.text) : ''
+            }))
+        }))
+        .filter((g) => g.name && g.items.length)
+        .slice(0, MAX_CUSTOM_GALLERIES);
+
+      state.galleryOrder = Array.isArray(d.galleryOrder)
+        ? d.galleryOrder.filter((x) => typeof x === 'string')
+        : [];
+    }
+
+    ensureGalleryIntegrity();
+
+    syncUI();
+    renderAll();
+    if (!silent) scheduleSave();
+  }
+
+  /* ==================== UI 同步 ==================== */
+  function syncUI() {
+    document.body.dataset.shape = state.shape;
+
+    dirSeg.querySelectorAll('button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.val === state.dir);
+    });
+    shapeSeg.querySelectorAll('button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.val === state.shape);
+    });
+
+    poolEl.style.width = state.pool.width + 'px';
+    poolCountEl.value = state.pool.count;
+  }
+
+  /* ==================== 還原預設 ==================== */
+  function resetToDefault() {
+    if (!confirm('確定要還原成預設狀態嗎？\n\n這會清除上陣區、候選區以及所有自訂角色庫的資料，並回復到初始配置。\n此操作無法復原。')) {
+      return;
+    }
+
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+
+    state.dir   = 'btt';
+    state.shape = 'rect';
+    state.rows = [
+      { count: 3, slots: newSlots(3) },
+      { count: 6, slots: newSlots(6) },
+	  { count: 7, slots: newSlots(7) }
+    ];
+    state.hiddenRows = [];
+    state.customGalleries = [];
+    state.galleryOrder = [];
+    state.pool = {
+      width: 168,
+      count: DEFAULT_POOL_COUNT,
+      slotSize: DEFAULT_POOL_SLOT_SIZE,
+      slots: newSlots(DEFAULT_POOL_COUNT)
+    };
+
+    totalInput.value = 16;
+
+    ensureGalleryIntegrity();
+    syncUI();
+    renderAll();
+    updateTotalDisplay();
+    scheduleSave();
+    toast('已還原成預設狀態');
+  }
+
+  /* ==================== 事件綁定 ==================== */
+  dirSeg.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-val]');
+    if (!btn) return;
+    state.dir = btn.dataset.val;
+    stage.dataset.dir = state.dir;
+    dirSeg.querySelectorAll('button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.val === state.dir);
+    });
+    scheduleFit();
+    scheduleSave();
+  });
+
+  shapeSeg.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-val]');
+    if (!btn) return;
+    state.shape = btn.dataset.val;
+    document.body.dataset.shape = state.shape;
+    shapeSeg.querySelectorAll('button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.val === state.shape);
+    });
+    layoutPool();
+    scheduleFit();
+    scheduleSave();
+  });
+
+  document.getElementById('addRow').addEventListener('click', () => {
+    addRow(3);
+  });
+
+  document.getElementById('bulkUrlBtn').addEventListener('click', () => {
+    promptBulkUrl(handleBulkUrl);
+  });
+
+  /* 1. 整理 */
+  document.getElementById('tidyPoolBtn').addEventListener('click', tidyPool);
+
+  /* 2. 角色庫：先彈出選單，選擇要加入哪個角色庫（含自訂角色庫） */
+  galleryBtnEl.addEventListener('click', () => {
+    ensureGalleryIntegrity();
+    const galleries = orderedGalleries();
+
+    const items = galleries.map((g) => ({
+      label: (g.isCustom ? '⭐ ' : '📚 ') + g.name + '（' + g.items.length + ' 張）',
+      action: () => addFromGallery(g.items)
+    }));
+
+    items.push({ type: 'separator' });
+    items.push({
+      label: '➕ 加入全部角色庫',
+      action: () => addFromGallery(galleries.reduce((acc, g) => acc.concat(g.items), []))
+    });
+    items.push({
+      label: '💾 把現有角色存成庫',
+      action: () => promptGalleryName(saveCurrentAsGallery)
+    });
+
+    /* 角色庫專屬的匯出／匯入（不影響上陣區與候選區） */
+    items.push({ type: 'separator' });
+    items.push({
+      label: '📤 匯出角色庫',
+      action: () => exportGalleries()
+    });
+    items.push({
+      label: '📥 匯入角色庫',
+      action: () => { galleryImportFile.value = ''; galleryImportFile.click(); }
+    });
+
+    items.push({ type: 'separator' });
+    items.push({
+      label: '⚙ 管理角色庫…',
+      action: () => openGalleryManager()
+    });
+
+    openMenu(galleryBtnEl, { items });
+  });
+
+  /* 2. 候選區格子大小 */
+  document.getElementById('poolSizeUp').addEventListener('click', () => {
+    setPoolSlotSize(state.pool.slotSize + 8);
+  });
+  document.getElementById('poolSizeDown').addEventListener('click', () => {
+    setPoolSlotSize(state.pool.slotSize - 8);
+  });
+
+  document.getElementById('clearPool').addEventListener('click', () => {
+    if (!confirm('確定要清空候選區所有內容嗎？')) return;
+    state.pool.slots.slice(0, state.pool.count).forEach(data => {
+      data.src = null; data.text = '';
+    });
+    renderPool();
+    scheduleSave();
+    toast('已清空候選區');
+  });
+
+  document.getElementById('clearStage').addEventListener('click', () => {
+    if (!confirm('確定要清空上陣陣容的所有內容嗎？')) return;
+    state.rows.forEach(row => {
+      row.slots.slice(0, row.count).forEach(data => {
+        data.src = null; data.text = '';
+      });
+    });
+    renderStage();
+    scheduleSave();
+    toast('已清空陣容');
+  });
+
+  document.getElementById('applyTotal').addEventListener('click', () => {
+    applyTotal(totalInput.value);
+  });
+
+  totalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); applyTotal(totalInput.value); }
+  });
+
+  poolCountEl.addEventListener('change', () => setPoolCount(poolCountEl.value));
+  poolCountEl.addEventListener('mousedown', (e) => e.stopPropagation());
+
+  /* 還原預設 */
+  document.getElementById('resetBtn').addEventListener('click', resetToDefault);
+
+  /* 右上角匯出：只含上陣區 + 候選區 */
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const data = boardData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    a.href = url;
+    a.download = `陣容${yyyy}${mm}${dd}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast('已匯出陣容檔案（不含角色庫）');
+  });
+
+  /* 右上角匯入：只套用上陣區 + 候選區，不動角色庫 */
+  document.getElementById('importBtn').addEventListener('click', () => {
+    importFile.value = '';
+    importFile.click();
+  });
+
+  importFile.addEventListener('change', () => {
+    const file = importFile.files && importFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        applyData(data, true, { galleries: false });
+        scheduleSave();
+        toast('✓ 匯入陣容成功（角色庫不受影響）');
+      } catch (err) {
+        alert('匯入失敗：' + err.message);
+      }
+    };
+    reader.onerror = () => alert('讀取檔案失敗');
+    reader.readAsText(file);
+  });
+
+  /* 角色庫匯入檔案 */
+  galleryImportFile.addEventListener('change', () => {
+    const file = galleryImportFile.files && galleryImportFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        importGalleries(data);
+      } catch (err) {
+        alert('匯入角色庫失敗：' + err.message);
+      }
+    };
+    reader.onerror = () => alert('讀取檔案失敗');
+    reader.readAsText(file);
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.slot-menu')) return;
+    closeMenu();
+  }, true);
+
+  const ro = new ResizeObserver(() => {
+    updateHeaderHeight();
+    scheduleFit();
+  });
+  ro.observe(stage);
+  ro.observe(header);
+
+  function updateHeaderHeight() {
+    document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+  }
+
+  window.addEventListener('resize', () => {
+    updateHeaderHeight();
+    layoutPool();
+    scheduleFit();
+  });
+
+  /* ==================== 初始化 ==================== */
+  function init() {
+    updateHeaderHeight();
+
+    const loaded = loadFromStorage();
+    ensureGalleryIntegrity();
+
+    if (!loaded) {
+      state.dir = 'btt';
+      state.shape = 'rect';
+      state.rows = [
+        { count: 3, slots: newSlots(3) },
+        { count: 6, slots: newSlots(6) },
+		{ count: 7, slots: newSlots(7) }
+      ];
+      state.customGalleries = [];
+      state.galleryOrder = [];
+      state.pool = { width: 168, count: DEFAULT_POOL_COUNT, slotSize: DEFAULT_POOL_SLOT_SIZE, slots: newSlots(DEFAULT_POOL_COUNT) };
+      ensureGalleryIntegrity();
+      syncUI();
+      renderAll();
+    }
+
+    updateTotalDisplay();
+    setTimeout(() => { scheduleFit(); layoutPool(); }, 60);
+    setTimeout(() => { scheduleFit(); }, 200);
+  }
+
+  init();
+
+})();
+</script>
+</body>
+</html>
